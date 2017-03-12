@@ -41,8 +41,8 @@ SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} ${mtca4u-deviceaccess_LIBRARIES})
 
 ## We are enabling testing. Full setup is done in CMakeTests.txt in 'tests/' directory.
-#enable_testing()  
-#add_subdirectory ("${PROJECT_SOURCE_DIR}/tests")
+enable_testing()  
+add_subdirectory ("${PROJECT_SOURCE_DIR}/tests")
 
 #include(${CMAKE_SOURCE_DIR}/cmake/enable_code_coverage_report.cmake)
 
