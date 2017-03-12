@@ -14,7 +14,18 @@ public:
   }
   
   void open() override{
-    throw mtca4u::NotImplementedException("CommandBasedHardwareBackend::open() not implemented yet.");
+    _fileStream.open(_serialDeviceName);
+    //empty input buffer
+    std::string inputToken;
+    do{
+      _fileStream >> inputToken;
+    }while(_fileStream.good());
+    _fileStream << "\r\n";
+    do{
+      _fileStream >> inputToken;
+      boost::this_thread::sleep_for(boost::chrono::microseconds(10));
+    }while(inputToken != ">>");
+    _opened = true;
   }
 
   void close() override{
