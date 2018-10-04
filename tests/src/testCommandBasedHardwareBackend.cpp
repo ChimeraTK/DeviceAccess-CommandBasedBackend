@@ -2,9 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 using namespace boost::unit_test_framework;
 
-#include <mtca4u/Device.h>
-#include <mtca4u/Utilities.h>
-using namespace mtca4u;
+#include <ChimeraTK/Device.h>
+#include <ChimeraTK/Utilities.h>
+using namespace ChimeraTK;
 
 BOOST_AUTO_TEST_SUITE( CommandBasedHardwareBackendTestSuite )
 

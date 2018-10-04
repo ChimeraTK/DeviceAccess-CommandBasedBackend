@@ -1,14 +1,14 @@
-#include <mtca4u/DeviceBackendImpl.h>
-#include <mtca4u/BackendFactory.h>
-#include <mtca4u/DeviceAccessVersion.h>
-#include <mtca4u/NotImplementedException.h>
+#include <ChimeraTK/DeviceBackendImpl.h>
+#include <ChimeraTK/BackendFactory.h>
+#include <ChimeraTK/DeviceAccessVersion.h>
+#include <ChimeraTK/Exception.h>
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 #include <boost/chrono.hpp>
 #include <fstream>
 #include <sstream>
 
-class CommandBasedHardwareBackend : public mtca4u::DeviceBackendImpl{
+class CommandBasedHardwareBackend : public ChimeraTK::DeviceBackendImpl{
 public:
   CommandBasedHardwareBackend(std::string serialDeviceName) : _serialDeviceName(serialDeviceName){
   }
@@ -29,7 +29,7 @@ public:
   }
 
   void close() override{
-    throw mtca4u::NotImplementedException("CommandBasedHardwareBackend::close() not implemented yet.");
+    throw ChimeraTK::logic_error("CommandBasedHardwareBackend::close() not implemented yet.");
   }
 
   std::string readDeviceInfo() override{
@@ -39,13 +39,13 @@ public:
     return deviceInfo.str();
   }
     
-  static boost::shared_ptr<mtca4u::DeviceBackend> createInstance(std::string /*host*/, std::string /*instance*/, std::list<std::string> parameters, std::string /*mapFileName*/){
+  static boost::shared_ptr<ChimeraTK::DeviceBackend> createInstance(std::string /*host*/, std::string /*instance*/, std::list<std::string> parameters, std::string /*mapFileName*/){
     return boost::make_shared<CommandBasedHardwareBackend>(parameters.front());
   }
 
   struct BackendRegisterer{
     BackendRegisterer(){
-      mtca4u::BackendFactory::getInstance().registerBackendType("CommandBasedHW","",&CommandBasedHardwareBackend::createInstance, CHIMERATK_DEVICEACCESS_VERSION);
+      ChimeraTK::BackendFactory::getInstance().registerBackendType("CommandBasedHW","",&CommandBasedHardwareBackend::createInstance, CHIMERATK_DEVICEACCESS_VERSION);
     }
   };
 
