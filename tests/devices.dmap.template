@@ -1,0 +1,3 @@
+@LOAD_LIB /home/killenb/CommandBasedHardwareBackend/build/libChimeraTK-CommandBasedHardwareBackend.so
+
+COMMAND_BASED_DUMMY sdm://./CommandBasedHW:/dev/pts/9
