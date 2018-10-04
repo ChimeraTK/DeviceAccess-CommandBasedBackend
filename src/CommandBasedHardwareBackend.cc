@@ -39,8 +39,8 @@ public:
     return deviceInfo.str();
   }
     
-  static boost::shared_ptr<ChimeraTK::DeviceBackend> createInstance(std::string /*host*/, std::string /*instance*/, std::list<std::string> parameters, std::string /*mapFileName*/){
-    return boost::make_shared<CommandBasedHardwareBackend>(parameters.front());
+  static boost::shared_ptr<ChimeraTK::DeviceBackend> createInstance(std::string /*host*/, std::string instance, std::list<std::string> /*parameters*/, std::string /*mapFileName*/){
+    return boost::make_shared<CommandBasedHardwareBackend>(instance);
   }
 
   struct BackendRegisterer{
