@@ -25,7 +25,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 --coverage")
 include(${CMAKE_SOURCE_DIR}/cmake/add_dependency.cmake)
 
 ## Dependencies loaded.
-add_dependency(mtca4u-deviceaccess 0.20 REQUIRED)
+add_dependency(ChimeraTK-DeviceAccess 01.00 REQUIRED)
 
 ## Don't know if this is really important, but specify detailed errors for the compiler
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpointer-arith -Wcast-align -Wwrite-strings -Wswitch-default")
@@ -38,7 +38,7 @@ add_library(${PROJECT_NAME} SHARED ${lib_sources})
 
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
 SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_link_libraries(${PROJECT_NAME} ${mtca4u-deviceaccess_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${ChimeraTK-DeviceAccess_LIBRARIES})
 
 ## We are enabling testing. Full setup is done in CMakeTests.txt in 'tests/' directory.
 enable_testing()  

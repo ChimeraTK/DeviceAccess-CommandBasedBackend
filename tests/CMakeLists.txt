@@ -9,7 +9,7 @@ foreach(testExecutableSrcFile ${testExecutables})
   #NAME_WE means the base name without path and (longest) extension
   get_filename_component(executableName ${testExecutableSrcFile} NAME_WE)
   add_executable(${executableName} ${testExecutableSrcFile})
-  target_link_libraries(${executableName} ${mtca4u-deviceaccess_LIBRARIES})
+  target_link_libraries(${executableName} ${ChimeraTK-DeviceAccess_LIBRARIES})
   add_test(${executableName} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${executableName})
 endforeach(testExecutableSrcFile)
 
