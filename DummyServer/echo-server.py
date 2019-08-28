@@ -27,7 +27,7 @@ class EchoServer:
           if data == b'':
             raise RuntimeError("EchoServer: Connection closed by client.")
           else:
-            print("  Received: " + data.decode("utf-8"))
+            print("  EchoServer: Received " + data.decode("utf-8"))
 
           bytesSentTotal = 0
           while bytesSentTotal < len(data):

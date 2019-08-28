@@ -1,3 +1,5 @@
-@LOAD_LIB /home/killenb/CommandBasedHardwareBackend/build/libChimeraTK-CommandBasedHardwareBackend.so
+@LOAD_LIB ../libChimeraTK-CommandBasedHardwareBackend.so
 
-COMMAND_BASED_DUMMY sdm://./CommandBasedHW:/dev/pts/9
+#COMMAND_BASED_DUMMY sdm://./CommandBasedHW:/dev/pts/9 FIXME Remove
+#COMMAND_BASED_DUMMY (CommandBasedHW:/dev/pts/9?type=serial)
+COMMAND_BASED_DUMMY_TCP (CommandBasedHW:<hostname>?type=tcp&port=10001)

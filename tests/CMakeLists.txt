@@ -14,3 +14,6 @@ foreach(testExecutableSrcFile ${testExecutables})
 endforeach(testExecutableSrcFile)
 
 #FIXME: copy dmap-file template and test bash script
+FILE(COPY ${CMAKE_SOURCE_DIR}/tests/devices.dmap.template
+     ${CMAKE_SOURCE_DIR}/tests/configureDMap.sh
+     DESTINATION ${PROJECT_BINARY_DIR}/tests)

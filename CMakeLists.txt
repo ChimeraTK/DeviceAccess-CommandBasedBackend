@@ -25,7 +25,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 --coverage")
 include(${CMAKE_SOURCE_DIR}/cmake/add_dependency.cmake)
 
 ## Dependencies loaded.
-add_dependency(ChimeraTK-DeviceAccess 01.00 REQUIRED)
+add_dependency(Boost COMPONENTS system REQUIRED)
+add_dependency(ChimeraTK-DeviceAccess 01.08 REQUIRED)
 
 ## Don't know if this is really important, but specify detailed errors for the compiler
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpointer-arith -Wcast-align -Wwrite-strings -Wswitch-default")
@@ -43,6 +44,9 @@ target_link_libraries(${PROJECT_NAME} ${ChimeraTK-DeviceAccess_LIBRARIES})
 ## We are enabling testing. Full setup is done in CMakeTests.txt in 'tests/' directory.
 enable_testing()  
 add_subdirectory ("${PROJECT_SOURCE_DIR}/tests")
+# Copy server dummys for testing
+FILE(COPY ${CMAKE_SOURCE_DIR}/DummyServer/echo-server.py
+     DESTINATION ${PROJECT_BINARY_DIR}/tests)
 
 #include(${CMAKE_SOURCE_DIR}/cmake/enable_code_coverage_report.cmake)
 

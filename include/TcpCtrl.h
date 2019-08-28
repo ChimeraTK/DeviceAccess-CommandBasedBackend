@@ -11,7 +11,7 @@
 #include <thread>
 #include <vector>
 
-namespace ChimeraTK {
+namespace CommandBasedBackend {
 
   /// Handles the communication over TCP protocol with RebotDevice-based devices
   class TcpCtrl {
@@ -31,6 +31,8 @@ namespace ChimeraTK {
     void closeConnection();
     /// Receives int32_t words from the socket.
     std::vector<int32_t> receiveData(uint32_t const& numWordsToRead);
+    /// Reads characters up to a specified delimiter
+    std::vector<char> receiveData(const std::string& msgDelimiter);
     void receiveData(boost::array<char, 4>& receivedArray);
     /// Sends a std::vector of bytes to the socket.
     void sendData(const std::vector<char>& data);
@@ -56,6 +58,6 @@ namespace ChimeraTK {
     boost::system::error_code connectToResolvedEndPoints(boost::asio::ip::tcp::resolver::iterator endpointIterator);
   };
 
-} // namespace ChimeraTK
+} // namespace CommandBasedBackend
 
 #endif /* CHIMERATK_TCPCTRL_H */

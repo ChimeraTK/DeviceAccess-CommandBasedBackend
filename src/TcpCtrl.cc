@@ -1,7 +1,10 @@
 #include "TcpCtrl.h"
 #include "ChimeraTK/Exception.h"
 
-namespace ChimeraTK {
+//FIXME
+#include <iostream>
+
+namespace CommandBasedBackend {
 
   namespace boost_ip = boost::asio::ip;
   typedef boost::asio::ip::tcp::resolver resolver_t;
@@ -50,6 +53,22 @@ namespace ChimeraTK {
     try {
       std::vector<int32_t> readData(numWordsToRead);
       boost::asio::read(*_socket, boost::asio::buffer(readData));
+      return readData;
+    }
+    catch(...) {
+      // TODO: find out how to extract info from the boost excception and wrap it
+      // inside RebotBackendException
+      throw ChimeraTK::runtime_error("Error reading from socket");
+    }
+  }
+
+  std::vector<char> TcpCtrl::receiveData(const std::string& msgDelimiter) {
+    try {
+      boost::asio::streambuf buffer;
+      boost::asio::read_until(*_socket, buffer, msgDelimiter);
+
+      std::vector<char> readData(buffer.size());
+      boost::asio::buffer_copy(boost::asio::buffer(readData), buffer.data());
       return readData;
     }
     catch(...) {
@@ -116,16 +135,16 @@ namespace ChimeraTK {
     return ec;
   }
 
-  // FIXME: remove this later; Do not want to do a cleanup at this point
-  void TcpCtrl::receiveData(boost::array<char, 4>& receivedArray) {
-    try {
-      boost::asio::read(*_socket, boost::asio::buffer(receivedArray));
-    }
-    catch(...) {
-      // TODO: find out how to extract info from the boost excception and wrap it
-      // inside RebotBackendException
-      throw ChimeraTK::runtime_error("Error reading from socket");
-    }
-  }
+//  // FIXME: remove this later; Do not want to do a cleanup at this point
+//  void TcpCtrl::receiveData(boost::array<char, 4>& receivedArray) {
+//    try {
+//      boost::asio::read(*_socket, boost::asio::buffer(receivedArray));
+//    }
+//    catch(...) {
+//      // TODO: find out how to extract info from the boost excception and wrap it
+//      // inside RebotBackendException
+//      throw ChimeraTK::runtime_error("Error reading from socket");
+//    }
+//  }
 
-} // namespace ChimeraTK
+} // namespace CommandBasedBackend
