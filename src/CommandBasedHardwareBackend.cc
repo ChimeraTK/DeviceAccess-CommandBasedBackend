@@ -1,5 +1,6 @@
 
 #include "CommandBasedHardwareBackend.h"
+#include "CommandBasedRegisterAccessor.h"
 
 #include <ChimeraTK/DeviceAccessVersion.h>
 #include <ChimeraTK/Exception.h>
