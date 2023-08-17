@@ -36,13 +36,14 @@ else(SUPPRESS_AUTO_DOC_BUILD)
     set(DOC_DEPENDENCY ALL)
 endif(SUPPRESS_AUTO_DOC_BUILD)
 
-
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
+  # Add custom version variable for Doxygen since configure_file does not seem to be able to do double dereferencing for ${${PROJECT_NAME}_version} etc.
+  set(DOXYGEN_PROJECT_NUMBER ${${PROJECT_NAME}_VERSION})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
   add_custom_target(doc ${DOC_DEPENDENCY}
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    COMMAND ${CMAKE_COMMAND} -E env GS_OPTIONS=-dNOSAFER ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
   #note the / after ${CMAKE_BINARY_DIR}/doc/. This causes the directory to be renamed to the destination, not copied into
