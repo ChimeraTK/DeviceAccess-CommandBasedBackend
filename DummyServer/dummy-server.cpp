@@ -1,123 +1,63 @@
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
+//#include <unistd.h>
 #include <iostream>
-#include <cstring>
 #include <sstream>
 #include <vector>
 #include <string>
-
+#include <cstdlib> //for atoi quacking test, DEBUG
+#include "serialport.cpp"
 //First start:
 //socat -d -d pty,raw,echo=0,link=/tmp/virtual-tty pty,raw,echo=0,link=/tmp/virtual-tty-back
 
-class SerialPort {
-    int fd;
-    public:
-    SerialPort(const char* device) {
-        fd = open(device, O_RDWR | O_NOCTTY); //from fcntl
-        //O_NOCTTY is questionalbe
-        if (fd == -1) {
-            std::cerr << "Unable to open device " << device << std::endl;
-            exit(-1); //stdlib
-        }
-
-        struct termios tty;
-        if(tcgetattr(fd, &tty) != 0) {//from termios
-            std::cerr << "Error from tcgetattr\n";
-            exit(-1);
-        }
-
-           // Set Baud Rate
-        cfsetospeed(&tty, (speed_t)B9600);//from termios
-        cfsetispeed(&tty, (speed_t)B9600);//from termios
-        //These can in princiapl fail, and return ints. 
-        //If those ints are <0, then failure.
-        //see https://www.man7.org/linux/man-pages/man3/termios.3.htmlL
-        //serial_port_settings.c_cflag &= ~PARENB;: This line disables parity generation and detection1.
-
-        tty.c_cflag     &=  ~PARENB; //disable parity bit generaton and detection
-        tty.c_cflag     &=  ~CSTOPB; //This line sets the number of stop bits to one. If CSTOPB were set, two stop bits would be used1.
-
-        tty.c_cflag     &=  ~CSIZE; //clear the character size mask
-        tty.c_cflag     |=  CS8;  //set character size to 8 bits
-
-        tty.c_cflag     &=  ~CRTSCTS;           // disable hardware flow control
-        tty.c_cc[VMIN]   =  0;                  // 1: read doesn't block
-        //VMIN defines the minimum number of characters to read
-
-        tty.c_cc[VTIME]  =  5;                  // 0.5 seconds read timeout
-        tty.c_cflag     |=  CREAD | CLOCAL;     // turn on READ (the CREAD receiver) & ignore modem ctrl lines
-
-        cfmakeraw(&tty);// Make raw
-
-        // Flush Port, then applies attributes
-        tcflush(fd, TCIFLUSH);
-        if (tcsetattr(fd, TCSANOW, &tty) != 0) {//from termios
-            std::cerr << "Error from tcsetattr\n";
-            exit(-1);
-        }
-
-    } //end SerialPort constructor
-
-    ~SerialPort() {
-        close(fd); //from unistd
-    }
-
-    void send(const std::string& str) {
-        int bytesWritten = write(fd, str.c_str(), str.size()); //from unistd
-
-        if (bytesWritten != static_cast<ssize_t>(str.size())) {
-            std::cerr << "Incomplete write" << std::endl;
-        }
-
-    }
-
-    std::string receive() {
-        char buffer[256];
-        memset(buffer, 0, sizeof(buffer));
-        char junk = read(fd, buffer, sizeof(buffer) - 1); //from unistd
-        return std::string(buffer);
-    }
-};
-
+//*********************************************************************************************************************
 std::vector<std::string> splitString(const std::string& input, char delimiter) {
+    // Parse the string based on the delimiter. Return a vector the resulting strings.
     std::vector<std::string> result;
     std::stringstream ss(input);
     std::string item;
-    
-    // Split the string based on the delimiter
     while (std::getline(ss, item, delimiter)) {
         result.push_back(item);
     }
-    
     return result;
 }
 
-void dummyServer() {
-    std::cout<<"make port"<<std::endl;
-    SerialPort sp("/tmp/virtual-tty-back");
-
-    //int i = 0;
-    std::cout<<"enter while"<<std::endl;
-    while(true){
-        std::string data = sp.receive();
-
-        usleep(50*1000L); //sleep for 50ms
-
-        std::vector<std::string> lines = splitString(data, ';');
-        for(const std::string& dat : lines){
-            std::cout<<"rx'ed "<<dat<<std::endl;
-            sp.send(dat);
-            usleep(50*1000L); //sleep for 50ms
-        }
-
-        //if(++i > 10) break;
-    }
-
-    std::cout<<"end"<<std::endl;
-}
-
+//*********************************************************************************************************************
 int main(){
-    dummyServer();
+    //long sleepTimeMillisec = 1;
+    //long sleepTimeMicrosec = 1000L*sleepTimeMillisec;
+    SerialPort serialPort("/tmp/virtual-tty-back");
+    std::cout<<"echoing port /tmp/virtual-tty-back"<<std::endl;//DEBUG
+
+    std::string data;
+    while(true){
+
+        std::cout<<"patiently listening..."<<std::endl; //DEBUG
+        data = serialPort.receive();
+
+        std::cout<<"rx'ed "<<replaceNewlines(data)<<std::endl;//DEBUG
+
+        if(data.find("send") == 0){ //for the quacking condition //DEBUG section
+            int n = std::atoi(data.substr(5).c_str());
+            std::cout<<"quacking "<<n<<" times"<<std::endl;//DEBUG
+            for(int i=0;i<n;i++){
+                std::string dat = "quack "+std::to_string(i);
+                std::cout<<"tx'ing "<<replaceNewlines(dat)<<std::endl;//DEBUG
+                serialPort.send(dat);
+
+                //without sleep, fe receives all concatenated onto one line
+                //std::cout<<"sleep "<<sleepTimeMillisec<<"ms"<<std::endl;//DEBUG
+                //usleep(sleepTimeMicrosec); //sleep for 50ms
+            }
+        } else{
+            std::vector<std::string> lines = splitString(data, ';');
+            for(const std::string& dat : lines){
+                std::cout<<"tx'ing "<<replaceNewlines(dat)<<std::endl;//DEBUG
+                serialPort.send(dat);
+                //std::cout<<"sleep "<<sleepTimeMillisec<<"ms"<<std::endl;//DEBUG
+                //usleep(sleepTimeMicrosec); //sleep for 50ms
+            }
+        }//end else
+
+    }
     return 0;
 }
+
