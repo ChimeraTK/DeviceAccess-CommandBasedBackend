@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <cstdlib> //for atoi quacking test, DEBUG
-#include "serialport.cpp"
+#include "serialport.h"
 //First start:
 //socat -d -d pty,raw,echo=0,link=/tmp/virtual-tty pty,raw,echo=0,link=/tmp/virtual-tty-back
 

@@ -1,51 +1,38 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.5.1)
+project(ChimeraTK-DeviceAccess-CommandBasedBackend) 
+cmake_minimum_required(VERSION 3.16.3)
 
-PROJECT(ChimeraTK-CommandBasedHardwareBackend)
+option(BUILD_TESTS "Build tests." ON)
 
-## Setting up library version.
-SET(${PROJECT_NAME}_MAJOR_VERSION 00)
-SET(${PROJECT_NAME}_MINOR_VERSION 00)
-SET(${PROJECT_NAME}_PATCH_VERSION 00)
-include(${CMAKE_SOURCE_DIR}/cmake/set_version_numbers.cmake)
+set(${PROJECT_NAME}_MAJOR_VERSION 00)
+set(${PROJECT_NAME}_MINOR_VERSION 00)
+set(${PROJECT_NAME}_PATCH_VERSION 00)
+include(cmake/set_version_numbers.cmake)
 
-## Loading custom defined CMake modules, like FindDOOCS.cmake.
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+include(cmake/set_default_build_to_release.cmake)
+include(cmake/set_default_flags.cmake)
+include(cmake/enable_code_coverage_report.cmake)
+include(cmake/enable_code_style_check.cmake)
 
-## If "-DCMAKE_BUILD_TYPE=Debug" is not defined, 'Release' will be forced.
-if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "None")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING
-      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
-endif(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "None")
+#find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
 
-## Additional flags set when in Debug mode, to remove code optimization and add coverage report.
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 --coverage")
+include_directories(include)
 
-## Loading `add_dependency` function for setup convenience.
-include(${CMAKE_SOURCE_DIR}/cmake/add_dependency.cmake)
+aux_source_directory(${CMAKE_SOURCE_DIR}/src library_sources)
 
-## Dependencies loaded.
-add_dependency(ChimeraTK-DeviceAccess 01.00 REQUIRED)
+add_library(${PROJECT_NAME} SHARED ${library_sources})
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
+#target_link_libraries(${PROJECT_NAME} PUBLIC ChimeraTK::ChimeraTK-DeviceAccess)
 
-## Don't know if this is really important, but specify detailed errors for the compiler
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpointer-arith -Wcast-align -Wwrite-strings -Wswitch-default")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunreachable-code -Winit-self -Wmissing-field-initializers -Wno-unknown-pragmas")
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wundef")
+#if(BUILD_TESTS)
+#  add_subdirectory(tests)
+#endif(BUILD_TESTS)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
-aux_source_directory(${CMAKE_SOURCE_DIR}/src lib_sources)
-add_library(${PROJECT_NAME} SHARED ${lib_sources})
+# Note: Backends do not need to install their header files, so just install the library.
+include(GNUInstallDirs)
+install(TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}Targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
-SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_link_libraries(${PROJECT_NAME} ${ChimeraTK-DeviceAccess_LIBRARIES})
-
-## We are enabling testing. Full setup is done in CMakeTests.txt in 'tests/' directory.
-enable_testing()  
-add_subdirectory ("${PROJECT_SOURCE_DIR}/tests")
-
-#include(${CMAKE_SOURCE_DIR}/cmake/enable_code_coverage_report.cmake)
-
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-#include(${CMAKE_SOURCE_DIR}/cmake/enable_doxygen_documentation.cmake)
+# we support our cmake EXPORTS as imported targets
+set(PROVIDES_EXPORTED_TARGETS 1)
+include(${CMAKE_SOURCE_DIR}/cmake/create_cmake_config_files.cmake)
