@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 #include <string>
 #include <vector>
@@ -5,30 +7,60 @@
 #include "SerialPort.h"
 #include <chrono>
 
-std::vector<std::string> parse(const std::string& stringToBeParsed, const std::string& delimeter = "\r\n");
-
-//*********************************************************************************************************************
+/**
+ *
+ */
 class SerialCommandHandler : CommandHandler{
     public:
+
+        /**
+         * 
+         */
         SerialCommandHandler(const char* device,ulong timeoutInMilliseconds = 1000);
+
+        /**
+         * Deletes serialPort, closing the port 
+         */
         ~SerialCommandHandler();
 
-
-
+        /**
+         * 
+         */
         std::string sendCommand(std::string cmd) override;
 
+        /**
+         * Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings 
+         */
         std::vector<std::string> sendCommand( std::string cmd, const size_t nLinesExpected) override;
-        //Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings 
 
-        void write(std::string cmd); //simply sends cmd to port with no readback
+        /**
+         * Simply sends cmd to the serial port with no readback.
+         */
+        void write(std::string cmd) const; 
 
-        std::string waitAndReadline(); //readline with no timeout, can wait forever
+        /**
+         * A simple blocking readline with no timeout. This can wait forever.
+         */
+        std::string waitAndReadline() const noexcept; 
 
-        //std::string readlineWithTimeout(); //Moved into SerialPort class
+        /**
+         * A convenience function to set the timeout parameter, used to to timeout sendCommand.
+         */
+        inline void setTimeout(const ulong& timeoutInMilliseconds) noexcept;
 
-        inline void setTimeout(const ulong& timeoutInMilliseconds);
-    private:
-        SerialPort* serialPort;
+        /**
+         * Timeout parameter in milliseconds used to to timeout sendCommand.
+         */
         std::chrono::milliseconds timeout;
+
+    protected:
+        SerialPort* serialPort;
 }; //end SerialCommandHandler 
 
+/**********************************************************************************************************************/
+
+/**
+ * Parse a string by the delimiter, and return a vector of the resulting segments
+ * no delimiters are present in the resulting segments.
+ */
+[[nodiscard]] std::vector<std::string> parse(const std::string& stringToBeParsed, const std::string& delimiter = "\r\n") noexcept;
