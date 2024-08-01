@@ -15,7 +15,7 @@ class SerialPort {
         ~SerialPort();
         void send(const std::string& str); //write str into the serial prot
         std::string readline(); //read a _delim delimited line from the serial port. Result ends in _delim
-        std::string readlineWithTimeout(std::chrono::milliseconds timeout);
+        std::string readlineWithTimeout(std::chrono::milliseconds timeout); //throws if timeout exceeded.
 
         std::string getDelim();
         bool strEndsInDelim(std::string str); //Returns true if and only if the provided string ends in the delimiter _delim.

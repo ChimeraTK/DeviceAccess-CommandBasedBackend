@@ -1,4 +1,3 @@
-//#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -6,6 +5,7 @@
 #include <cstdlib> //for atoi quacking test, DEBUG
 #include "SerialPort.h"
 #include "SerialCommandHandler.h"
+//#include <unistd.h>
 //First start:
 //socat -d -d pty,raw,echo=0,link=/tmp/virtual-tty pty,raw,echo=0,link=/tmp/virtual-tty-back
 

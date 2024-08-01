@@ -16,6 +16,7 @@ include(cmake/enable_code_style_check.cmake)
 #find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
 
 include_directories(include)
+#include_directories(${CMAKE_SOURCE_DIR}/include)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src library_sources)
 
@@ -23,9 +24,9 @@ add_library(${PROJECT_NAME} SHARED ${library_sources})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
 #target_link_libraries(${PROJECT_NAME} PUBLIC ChimeraTK::ChimeraTK-DeviceAccess)
 
-#if(BUILD_TESTS)
-#  add_subdirectory(tests)
-#endif(BUILD_TESTS)
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif(BUILD_TESTS)
 
 # Note: Backends do not need to install their header files, so just install the library.
 include(GNUInstallDirs)

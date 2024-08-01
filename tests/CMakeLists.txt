@@ -2,6 +2,10 @@
 
 add_executable(dummy-server dummy-server.cpp)
 target_link_libraries(dummy-server PUBLIC ${PROJECT_NAME} )
+
+add_executable(test_serialPort test_serialPort.cpp)
+target_link_libraries(test_serialPort PUBLIC ${PROJECT_NAME} )
+
 #add_test(testModbus testModbus)
 
 #file(COPY dummy.map DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

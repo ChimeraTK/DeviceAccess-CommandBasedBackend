@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include "CommandHandler.h"
+#include "SerialPort.h"
 #include <chrono>
 
 std::vector<std::string> parse(const std::string& stringToBeParsed, const std::string& delimeter = "\r\n");
