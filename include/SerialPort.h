@@ -31,7 +31,7 @@ class SerialPort {
         /**
          * Closes the port.
          */
-        ~SerialPort();
+        ~SerialPort();//{ close(fileDescriptor); }
 
         /**
          * Write str into the serial port, with _delim delimiter appended 
@@ -51,21 +51,6 @@ class SerialPort {
         std::string readlineWithTimeout(const std::chrono::milliseconds& timeout) const; 
 
         /**
-         * Returns true if and only if the provided string ends in the delimiter _delim.
-         * Forseen only for interal use.
-         */
-        [[nodiscard]] bool strEndsInDelim(const std::string& str) const noexcept; 
-
-        /**
-         * Removes the delimiter _delim from str if it's present and returns the result
-         * If no delimiter is found, returns the input
-         * Use this to ensure that the resulting string doesn't end in the delimiter
-         * Forseen only for interal use.
-         */
-        [[nodiscard]] std::string stripDelim(const std::string& str) const noexcept; 
-
-
-        /**
          * delim is the line delimiter for the serial port communication 
          */
         const std::string delim; 
@@ -81,9 +66,3 @@ class SerialPort {
          */
         int fileDescriptor;
 }; //end SerialPort
-
-/**
-* This replaces '\n' with 'N' and '\r' with 'R' and returns the modified string. 
-* This is only used for visualizing delimiters during debugging.
-*/
-[[nodiscard]] std::string replaceNewlines(const std::string& input) noexcept; 

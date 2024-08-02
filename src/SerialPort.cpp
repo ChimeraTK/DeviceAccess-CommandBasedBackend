@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <fcntl.h> 
 #include <unistd.h> //POSIX OS API
 #include <termios.h> //for termain IO interface
-#include <cstring>
-#include <future>
+#include <cstring> //used for memset
 #include <future> //needed for timeout
 #include <chrono> //needed for timout
 
 #include "SerialPort.h"
+#include "stringUtils.h"
 
 /**********************************************************************************************************************/
 
@@ -67,8 +66,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter):
 
 /**********************************************************************************************************************/
 
-SerialPort::~SerialPort() {
-    close(fileDescriptor); //from unistd
+SerialPort::~SerialPort(){
+    close(fileDescriptor); 
 }
 
 /**********************************************************************************************************************/
@@ -85,33 +84,11 @@ void SerialPort::send(const std::string& str) const {
 
 /**********************************************************************************************************************/
 
-[[nodiscard]] bool SerialPort::strEndsInDelim(const std::string& str) const noexcept {
-    int s = str.size()-1;
-    int d = delim_size -1;
-    while(s>=0 and d>= 0){
-        if (str[s--] != delim[d--]){
-            return false; 
-        }
-    }
-    return d<0;
-}
-
-/**********************************************************************************************************************/
-
-[[nodiscard]] std::string SerialPort::stripDelim(const std::string& str) const noexcept {
-    if(strEndsInDelim(str)){
-        return str.substr(0, str.size() - delim_size);
-    } else {
-        return str;
-    }
-}
-
-/**********************************************************************************************************************/
-
 std::string SerialPort::readline() const noexcept { 
-    char buffer[256];
-    std::string outputStr = "";
+    static const int bufferLen = 256;
     int bytes_read;
+    char buffer[bufferLen];
+    std::string outputStr = "";
 
     do{
         memset(buffer, 0, sizeof(buffer));
@@ -119,9 +96,9 @@ std::string SerialPort::readline() const noexcept {
         //the -1 makes room for read to insert a '\0' null termination at the end
 
         outputStr += std::string(buffer);
-    } while(bytes_read >= 255 and not strEndsInDelim(outputStr));
+    } while(bytes_read >= (bufferLen - 1) and not strEndsInDelim(outputStr, delim, delim_size));
 
-    return stripDelim(outputStr); 
+    return stripDelim(outputStr, delim, delim_size); 
 } //end readline
 
 /**********************************************************************************************************************/
@@ -140,24 +117,3 @@ std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& tim
     }
 } //end readlineWithTimeout
 
-/**********************************************************************************************************************/
-
-[[nodiscard]] std::string replaceNewlines(const std::string& input) noexcept {
-    std::string result = input;
-
-    // Replace '\n' with 'N'
-    size_t pos = result.find('\n');
-    while (pos != std::string::npos) {
-        result.replace(pos, 1, "N");
-        pos = result.find('\n', pos + 1);
-    }
-
-    // Replace '\r' with 'R'
-    pos = result.find('\r');
-    while (pos != std::string::npos) {
-        result.replace(pos, 1, "R");
-        pos = result.find('\r', pos + 1);
-    }
-
-    return result;
-}
