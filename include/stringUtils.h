@@ -8,12 +8,13 @@
  * Parse a string by the delimiter, and return a vector of the resulting segments
  * no delimiters are present in the resulting segments.
  */
-[[nodiscard]] std::vector<std::string> parseStr(const std::string& stringToBeParsed, const std::string& delimiter = "\r\n") noexcept;
+[[nodiscard]] std::vector<std::string> parseStr(
+    const std::string& stringToBeParsed, const std::string& delimiter = "\r\n") noexcept;
 
 /**
-* Parse the string by the delimiter. Return a vector the resulting strings segments.
-* Strings in the vector will not contain the delimiter.
-*/
+ * Parse the string by the delimiter. Return a vector the resulting strings segments.
+ * Strings in the vector will not contain the delimiter.
+ */
 [[nodiscard]] std::vector<std::string> parseStr(const std::string& stringToBeParsed, const char delimiter) noexcept;
 
 /**
@@ -28,10 +29,11 @@
  * Use this to ensure that the resulting string doesn't end in the delimiter
  * Requires delim_size = delim.size()
  */
-[[nodiscard]] std::string stripDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept;
+[[nodiscard]] std::string stripDelim(
+    const std::string& str, const std::string& delim, const size_t delim_size) noexcept;
 
 /**
-* This replaces '\n' with 'N' and '\r' with 'R' and returns the modified string.
-* This is only used for visualizing delimiters during debugging.
-*/
+ * This replaces '\n' with 'N' and '\r' with 'R' and returns the modified string.
+ * This is only used for visualizing delimiters during debugging.
+ */
 [[nodiscard]] std::string replaceNewLines(const std::string& input) noexcept;
