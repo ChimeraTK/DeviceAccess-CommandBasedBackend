@@ -12,6 +12,21 @@ std::vector<std::string> parseStr(const std::string& stringToBeParsed, const std
   std::vector<std::string> lines;
   size_t pos = 0;
 
+  //TODO this would be better phrased as a do-while
+  do {
+    size_t nextPos = stringToBeParsed.find(delimiter, pos);
+    std::string line = stringToBeParsed.substr(pos, nextPos - pos);
+    lines.push_back(line);
+
+    // Move the position to the next delimiter
+    if(nextPos != std::string::npos) {
+      pos = nextPos + delimiter.length();
+    }
+    else {
+      break;
+    }
+  } while(pos != std::string::npos);
+  /*
   while(pos != std::string::npos) {
     size_t nextPos = stringToBeParsed.find(delimiter, pos);
     std::string line = stringToBeParsed.substr(pos, nextPos - pos);
@@ -25,6 +40,7 @@ std::vector<std::string> parseStr(const std::string& stringToBeParsed, const std
       break;
     }
   }
+  */
 
   return lines;
 } // end parseStr

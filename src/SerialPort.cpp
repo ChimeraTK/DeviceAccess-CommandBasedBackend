@@ -84,20 +84,23 @@ void SerialPort::send(const std::string& str) const {
 /**********************************************************************************************************************/
 
 std::string SerialPort::readline() const noexcept {
-  static const int bufferLen = 256;
-  int bytes_read;
-  char buffer[bufferLen];
-  std::string outputStr = "";
+  size_t delimPos;
+  static const int readBufferLen = 256;
+  char readBuffer[readBufferLen];
+  static std::string persistentBufferStr = "";
 
-  do {
-    memset(buffer, 0, sizeof(buffer));
-    bytes_read = read(fileDescriptor, buffer, sizeof(buffer) - 1); // from unistd
+  // search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
+  for(delimPos = persistentBufferStr.find(delim); delimPos == std::string::npos; delimPos = persistentBufferStr.find(delim)) {
+    memset(readBuffer, 0, sizeof(readBuffer));
+    ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
     // the -1 makes room for read to insert a '\0' null termination at the end
+    persistentBufferStr += std::string(readBuffer);
+  }
 
-    outputStr += std::string(buffer);
-  } while(not strEndsInDelim(outputStr, delim, delim_size));
-
-  return stripDelim(outputStr, delim, delim_size);
+  //Now the delimiter has been found at position delimPos.
+  std::string outputStr = persistentBufferStr.substr(0, delimPos);
+  persistentBufferStr = persistentBufferStr.substr(delimPos + delim_size);
+  return outputStr; 
 } // end readline
 
 /**********************************************************************************************************************/

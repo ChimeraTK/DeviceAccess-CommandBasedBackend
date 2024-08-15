@@ -25,7 +25,7 @@ int main() {
 
     if(debug) std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl; // DEBUG
 
-    if(data.find("send") == 0) { // for the quacking condition //DEBUG section
+    if(data.find("send") == 0) { // A fake command e.g. "send 4" to test multiline readback //DEBUG section
       int n = std::atoi(data.substr(5).c_str());
       for(int i = 0; i < n; i++) {
         std::string dat = "reply " + std::to_string(i);
