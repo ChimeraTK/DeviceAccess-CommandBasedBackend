@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
-#include "SerialCommandHandler.h"
+#include "DummyServer.h"
+
 #include "SerialPort.h"
 #include "stringUtils.h"
 
@@ -12,13 +13,12 @@
 // First start socat:
 // socat -d -d pty,raw,echo=0,link=/tmp/virtual-tty pty,raw,echo=0,link=/tmp/virtual-tty-back
 
-int main() {
-  SerialPort serialPort("/tmp/virtual-tty-back");
+void DummyServer::mainLoop() {
   static const bool debug = true;
   if(debug) std::cout << "echoing port /tmp/virtual-tty-back" << std::endl; // DEBUG
 
   std::string data;
-  long long nIter = 0;
+  uint64_t nIter = 0;
   while(true) {
     if(debug) std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl; // DEBUG
     data = serialPort.readline();
@@ -41,5 +41,4 @@ int main() {
       }
     } // end else
   }
-  return 0;
-} // end main
+} // end mainLoop
