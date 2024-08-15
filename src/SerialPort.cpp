@@ -95,7 +95,7 @@ std::string SerialPort::readline() const noexcept {
     // the -1 makes room for read to insert a '\0' null termination at the end
 
     outputStr += std::string(buffer);
-  } while(bytes_read >= (bufferLen - 1) and not strEndsInDelim(outputStr, delim, delim_size));
+  } while(not strEndsInDelim(outputStr, delim, delim_size));
 
   return stripDelim(outputStr, delim, delim_size);
 } // end readline
