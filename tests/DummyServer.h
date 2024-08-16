@@ -18,7 +18,7 @@ class DummyServer {
  protected:
   SerialPort serialPort{"/tmp/virtual-tty-back"};
 
-  void setAcc(size_t i, std::string data);
+  void setAcc(size_t i, const std::string& data);
 
   bool _debug{true};
 };

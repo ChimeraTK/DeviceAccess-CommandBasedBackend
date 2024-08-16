@@ -45,11 +45,6 @@ void DummyServer::mainLoop() {
         std::cout << "Received debug clear command" << std::endl;
       }
     }
-    else if(data == "*CLS") {
-      if(_debug) {
-        std::cout << "Received debug clear command" << std::endl;
-      }
-    }
     else if(data == "*IDN?") {
       serialPort.send("Dummy server for command based serial backend.");
     }
@@ -120,7 +115,7 @@ void DummyServer::mainLoop() {
   }
 }
 
-void DummyServer::setAcc(size_t i, std::string data) {
+void DummyServer::setAcc(size_t i, const std::string& data) {
   if(data.size() < 12) {
     serialPort.send("12345 Syntax error: ACC AXIS_1 needs an argument");
     return;
