@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,14 @@ class SerialCommandHandler : CommandHandler {
   /**
    * A simple blocking readline with no timeout. This can wait forever.
    */
-  std::string waitAndReadline() const noexcept { return _serialPort->readline(); }
+  std::string waitAndReadline() const {
+    // FIXME: is inline -> move to cc
+    auto readData = _serialPort->readline();
+    if(readData.has_value()) {
+      return readData.value();
+    }
+    throw std::logic_error("FIXME: BAD INTERFACE");
+  }
 
  protected:
   /**
