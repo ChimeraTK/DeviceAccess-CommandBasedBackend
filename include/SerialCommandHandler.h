@@ -5,6 +5,7 @@
 #include "SerialPort.h"
 
 #include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -20,11 +21,6 @@ class SerialCommandHandler : CommandHandler {
   SerialCommandHandler(const char* device, ulong timeoutInMilliseconds = 1000);
 
   /**
-   * Deletes serialPort, closing the port
-   */
-  ~SerialCommandHandler() { delete serialPort; }
-
-  /**
    * Send a command to the serial port and read back a single line responce, which is returned.
    */
   std::string sendCommand(std::string cmd) override;
@@ -37,23 +33,18 @@ class SerialCommandHandler : CommandHandler {
   /**
    * Simply sends cmd to the serial port with no readback.
    */
-  void write(std::string cmd) const { serialPort->send(cmd); }
+  void write(std::string cmd) const { _serialPort->send(cmd); }
 
   /**
    * A simple blocking readline with no timeout. This can wait forever.
    */
-  std::string waitAndReadline() const noexcept { return serialPort->readline(); }
+  std::string waitAndReadline() const noexcept { return _serialPort->readline(); }
 
-  /**
-   * A convenience function to set the timeout parameter, used to to timeout sendCommand.
-   */
-  inline void setTimeout(const ulong& milliseconds) noexcept { timeout = std::chrono::milliseconds(milliseconds); }
-
+ protected:
   /**
    * Timeout parameter in milliseconds used to to timeout sendCommand.
    */
-  std::chrono::milliseconds timeout;
+  std::chrono::milliseconds _timeout;
 
- protected:
-  SerialPort* serialPort;
+  std::unique_ptr<SerialPort> _serialPort;
 }; // end SerialCommandHandler

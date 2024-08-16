@@ -14,16 +14,16 @@
 
 /**********************************************************************************************************************/
 
-SerialCommandHandler::SerialCommandHandler(const char* device, ulong timeoutInMilliseconds) {
-  setTimeout(timeoutInMilliseconds);
-  serialPort = new SerialPort(device);
+SerialCommandHandler::SerialCommandHandler(const char* device, ulong timeoutInMilliseconds)
+: _timeout(timeoutInMilliseconds) {
+  _serialPort = std::make_unique<SerialPort>(device);
 }
 
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::sendCommand(std::string cmd) {
-  serialPort->send(cmd);
-  return serialPort->readlineWithTimeout(timeout);
+  _serialPort->send(cmd);
+  return _serialPort->readlineWithTimeout(_timeout);
 }
 
 /**********************************************************************************************************************/
@@ -37,23 +37,23 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesExpected);
 
-  serialPort->send(cmd);
+  _serialPort->send(cmd);
 
   std::string readStr;
   std::vector<std::string> readStrParsed;
   size_t nLinesFound = 0;
   for(; nLinesFound < nLinesExpected; nLinesFound += readStrParsed.size()) {
     try {
-      readStr = serialPort->readlineWithTimeout(timeout);
+      readStr = _serialPort->readlineWithTimeout(_timeout);
     }
     catch(const std::runtime_error& e) {
-      std::string err = std::string(e.what()) + " Retreived:";
-      for(auto s : outputStrVec) {
+      std::string err = std::string(e.what()) + " Retrieved:";
+      for(auto& s : outputStrVec) {
         err += "\n" + s;
       }
       throw std::runtime_error(err);
     }
-    readStrParsed = parseStr(readStr, serialPort->delim);
+    readStrParsed = parseStr(readStr, _serialPort->delim);
     outputStrVec.insert(outputStrVec.end(), readStrParsed.begin(), readStrParsed.end());
   } // end for
   if(nLinesFound > nLinesExpected) {
