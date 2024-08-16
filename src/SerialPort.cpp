@@ -46,12 +46,11 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tty.c_cflag &= ~CSIZE;
   tty.c_cflag |= CS8;            // Use 8 bit chars.
   tty.c_cflag &= ~CRTSCTS;       // no flow control
+  tty.c_lflag &= ~ICANON;        // Set non-canonical mode so VMIN and VTIME are effective
   tty.c_cc[VMIN] = 0;            // 0: read blocks,  1: read doesn't block
                                  // VMIN defines the minimum number of characters to read
   tty.c_cc[VTIME] = 5;           // 0.5 seconds read timeout //Really??
   tty.c_cflag |= CREAD | CLOCAL; // turn on READ & ignore ctrl lines
-
-  cfmakeraw(&tty);
 
   // Flush Port, then applies attributes
   tcflush(fileDescriptor, TCIFLUSH);
@@ -81,16 +80,21 @@ void SerialPort::send(const std::string& str) const {
 
 /**********************************************************************************************************************/
 
-std::string SerialPort::readline() noexcept {
+std::optional<std::string> SerialPort::readline() noexcept {
   size_t delimPos;
   static constexpr int readBufferLen = 256;
   char readBuffer[readBufferLen];
 
+  _terminateRead = false;
   // search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
   for(delimPos = _persistentBufferStr.find(delim); delimPos == std::string::npos;
       delimPos = _persistentBufferStr.find(delim)) {
     memset(readBuffer, 0, sizeof(readBuffer));
     ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
+    std::cout << "readLine timeout!" << std::endl;
+    if(_terminateRead) {
+      return std::nullopt;
+    }
     // the -1 makes room for read to insert a '\0' null termination at the end
     _persistentBufferStr += std::string(readBuffer);
   }
@@ -98,18 +102,27 @@ std::string SerialPort::readline() noexcept {
   // Now the delimiter has been found at position delimPos.
   std::string outputStr = _persistentBufferStr.substr(0, delimPos);
   _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim_size);
-  return outputStr;
+  return std::make_optional(outputStr);
 } // end readline
 
 /**********************************************************************************************************************/
 
 std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) {
-  auto future = std::async(std::launch::async, [&]() -> std::string { return this->readline(); });
+  auto future = std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readline(); });
   if(future.wait_for(timeout) != std::future_status::timeout) {
-    return future.get();
+    // no timeout. Let's see if the optional has data
+    auto readData = future.get();
+    if(readData.has_value()) {
+      return readData.value();
+    }
   }
-  else {
-    std::string err = "readline operation timed out.";
-    throw std::runtime_error(err);
-  }
+  // if the code has not returned there has been a timeout or read has been abandone
+  std::string err = "readline operation timed out.";
+  throw std::runtime_error(err);
 } // end readlineWithTimeout
+
+/**********************************************************************************************************************/
+
+void SerialPort::terminateRead() {
+  _terminateRead = true;
+}

@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+
+#include <atomic>
 #include <chrono>
+#include <optional>
 #include <string>
 
 /**
@@ -40,9 +43,10 @@ class SerialPort {
   void send(const std::string& str) const;
 
   /**
-   * Read a _delim delimited line from the serial port. Result ends in _delim
+   * Read a _delim delimited line from the serial port. Result ends in _delim.
+   * Retruns an empty optional if terminateRead() has been called.
    */
-  std::string readline() noexcept;
+  std::optional<std::string> readline() noexcept;
 
   /**
    * Read a _delim delimited line from the serial port. Result does NOT end in _delim
@@ -60,6 +64,11 @@ class SerialPort {
    */
   const size_t delim_size;
 
+  /**
+   * terminate a blocking read call.
+   */
+  void terminateRead();
+
  protected:
   /**
    * The serial port handle.
@@ -70,4 +79,6 @@ class SerialPort {
    * Persist the not returned data from readline() call to the next.
    */
   std::string _persistentBufferStr;
+
+  std::atomic_bool _terminateRead{false};
 }; // end SerialPort

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "DummyServer.h"
 
+#include <iostream>
+
 int main() {
   DummyServer dummy;
-  dummy.mainLoop();
+  dummy.waitForStop();
 
   return 0;
 } // end main
