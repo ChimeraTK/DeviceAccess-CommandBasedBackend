@@ -12,7 +12,7 @@ std::vector<std::string> parseStr(const std::string& stringToBeParsed, const std
   std::vector<std::string> lines;
   size_t pos = 0;
 
-  //TODO this would be better phrased as a do-while
+  // TODO this would be better phrased as a do-while
   do {
     size_t nextPos = stringToBeParsed.find(delimiter, pos);
     std::string line = stringToBeParsed.substr(pos, nextPos - pos);

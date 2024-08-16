@@ -90,17 +90,18 @@ std::string SerialPort::readline() const noexcept {
   static std::string persistentBufferStr = "";
 
   // search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
-  for(delimPos = persistentBufferStr.find(delim); delimPos == std::string::npos; delimPos = persistentBufferStr.find(delim)) {
+  for(delimPos = persistentBufferStr.find(delim); delimPos == std::string::npos;
+      delimPos = persistentBufferStr.find(delim)) {
     memset(readBuffer, 0, sizeof(readBuffer));
     ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
     // the -1 makes room for read to insert a '\0' null termination at the end
     persistentBufferStr += std::string(readBuffer);
   }
 
-  //Now the delimiter has been found at position delimPos.
+  // Now the delimiter has been found at position delimPos.
   std::string outputStr = persistentBufferStr.substr(0, delimPos);
   persistentBufferStr = persistentBufferStr.substr(delimPos + delim_size);
-  return outputStr; 
+  return outputStr;
 } // end readline
 
 /**********************************************************************************************************************/
