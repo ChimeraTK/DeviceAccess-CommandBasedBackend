@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "SerialPort.h"
 
-#include "stringUtils.h"
-
 #include <chrono>  //needed for timout
 #include <cstring> //used for memset
 #include <fcntl.h>
@@ -83,30 +81,29 @@ void SerialPort::send(const std::string& str) const {
 
 /**********************************************************************************************************************/
 
-std::string SerialPort::readline() const noexcept {
+std::string SerialPort::readline() noexcept {
   size_t delimPos;
-  static const int readBufferLen = 256;
+  static constexpr int readBufferLen = 256;
   char readBuffer[readBufferLen];
-  static std::string persistentBufferStr = "";
 
   // search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
-  for(delimPos = persistentBufferStr.find(delim); delimPos == std::string::npos;
-      delimPos = persistentBufferStr.find(delim)) {
+  for(delimPos = _persistentBufferStr.find(delim); delimPos == std::string::npos;
+      delimPos = _persistentBufferStr.find(delim)) {
     memset(readBuffer, 0, sizeof(readBuffer));
     ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
     // the -1 makes room for read to insert a '\0' null termination at the end
-    persistentBufferStr += std::string(readBuffer);
+    _persistentBufferStr += std::string(readBuffer);
   }
 
   // Now the delimiter has been found at position delimPos.
-  std::string outputStr = persistentBufferStr.substr(0, delimPos);
-  persistentBufferStr = persistentBufferStr.substr(delimPos + delim_size);
+  std::string outputStr = _persistentBufferStr.substr(0, delimPos);
+  _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim_size);
   return outputStr;
 } // end readline
 
 /**********************************************************************************************************************/
 
-std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) const {
+std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) {
   auto future = std::async(std::launch::async, [&]() -> std::string { return this->readline(); });
   if(future.wait_for(timeout) != std::future_status::timeout) {
     return future.get();

@@ -42,13 +42,13 @@ class SerialPort {
   /**
    * Read a _delim delimited line from the serial port. Result ends in _delim
    */
-  std::string readline() const noexcept;
+  std::string readline() noexcept;
 
   /**
    * Read a _delim delimited line from the serial port. Result does NOT end in _delim
    * throws std::runtime_error if timeout exceeded.
    */
-  std::string readlineWithTimeout(const std::chrono::milliseconds& timeout) const;
+  std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
 
   /**
    * delim is the line delimiter for the serial port communication
@@ -60,9 +60,14 @@ class SerialPort {
    */
   const size_t delim_size;
 
- private:
+ protected:
   /**
    * The serial port handle.
    */
   int fileDescriptor;
+
+  /**
+   * Persist the not returned data from readline() call to the next.
+   */
+  std::string _persistentBufferStr;
 }; // end SerialPort
