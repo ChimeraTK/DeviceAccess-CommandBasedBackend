@@ -49,12 +49,12 @@ struct scalarFloat {
 
   template<typename Type>
   std::vector<std::vector<Type>> generateValue([[maybe_unused]] bool raw = false) {
-    return {{acc + 3}};
+    return {{Type(acc + 3)}};
   }
 
   template<typename UserType>
   std::vector<std::vector<UserType>> getRemoteValue([[maybe_unused]] bool raw = false) {
-    return {{acc}};
+    return {{UserType(acc)}};
   }
 
   void setRemoteValue() { acc = generateValue<minimumUserType>()[0][0]; }
