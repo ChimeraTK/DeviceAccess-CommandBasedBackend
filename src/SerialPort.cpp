@@ -91,7 +91,6 @@ std::optional<std::string> SerialPort::readline() noexcept {
       delimPos = _persistentBufferStr.find(delim)) {
     memset(readBuffer, 0, sizeof(readBuffer));
     ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
-    std::cout << "readLine timeout!" << std::endl;
     if(_terminateRead) {
       return std::nullopt;
     }
