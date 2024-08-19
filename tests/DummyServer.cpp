@@ -79,7 +79,6 @@ void DummyServer::stop() {
 }
 
 void DummyServer::mainLoop() {
-
   uint64_t nIter = 0;
   while(true) {
     if(_debug) std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl; // DEBUG
