@@ -7,7 +7,8 @@ add_executable(dummy-server DummyServer-stand-alone.cpp)
 target_link_libraries(dummy-server PUBLIC DummyServerLib )
 
 add_executable(test_serialPort test_serialPort.cpp)
-target_link_libraries(test_serialPort PUBLIC ${PROJECT_NAME} )
+target_link_libraries(test_serialPort PUBLIC ${PROJECT_NAME} DummyServerLib)
+add_test(test_serialPort test_serialPort)
 
 add_executable(testCommandBasedBackendUnified testCommandBasedBackendUnified.cpp)
 target_link_libraries(testCommandBasedBackendUnified  PRIVATE ${Boost_LIBRARIES} ${PROJECT_NAME} )

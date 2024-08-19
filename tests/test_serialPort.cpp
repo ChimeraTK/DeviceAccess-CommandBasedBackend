@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
+#include "DummyServer.h"
 #include "SerialCommandHandler.h"
 #include "SerialPort.h"
 #include "stringUtils.h"
@@ -8,16 +9,14 @@
 #include <string>
 #include <vector>
 
-// Use this with
-// socat -d -d pty,raw,echo=0,link=/tmp/virtual-tty pty,raw,echo=0,link=/tmp/virtual-tty-back
-// and dummy-server
-
 int main() {
+  DummyServer dummy;
+
   int testCode = 0;
   std::string cmd;
   std::string res;
 
-  SerialCommandHandler s("/tmp/virtual-tty");
+  SerialCommandHandler s(dummy.deviceNode);
 
   // ****************************************************************************************************************
   testCode = 0; // TEST 0
@@ -26,7 +25,7 @@ int main() {
     s.write(cmd);
     res = s.waitAndReadline(); // able to receive just fine after sending.
     if(res != cmd) {
-      std::cerr << "Serail Communication Test 0:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
+      std::cerr << "Serial Communication Test 0:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
       return std::max(1, testCode + ((int)l) + 1);
     }
   }
