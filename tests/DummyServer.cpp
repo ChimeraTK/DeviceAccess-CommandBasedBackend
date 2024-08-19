@@ -12,18 +12,27 @@
 #include <string>
 #include <vector>
 
+DummyServer::DummyServer(bool useRandomDevice) {
+  if(useRandomDevice) {
+    // generate a random number to attach to the device name to muliple test can run in parallel
+    // Initialise with high resolution clock as see so all processes get a different value.
+    auto now = std::chrono::high_resolution_clock::now();
+    auto epoch = std::chrono::nanoseconds(now.time_since_epoch()).count();
+    std::srand(epoch);
+    int random_value = std::rand() % 100000; // 5 digits
+    deviceNode += std::to_string(random_value);
+  }
+  auto backportNode = deviceNode + "-back";
 
-DummyServer::DummyServer() {
   _socatRunner = boost::process::child(boost::process::search_path("socat"),
-      boost::process::args(
-          {"-d", "-d", "pty,raw,echo=0,link=/tmp/virtual-tty2", "pty,raw,echo=0,link=/tmp/virtual-tty2-back"}));
+      boost::process::args({"-d", "-d", "pty,raw,echo=0,link=" + deviceNode, "pty,raw,echo=0,link=" + backportNode}));
 
   // try to open the virtual tty with a timeout (1000 tries with 10  ms waiting time)
   static constexpr size_t maxTries = 1000;
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     try {
-      _serialPort = std::make_unique<SerialPort>("/tmp/virtual-tty2-back");
+      _serialPort = std::make_unique<SerialPort>(backportNode);
       break;
     }
     catch(std::runtime_error&) {
@@ -32,7 +41,7 @@ DummyServer::DummyServer() {
       }
     }
   }
-  if(_debug) std::cout << "echoing port /tmp/virtual-tty2-back" << std::endl; // DEBUG
+  if(_debug) std::cout << "echoing port " << backportNode << std::endl; // DEBUG
   _mainLoopThread = boost::thread([&]() { mainLoop(); });
 }
 

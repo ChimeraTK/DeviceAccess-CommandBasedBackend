@@ -12,7 +12,7 @@
 
 class DummyServer {
  public:
-  DummyServer();
+  DummyServer(bool useRandomDevice = true);
   ~DummyServer();
 
   float acc[2]{0.2, 0.3};
@@ -23,6 +23,10 @@ class DummyServer {
   void waitForStop();
 
   void stop();
+
+  // The device node for the business logic. It normaly contains a random componen, so
+  // we need a way to read it back.
+  std::string deviceNode{"/tmp/virtual-tty"};
 
  protected:
   void mainLoop();

@@ -5,7 +5,7 @@
 #include <iostream>
 
 int main() {
-  DummyServer dummy;
+  DummyServer dummy(false); // Don't use random number when stating the dummy as a stand-alone executable
   dummy.waitForStop();
 
   return 0;
