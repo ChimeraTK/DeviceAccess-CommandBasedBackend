@@ -26,7 +26,7 @@ static auto exceptionDummy =
 
 /**********************************************************************************************************************/
 
-struct scalarFloat {
+struct scalarInt {
   std::string path() { return "/cwFrequency"; }
   bool isWriteable() { return true; }
   bool isReadable() { return true; }
@@ -34,7 +34,7 @@ struct scalarFloat {
   size_t nChannels() { return 1; }
   size_t nElementsPerChannel() { return 1; }
   size_t nRuntimeErrorCases() { return 1; }
-  typedef float minimumUserType;
+  typedef int32_t minimumUserType;
   typedef int32_t rawUserType;
 
   static constexpr auto capabilities = TestCapabilities<>()
@@ -45,7 +45,7 @@ struct scalarFloat {
                                            .disableTestWriteNeverLosesData()
                                            .enableTestRawTransfer();
 
-  DummyRegisterAccessor<float> acc{exceptionDummy.get(), "", path()};
+  DummyRegisterAccessor<int32_t> acc{exceptionDummy.get(), "", path()};
 
   template<typename Type>
   std::vector<std::vector<Type>> generateValue([[maybe_unused]] bool raw = false) {
@@ -607,82 +607,148 @@ struct scalarFloat {
 
 ///**********************************************************************************************************************/
 
-// struct MuxedFloat {
-//   std::string path() { return "/TEST/FLOAT"; }
-//   bool isWriteable() { return true; }
-//   bool isReadable() { return true; }
-//   ChimeraTK::AccessModeFlags supportedFlags() { return {}; }
+struct ArrayFloatMultiLine {
+  std::string path() { return "/ACC"; }
+  bool isWriteable() { return true; }
+  bool isReadable() { return true; }
+  ChimeraTK::AccessModeFlags supportedFlags() { return {ChimeraTK::AccessMode::raw}; }
 
-//  size_t nChannels() { return 4; }
-//  size_t nElementsPerChannel() { return 8; }
-//  size_t nRuntimeErrorCases() { return 1; }
-//  typedef float minimumUserType;
-//  // typedef int32_t rawUserType;
+  size_t nChannels() { return 1; }
+  size_t nElementsPerChannel() { return 2; }
+  size_t nRuntimeErrorCases() { return 0; } // FIXME
+  typedef float minimumUserType;
+  typedef int32_t rawUserType;
 
-//  static constexpr auto capabilities = TestCapabilities<>()
-//                                           .disableForceDataLossWrite()
-//                                           .disableAsyncReadInconsistency()
-//                                           .disableSwitchReadOnly()
-//                                           .disableSwitchWriteOnly()
-//                                           .disableTestWriteNeverLosesData()
-//                                           .disableTestRawTransfer();
+  static constexpr auto capabilities = TestCapabilities<>()
+                                           .disableForceDataLossWrite()
+                                           .disableAsyncReadInconsistency()
+                                           .disableSwitchReadOnly()
+                                           .disableSwitchWriteOnly()
+                                           .disableTestWriteNeverLosesData()
+                                           .enableTestRawTransfer();
 
-//  DummyMultiplexedRegisterAccessor<int32_t> rawAcc{exceptionDummyMuxed.get(), "TEST", "FLOAT"};
+  DummyRegisterAccessor<int32_t> rawAcc{exceptionDummy.get(), "", path()};
 
-//  template<typename UserType>
-//  std::vector<std::vector<UserType>> generateValue() {
-//    std::vector<std::vector<UserType>> v;
-//    v.resize(nChannels());
-//    for(uint32_t c = 0; c < nChannels(); ++c) {
-//      for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
-//        int32_t rawValue = rawAcc[c][e];
-//        float* cookedValue = reinterpret_cast<float*>(&rawValue);
-//        v[c].push_back(*cookedValue + 0.7f * c + 3 * e);
-//      }
-//    }
-//    return v;
-//  }
+  template<typename UserType>
+  std::vector<std::vector<UserType>> generateValue(bool raw = false) {
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      auto r = int32_t(rawAcc[e]);
+      auto val = *reinterpret_cast<float*>(&r) + 1.7F + 3.123F * float(e);
+      if(raw) {
+        v[e] = *reinterpret_cast<int32_t*>(&val);
+      }
+      else {
+        v[e] = val;
+      }
+    }
+    return {v};
+  }
 
-//  template<typename UserType>
-//  std::vector<std::vector<UserType>> getRemoteValue() {
-//    std::vector<std::vector<UserType>> v;
-//    v.resize(nChannels());
-//    for(uint32_t c = 0; c < nChannels(); ++c) {
-//      for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
-//        int32_t rawValue = rawAcc[c][e];
-//        float* cookedValue = reinterpret_cast<float*>(&rawValue);
-//        v[c].push_back(*cookedValue);
-//      }
-//    }
-//    return v;
-//  }
+  template<typename UserType>
+  std::vector<std::vector<UserType>> getRemoteValue([[maybe_unused]] bool raw = false) {
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      if(raw) {
+        v[e] = rawAcc[e];
+      }
+      else {
+        auto r = int32_t(rawAcc[e]);
+        v[e] = *reinterpret_cast<float*>(&r);
+      }
+    }
+    return {v};
+  }
 
-//  void setRemoteValue() {
-//    auto v = generateValue<minimumUserType>();
-//    for(uint32_t c = 0; c < nChannels(); ++c) {
-//      for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
-//        int32_t rawValue;
-//        float* cookedValue = reinterpret_cast<float*>(&rawValue);
-//        *cookedValue = v[c][e];
-//        std::cout << "raw value is " << rawValue << "; cookedValue is " << *cookedValue << std::endl;
-//        rawAcc[c][e] = rawValue;
-//      }
-//    }
-//  }
+  void setRemoteValue() {
+    auto rawVal = generateValue<rawUserType>(true);
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      rawAcc[e] = rawVal[0][e];
+    }
+  }
 
-//  void setForceRuntimeError(bool enable, size_t) {
-//    exceptionDummyMuxed->throwExceptionRead = enable;
-//    exceptionDummyMuxed->throwExceptionWrite = enable;
-//    exceptionDummyMuxed->throwExceptionOpen = enable;
-//  }
-//};
+  void setForceRuntimeError(bool enable, size_t) {
+    exceptionDummy->throwExceptionRead = enable;
+    exceptionDummy->throwExceptionWrite = enable;
+    exceptionDummy->throwExceptionOpen = enable;
+  }
+};
+
+struct ArrayFloatSingleLine {
+  std::string path() { return "/myData"; }
+  bool isWriteable() { return false; }
+  bool isReadable() { return true; }
+  ChimeraTK::AccessModeFlags supportedFlags() { return {ChimeraTK::AccessMode::raw}; }
+
+  size_t nChannels() { return 1; }
+  size_t nElementsPerChannel() { return 10; }
+  size_t nRuntimeErrorCases() { return 0; } // FIXME
+  typedef float minimumUserType;
+  typedef int32_t rawUserType;
+
+  static constexpr auto capabilities = TestCapabilities<>()
+                                           .disableForceDataLossWrite()
+                                           .disableAsyncReadInconsistency()
+                                           .disableSwitchReadOnly()
+                                           .disableSwitchWriteOnly()
+                                           .disableTestWriteNeverLosesData()
+                                           .enableTestRawTransfer();
+
+  DummyRegisterAccessor<float> rawAcc{exceptionDummy.get(), "", path()};
+
+  template<typename UserType>
+  std::vector<std::vector<UserType>> generateValue(bool raw = false) {
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      auto r = int32_t(rawAcc[e]);
+      auto val = *reinterpret_cast<float*>(&r) + 2.7F + 2.238F * float(e);
+      if(raw) {
+        v[e] = *reinterpret_cast<int32_t*>(&val);
+      }
+      else {
+        v[e] = val;
+      }
+    }
+    return {v};
+  }
+
+  template<typename UserType>
+  std::vector<std::vector<UserType>> getRemoteValue([[maybe_unused]] bool raw = false) {
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      if(raw) {
+        v[e] = rawAcc[e];
+      }
+      else {
+        auto r = int32_t(rawAcc[e]);
+        v[e] = *reinterpret_cast<float*>(&r);
+      }
+    }
+    return {v};
+  }
+
+  void setRemoteValue() {
+    auto v = generateValue<rawUserType>(true);
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      rawAcc[e] = v[0][e];
+    }
+  }
+
+  void setForceRuntimeError(bool enable, size_t) {
+    exceptionDummy->throwExceptionRead = enable;
+    exceptionDummy->throwExceptionWrite = enable;
+    exceptionDummy->throwExceptionOpen = enable;
+  }
+};
 
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
   std::cout << "*** testRegisterAccessor *** " << std::endl;
   ChimeraTK::UnifiedBackendTest<>()
-      .addRegister<scalarFloat>()
+      .addRegister<scalarInt>()
+      .addRegister<ArrayFloatMultiLine>()
+      .addRegister<ArrayFloatSingleLine>()
       //      .addRegister<AsciiData>()
       .runTests(cdd);
 }
