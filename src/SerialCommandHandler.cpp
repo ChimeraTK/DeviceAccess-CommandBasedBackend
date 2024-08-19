@@ -14,7 +14,7 @@
 
 /**********************************************************************************************************************/
 
-SerialCommandHandler::SerialCommandHandler(const char* device, ulong timeoutInMilliseconds)
+SerialCommandHandler::SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds)
 : _timeout(timeoutInMilliseconds) {
   _serialPort = std::make_unique<SerialPort>(device);
 }

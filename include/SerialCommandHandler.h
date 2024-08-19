@@ -19,7 +19,7 @@ class SerialCommandHandler : CommandHandler {
   /**
    * Open and setup the serial port, set the readback timeout parameter.
    */
-  SerialCommandHandler(const char* device, ulong timeoutInMilliseconds = 1000);
+  SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds = 1000);
 
   /**
    * Send a command to the serial port and read back a single line responce, which is returned.
