@@ -16,3 +16,6 @@ add_test(testCommandBasedBackendUnified testCommandBasedBackendUnified)
 
 file(COPY mock.map mock.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 #file(COPY devMapFile.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(testPortaCount testPortaCount.cpp)
+target_link_libraries(testPortaCount PRIVATE ${PROJECT_NAME} )

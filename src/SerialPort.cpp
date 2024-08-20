@@ -34,8 +34,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   }
 
   // Set baud rate, using termios
-  int iCfsetospeed = cfsetospeed(&tty, (speed_t)B9600);
-  int iCfsetispeed = cfsetispeed(&tty, (speed_t)B9600);
+  int iCfsetospeed = cfsetospeed(&tty, (speed_t)B1200);
+  int iCfsetispeed = cfsetispeed(&tty, (speed_t)B1200);
   if(iCfsetospeed < 0 or iCfsetispeed < 0) {
     std::string err = "Error setting IO speed\n";
     throw std::runtime_error(err);
@@ -44,7 +44,7 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tty.c_cflag &= ~PARENB; // disables parity generation and detection.
   tty.c_cflag &= ~CSTOPB; // Use 1 stop bit, not 2
   tty.c_cflag &= ~CSIZE;
-  tty.c_cflag |= CS8;            // Use 8 bit chars.
+  tty.c_cflag |= CS7;            // Use 8 bit chars.
   tty.c_cflag &= ~CRTSCTS;       // no flow control
   tty.c_lflag &= ~ICANON;        // Set non-canonical mode so VMIN and VTIME are effective
   tty.c_cc[VMIN] = 0;            // 0: read blocks,  1: read doesn't block
