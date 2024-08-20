@@ -11,7 +11,7 @@ target_link_libraries(test_serialPort PUBLIC ${PROJECT_NAME} DummyServerLib)
 add_test(test_serialPort test_serialPort)
 
 add_executable(testCommandBasedBackendUnified testCommandBasedBackendUnified.cpp)
-target_link_libraries(testCommandBasedBackendUnified  PRIVATE ${Boost_LIBRARIES} ${PROJECT_NAME} )
+target_link_libraries(testCommandBasedBackendUnified  PRIVATE ${Boost_LIBRARIES} ${PROJECT_NAME} DummyServerLib)
 add_test(testCommandBasedBackendUnified testCommandBasedBackendUnified)
 
 file(COPY mock.map mock.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

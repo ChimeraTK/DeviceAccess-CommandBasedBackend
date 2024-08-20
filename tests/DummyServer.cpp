@@ -115,8 +115,8 @@ void DummyServer::mainLoop() {
       _serialPort->send("Dummy server for command based serial backend.");
     }
     else if(data == "SAI?") {
-      _serialPort->send("AXIS_1");
-      _serialPort->send("AXIS_2");
+      _serialPort->send(sai[0]);
+      _serialPort->send(sai[1]);
     }
     else if(data.find("ACC AXIS_1 ") == 0) {
       setAcc(0, data);

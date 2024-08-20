@@ -19,6 +19,7 @@ class DummyServer {
   float mov[2]{1.2, 1.3};
   uint64_t cwFrequency{1300000000};
   float trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
+  std::string sai[2]{"AXIS_1", "AXIS_2"};
 
   void waitForStop();
 
