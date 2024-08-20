@@ -22,17 +22,42 @@ DummyServer::DummyServer(bool useRandomDevice) {
     int random_value = std::rand() % 100000; // 5 digits
     deviceNode += std::to_string(random_value);
   }
-  auto backportNode = deviceNode + "-back";
+  _backportNode = deviceNode + "-back";
 
+  activate();
+}
+
+DummyServer::~DummyServer() {
+  if(_debug) std::cout << "this is ~DummyServer" << std::endl;
+  try {
+    if(_debug) std::cout << "joining main thread" << std::endl;
+    deactivate();
+  }
+  catch(...) {
+    // try/catch make the linter happy. We are beyond recovery here.
+    std::terminate();
+  }
+}
+
+void DummyServer::activate() {
+  if(_mainLoopThread.joinable()) {
+    // main loop thread is running, already active
+    assert(_serialPort);
+    assert(_socatRunner.running());
+
+    return;
+  }
+
+  // first start socat, which provides the virtual serial ports
   _socatRunner = boost::process::child(boost::process::search_path("socat"),
-      boost::process::args({"-d", "-d", "pty,raw,echo=0,link=" + deviceNode, "pty,raw,echo=0,link=" + backportNode}));
+      boost::process::args({"-d", "-d", "pty,raw,echo=0,link=" + deviceNode, "pty,raw,echo=0,link=" + _backportNode}));
 
   // try to open the virtual tty with a timeout (1000 tries with 10  ms waiting time)
   static constexpr size_t maxTries = 1000;
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     try {
-      _serialPort = std::make_unique<SerialPort>(backportNode);
+      _serialPort = std::make_unique<SerialPort>(_backportNode);
       break;
     }
     catch(std::runtime_error&) {
@@ -41,40 +66,48 @@ DummyServer::DummyServer(bool useRandomDevice) {
       }
     }
   }
-  if(_debug) std::cout << "echoing port " << backportNode << std::endl; // DEBUG
+  if(_debug) std::cout << "echoing port " << _backportNode << std::endl; // DEBUG
+
+  // finally start the main loop, which accesses the serial port
+  _stopMainLoop = false;
   _mainLoopThread = boost::thread([&]() { mainLoop(); });
 }
 
-DummyServer::~DummyServer() {
-  if(_debug) std::cout << "this is ~DummyServer" << std::endl;
-  try {
-    if(_debug) std::cout << "joining main thread" << std::endl;
-    stop();
+void DummyServer::deactivate() {
+  // First stop the main thread which is accessing the SerialPort object
+  if(_mainLoopThread.joinable()) {
+    _stopMainLoop = true;
+    // Try sending the read terminate several times. The main loop in another thread might just have started reading and
+    // cleared it (race condition).
+    do {
+      _serialPort->terminateRead();
+    } while(!_mainLoopThread.try_join_for(boost::chrono::milliseconds(10)));
+  }
 
-    if(_debug) std::cout << "joining socat thread" << std::endl;
-    _socatRunner.terminate();
-    _socatRunner.wait();
-  }
-  catch(...) {
-    // try/catch make the linter happy. We are beyond recovery here.
-    std::terminate();
-  }
+  // Remove the SerialPort which is accessing the virtual serial ports provided by socat
+  _serialPort.reset();
+
+  // Finally, stop the socat runner
+  assert(_socatRunner.running());
+  _socatRunner.terminate();
+  _socatRunner.wait();
+
+  // Wait for "front door" file descriptor to become invalid
+  while(true) {
+    auto fd = ::open(deviceNode.c_str(), O_RDONLY | O_NOCTTY);
+
+    if(fd < 0) {
+      break;
+    }
+
+    close(fd);
+    usleep(10000);
+  };
 }
 
 void DummyServer::waitForStop() {
   if(_mainLoopThread.joinable()) {
     _mainLoopThread.join();
-  }
-}
-
-void DummyServer::stop() {
-  if(_mainLoopThread.joinable()) {
-    _stopMainLoop = true;
-    // Try sending the read terminate several times. The main loop in another thread might just have started reading and
-    // cleared it (race conditon).
-    do {
-      _serialPort->terminateRead();
-    } while(!_mainLoopThread.try_join_for(boost::chrono::milliseconds(10)));
   }
 }
 
@@ -89,6 +122,15 @@ void DummyServer::mainLoop() {
     auto data = readValue.value();
 
     if(_debug) std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl; // DEBUG
+
+    if(sendNothing) {
+      continue;
+    }
+
+    if(sendGarbage) {
+      _serialPort->send("gnrbBlrpnBrtz");
+      continue;
+    }
 
     if(data.find("send") == 0) { // A fake command e.g. "send 4" to test multiline readback //DEBUG section
       if(data.size() < 6) {
@@ -125,8 +167,15 @@ void DummyServer::mainLoop() {
       setAcc(1, data);
     }
     else if(data == "ACC?") {
-      _serialPort->send("AXIS_1=" + std::to_string(acc[0]));
-      _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
+      if(responseWithDataAndSyntaxError) {
+        _serialPort->send("AXXIS_1=" + std::to_string(acc[0]));
+      }
+      else {
+        _serialPort->send("AXIS_1=" + std::to_string(acc[0]));
+      }
+      if(!sendTooFew) {
+        _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
+      }
     }
     else if(data == "ACC? AXIS1") {
       _serialPort->send("AXIS_1=" + std::to_string(acc[0]));
@@ -150,6 +199,13 @@ void DummyServer::mainLoop() {
       }
     }
     else if(data == "SOUR:FREQ:CW?") {
+      if(sendTooFew) {
+        continue;
+      }
+      if(responseWithDataAndSyntaxError) {
+        _serialPort->send("BL" + std::to_string(cwFrequency));
+        continue;
+      }
       _serialPort->send(std::to_string(cwFrequency));
     }
     else if(data.find("CALC1:DATA:TRAC? ") == 0) {
@@ -160,7 +216,18 @@ void DummyServer::mainLoop() {
           for(auto& val : trace) {
             out += std::to_string(val) + ",";
           }
+          if(responseWithDataAndSyntaxError) {
+            out[10] = 'M';
+            if(_debug) {
+              std::cout << "sending with syntax error: " << out << std::endl;
+            }
+          }
           out.pop_back();
+          if(sendTooFew) {
+            auto lastComma = out.rfind(",");
+            out = out.substr(0, lastComma);
+            std::cout << "sending with syntax error: " << out << std::endl;
+          }
           _serialPort->send(out);
         }
         else {
