@@ -21,11 +21,20 @@ class DummyServer {
   float trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
   std::string sai[2]{"AXIS_1", "AXIS_2"};
 
+  std::atomic_bool sendNothing{false};
+  std::atomic_bool sendTooFew{false};
+  std::atomic_bool responseWithDataAndSyntaxError{false};
+  std::atomic_bool sendGarbage{false};
+
+  // Pause execution here to wait for the main thread to stop (e.g. because ^C has been pressed).
   void waitForStop();
 
-  void stop();
+  // starts the socat runner and the main thread
+  void activate();
+  // stops the main thread and then terminates the socat runner
+  void deactivate();
 
-  // The device node for the business logic. It normaly contains a random componen, so
+  // The device node for the business logic. It normaly contains a random component, so
   // we need a way to read it back.
   std::string deviceNode{"/tmp/virtual-tty"};
 
@@ -40,4 +49,6 @@ class DummyServer {
   boost::process::child _socatRunner;
   boost::thread _mainLoopThread;
   std::atomic_bool _stopMainLoop{false};
+
+  std::string _backportNode;
 };
