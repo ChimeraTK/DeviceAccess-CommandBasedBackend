@@ -20,7 +20,7 @@ class SerialPort {
   /**
    * Sets-up a bidirectional serial port, and flushes the port.
    *
-   * Can throw std::runtime_error
+   * Can throw ChimeraTK::runtime_error
    *
    * Port settings:
    *  Baud rate = B9600
@@ -38,7 +38,7 @@ class SerialPort {
 
   /**
    * Write str into the serial port, with _delim delimiter appended
-   * throws std::runtime_error if the write fails
+   * throws ChimeraTK::runtime_error if the write fails
    */
   void send(const std::string& str) const;
 
@@ -50,7 +50,7 @@ class SerialPort {
 
   /**
    * Read a _delim delimited line from the serial port. Result does NOT end in _delim
-   * throws std::runtime_error if timeout exceeded.
+   * throws ChimeraTK::runtime_error if timeout exceeded.
    */
   std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
 
