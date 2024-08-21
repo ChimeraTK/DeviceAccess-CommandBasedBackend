@@ -15,14 +15,17 @@ include(cmake/enable_code_style_check.cmake)
 
 find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
 
-include_directories(include)
-#include_directories(${CMAKE_SOURCE_DIR}/include)
+#include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src library_sources)
 
 add_library(${PROJECT_NAME} SHARED ${library_sources})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
 target_link_libraries(${PROJECT_NAME} PUBLIC ChimeraTK::ChimeraTK-DeviceAccess)
+
+# Specify include directories for the target -- Trial
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 if(BUILD_TESTS)
   add_subdirectory(tests)

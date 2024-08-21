@@ -14,12 +14,14 @@
  * The SerialCommandHandler class sets up a serial port
  * and provides for read/write, as well as sending commands are reading back the responce with sendCommand.
  */
-class SerialCommandHandler : CommandHandler {
+class SerialCommandHandler : public CommandHandler {
  public:
   /**
    * Open and setup the serial port, set the readback timeout parameter.
    */
   SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds = 1000);
+
+  ~SerialCommandHandler() override = default;
 
   /**
    * Send a command to the serial port and read back a single line responce, which is returned.

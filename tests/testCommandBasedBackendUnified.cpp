@@ -42,7 +42,7 @@ struct ScalarInt {
                                            .disableSwitchReadOnly()
                                            .disableSwitchWriteOnly()
                                            .disableTestWriteNeverLosesData()
-                                           .enableTestRawTransfer();
+                                           .disableTestRawTransfer();
 
   template<typename Type>
   std::vector<std::vector<Type>> generateValue([[maybe_unused]] bool raw = false) {
@@ -187,7 +187,7 @@ struct ArrayFloatSingleLine {
                                            .disableSwitchReadOnly()
                                            .disableSwitchWriteOnly()
                                            .disableTestWriteNeverLosesData()
-                                           .enableTestRawTransfer();
+                                           .disableTestRawTransfer();
 
   template<typename UserType>
   std::vector<std::vector<UserType>> generateValue(bool raw = false) {

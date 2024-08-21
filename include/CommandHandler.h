@@ -20,4 +20,6 @@ class CommandHandler {
    * Resulting vector will be nLinesExpected long or else throw
    */
   virtual std::vector<std::string> sendCommand(std::string cmd, const size_t nLinesExpected) = 0;
+
+  virtual ~CommandHandler() = default;
 };

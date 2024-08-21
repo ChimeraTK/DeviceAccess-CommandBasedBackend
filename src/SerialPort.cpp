@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "SerialPort.h"
 
+#include <ChimeraTK/Exception.h>
+
 #include <chrono>  //needed for timout
 #include <cstring> //used for memset
 #include <fcntl.h>
@@ -21,8 +23,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
                                                             // O_WRONLY = open write only
                                                             // O_NOCTTY = no controlling termainl
   if(fileDescriptor == -1) {
-    std::string err = "Unable to open device " + device + "\n";
-    throw std::runtime_error(err);
+    std::string err = "Unable to open device \"" + device + "\"";
+    throw ChimeraTK::runtime_error(err);
   }
 
   termios tty; // Make an instance of the termios structure
@@ -30,7 +32,7 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   // throw if this fails
   if(tcgetattr(fileDescriptor, &tty) != 0) { // from termios
     std::string err = "Error from tcgetattr\n";
-    throw std::runtime_error(err);
+    throw ChimeraTK::runtime_error(err);
   }
 
   // Set baud rate, using termios
@@ -38,7 +40,7 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   int iCfsetispeed = cfsetispeed(&tty, (speed_t)B9600);
   if(iCfsetospeed < 0 or iCfsetispeed < 0) {
     std::string err = "Error setting IO speed\n";
-    throw std::runtime_error(err);
+    throw ChimeraTK::runtime_error(err);
   }
   // see https://www.man7.org/linux/man-pages/man3/termios.3.htmlL
   tty.c_cflag &= ~PARENB; // disables parity generation and detection.
@@ -56,7 +58,7 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tcflush(fileDescriptor, TCIFLUSH);
   if(tcsetattr(fileDescriptor, TCSANOW, &tty) != 0) { // from termios
     std::string err = "Error from tcsetattr\n";
-    throw std::runtime_error(err);
+    throw ChimeraTK::runtime_error(err);
   }
 } // end SerialPort constructor
 
@@ -74,7 +76,7 @@ void SerialPort::send(const std::string& str) const {
 
   if(bytesWritten != static_cast<ssize_t>(strToWrite.size())) {
     std::string err = "Incomplete write";
-    throw std::runtime_error(err);
+    throw ChimeraTK::runtime_error(err);
   }
 }
 
@@ -117,7 +119,7 @@ std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& tim
   }
   // if the code has not returned there has been a timeout or read has been abandone
   std::string err = "readline operation timed out.";
-  throw std::runtime_error(err);
+  throw ChimeraTK::runtime_error(err);
 } // end readlineWithTimeout
 
 /**********************************************************************************************************************/
