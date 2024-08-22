@@ -239,7 +239,7 @@ void DummyServer::mainLoop() {
       }
     }
     else {
-      std::vector<std::string> lines = parseStr(data, ";");
+      std::vector<std::string> lines = splitString(data, ";");
       for(const std::string& dat : lines) {
         if(_debug) std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl; // DEBUG
         _serialPort->send(dat);

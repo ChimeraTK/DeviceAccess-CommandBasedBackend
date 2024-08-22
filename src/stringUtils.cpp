@@ -8,25 +8,23 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> parseStr(const std::string& stringToBeParsed, const std::string& delimiter) noexcept {
-  std::vector<std::string> lines;
+std::vector<std::string> splitString(const std::string& stringToBeParsed, const std::string& delimiter) noexcept {
+  std::vector<std::string> subStrings;
   size_t pos = 0;
 
-  do {
+  while(true) {
     size_t nextPos = stringToBeParsed.find(delimiter, pos);
-    std::string line = stringToBeParsed.substr(pos, nextPos - pos);
-    lines.push_back(line);
+    std::string subString = stringToBeParsed.substr(pos, nextPos - pos);
+    subStrings.push_back(subString);
 
-    // Move the position to the next delimiter
-    if(nextPos != std::string::npos) {
-      pos = nextPos + delimiter.length();
-    }
-    else {
+    if(nextPos == std::string::npos) {
       break;
     }
-  } while(pos != std::string::npos);
 
-  return lines;
+    pos = nextPos + delimiter.length();
+  }
+
+  return subStrings;
 } // end parseStr
 
 /**********************************************************************************************************************/
