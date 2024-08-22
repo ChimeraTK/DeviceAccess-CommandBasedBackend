@@ -12,12 +12,6 @@
     const std::string& stringToBeParsed, const std::string& delimiter = "\r\n") noexcept;
 
 /**
- * Parse the string by the delimiter. Return a vector the resulting strings segments.
- * Strings in the vector will not contain the delimiter.
- */
-[[nodiscard]] std::vector<std::string> parseStr(const std::string& stringToBeParsed, const char delimiter) noexcept;
-
-/**
  * Returns true if and only if the provided string ends in the delimiter delim.
  * Requires delim_size = delim.size()
  */
