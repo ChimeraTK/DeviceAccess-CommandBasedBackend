@@ -5,11 +5,12 @@
 #include <vector>
 
 /**
- * Parse a string by the delimiter, and return a vector of the resulting segments
- * no delimiters are present in the resulting segments.
+ * Split a string by the delimiter, and return a vector of the resulting segments.
+ * No delimiters are present in the resulting segments.
+ * If the string starts/ends with a delimiter, there is an empty string at the beginning/end of the vector.
  */
-[[nodiscard]] std::vector<std::string> parseStr(
-    const std::string& stringToBeParsed, const std::string& delimiter = "\r\n") noexcept;
+[[nodiscard]] std::vector<std::string> splitString(
+    const std::string& stringToBeParsed, const std::string& delimiter) noexcept;
 
 /**
  * Returns true if and only if the provided string ends in the delimiter delim.

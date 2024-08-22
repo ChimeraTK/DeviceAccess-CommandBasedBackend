@@ -40,9 +40,7 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
   _serialPort->send(cmd);
 
   std::string readStr;
-  std::vector<std::string> readStrParsed;
-  size_t nLinesFound = 0;
-  for(; nLinesFound < nLinesExpected; nLinesFound += readStrParsed.size()) {
+  for(size_t nLinesFound = 0; nLinesFound < nLinesExpected; ++nLinesFound) {
     try {
       readStr = _serialPort->readlineWithTimeout(_timeout);
     }
@@ -53,12 +51,8 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
       }
       throw std::runtime_error(err);
     }
-    readStrParsed = parseStr(readStr, _serialPort->delim);
-    outputStrVec.insert(outputStrVec.end(), readStrParsed.begin(), readStrParsed.end());
+    outputStrVec.push_back(readStr);
   } // end for
-  if(nLinesFound > nLinesExpected) {
-    std::string err = "Error: Found " + std::to_string(nLinesFound - nLinesExpected) + " more lines than expected";
-    throw std::runtime_error(err);
-  }
+
   return outputStrVec;
 } // end sendCommand
