@@ -224,7 +224,7 @@ void DummyServer::mainLoop() {
           }
           out.pop_back();
           if(sendTooFew) {
-            auto lastComma = out.rfind(",");
+            auto lastComma = out.rfind(',');
             out = out.substr(0, lastComma);
             std::cout << "sending with syntax error: " << out << std::endl;
           }
@@ -239,7 +239,7 @@ void DummyServer::mainLoop() {
       }
     }
     else {
-      std::vector<std::string> lines = parseStr(data, ';');
+      std::vector<std::string> lines = parseStr(data, ";");
       for(const std::string& dat : lines) {
         if(_debug) std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl; // DEBUG
         _serialPort->send(dat);
