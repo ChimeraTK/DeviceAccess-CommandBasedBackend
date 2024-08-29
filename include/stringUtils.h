@@ -13,6 +13,12 @@
     const std::string& stringToBeParsed, const std::string& delimiter) noexcept;
 
 /**
+ * Search for whitespace separated text tokens in a string. No whitespace is retuned. The list might be empty if the
+ * input string is empty or there is only whitespace.
+ */
+[[nodiscard]] std::vector<std::string> tokenise(const std::string& stringToBeParsed);
+
+/**
  * Returns true if and only if the provided string ends in the delimiter delim.
  * Requires delim_size = delim.size()
  */
