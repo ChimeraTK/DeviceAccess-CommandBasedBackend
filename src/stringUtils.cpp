@@ -25,7 +25,25 @@ std::vector<std::string> splitString(const std::string& stringToBeParsed, const 
   }
 
   return subStrings;
-} // end parseStr
+} // end splitString
+
+/**********************************************************************************************************************/
+
+std::vector<std::string> tokenise(const std::string& stringToBeParsed) {
+  std::vector<std::string> output;
+  std::basic_stringstream inputStream(stringToBeParsed);
+
+  std::string token;
+  while(!inputStream.eof()) {
+    token = "";
+    inputStream >> token;
+    if(!token.empty()) {
+      output.push_back(token);
+    }
+  }
+
+  return output;
+}
 
 /**********************************************************************************************************************/
 
