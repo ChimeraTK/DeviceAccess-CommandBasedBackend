@@ -22,10 +22,10 @@ namespace ChimeraTK {
   class CommandBasedBackend : public DeviceBackendImpl {
     /******************************************************************************************************************/
    public:
-    enum class CommandBasedBackendType { SERIAL, ETHERNET } _commandBasedBackendType;
+    enum class CommandBasedBackendType { SERIAL, ETHERNET };
 
-    // Constructor for Serial communication
-    CommandBasedBackend(std::string serialDevice);
+    CommandBasedBackend(
+        CommandBasedBackendType type, std::string instance, std::map<std::string, std::string> parameters);
 
     ~CommandBasedBackend() override = default;
 
@@ -42,7 +42,10 @@ namespace ChimeraTK {
     boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
         const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags);
 
-    static boost::shared_ptr<DeviceBackend> createInstance(
+    static boost::shared_ptr<DeviceBackend> createInstanceSerial(
+        std::string instance, std::map<std::string, std::string> parameters);
+
+    static boost::shared_ptr<DeviceBackend> createInstanceEthernet(
         std::string instance, std::map<std::string, std::string> parameters);
 
     struct BackendRegisterer {
@@ -56,7 +59,14 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
 
    protected:
-    std::string _device;
+    CommandBasedBackendType _commandBasedBackendType;
+
+    ///  The device node for serial communication, or the host name for network communication
+    std::string _instance;
+
+    // parameters for network based communication
+    std::string _port;
+
     ulong _timeoutInMilliseconds = 2000;
     // avoid 1000 due to race conditions with a 1000ms timeout on CommandBasedBackendRegisterAccessor::doReadTransferSynchronously
 
