@@ -117,7 +117,11 @@ std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& tim
       return readData.value();
     }
   }
-  // if the code has not returned there has been a timeout or read has been abandone
+  // If the code has not returned there has been a timeout or read has been abandoned
+
+  // In case of a timeout we have to tell the read to stop so the
+  // async thread can complete.
+  terminateRead();
   std::string err = "readline operation timed out.";
   throw ChimeraTK::runtime_error(err);
 } // end readlineWithTimeout
