@@ -4,17 +4,30 @@
 #include "CommandBasedBackend.h"
 
 #include "SerialCommandHandler.h"
+#include "TcpCommandHandler.h"
+
+#include <string>
 
 namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  CommandBasedBackend::CommandBasedBackend(std::string serialDevice) : _device(serialDevice), _mux() {
-    _commandBasedBackendType = CommandBasedBackendType::SERIAL;
+  CommandBasedBackend::CommandBasedBackend(
+      CommandBasedBackendType type, std::string instance, std::map<std::string, std::string> parameters)
+  : _commandBasedBackendType(type), _instance(std::move(instance)) {
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
+    if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
+      try {
+        _port = parameters.at("port");
+      }
+      catch(std::out_of_range&) {
+        throw ChimeraTK::logic_error("Missing parameter \"port\" in CDD of backend CommandBasedTCP " + instance);
+      }
+    }
+
     // fill this from the map file
-    _defaultRecoveryRegister = "/cwFrequency";
+    _defaultRecoveryRegister = "/IDN";
     _lastWrittenRegister = _defaultRecoveryRegister;
 
     // fill the catalogue from the map file
@@ -34,6 +47,11 @@ namespace ChimeraTK {
     _backendCatalogue.addRegister({"/myData", "", "", "CALC1:DATA:TRAC? 'myTrace' SDAT",
         R"delim({% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n)delim", 10, 1,
         CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
+
+    _backendCatalogue.addRegister(
+        {"/IDN", "", "", "*IDN?", "(.*)\n", 1, 1, CommandBasedBackendRegisterInfo::InternalType::STRING, "\n"});
+    _backendCatalogue.addRegister({"/ACC1", "ACC 1 {{x.0}}", "", "ACC?", "1={{x.0}}\n", 1, 1,
+        CommandBasedBackendRegisterInfo::InternalType::DOUBLE, "\n"});
   }
 
   /********************************************************************************************************************/
@@ -41,7 +59,10 @@ namespace ChimeraTK {
   void CommandBasedBackend::open() {
     switch(_commandBasedBackendType) {
       case CommandBasedBackendType::SERIAL:
-        _commandHandler = std::make_unique<SerialCommandHandler>(_device, _timeoutInMilliseconds);
+        _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _timeoutInMilliseconds);
+        break;
+      case CommandBasedBackendType::ETHERNET:
+        _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _timeoutInMilliseconds);
         break;
       default:
         // This is not part of the proper interface. Throw a std::logic_error as
@@ -76,9 +97,18 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  boost::shared_ptr<DeviceBackend> CommandBasedBackend::createInstance(
-      std::string instance, [[maybe_unused]] std::map<std::string, std::string> parameters) {
-    return boost::make_shared<CommandBasedBackend>(instance);
+  boost::shared_ptr<DeviceBackend> CommandBasedBackend::createInstanceSerial(
+      std::string instance, std::map<std::string, std::string> parameters) {
+    return boost::make_shared<CommandBasedBackend>(
+        CommandBasedBackend::CommandBasedBackendType::SERIAL, instance, parameters);
+  }
+
+  /********************************************************************************************************************/
+
+  boost::shared_ptr<DeviceBackend> CommandBasedBackend::createInstanceEthernet(
+      std::string instance, std::map<std::string, std::string> parameters) {
+    return boost::make_shared<CommandBasedBackend>(
+        CommandBasedBackend::CommandBasedBackendType::ETHERNET, instance, parameters);
   }
 
   /********************************************************************************************************************/
@@ -101,14 +131,18 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string CommandBasedBackend::readDeviceInfo() {
-    return "Device: " + _device + " timeout: " + std::to_string(_timeoutInMilliseconds);
+    return "Device: " + _instance + " timeout: " + std::to_string(_timeoutInMilliseconds);
   }
 
   /********************************************************************************************************************/
 
   CommandBasedBackend::BackendRegisterer::BackendRegisterer() {
     BackendFactory::getInstance().registerBackendType(
-        "CommandBasedTTY", &CommandBasedBackend::createInstance, {}, CHIMERATK_DEVICEACCESS_VERSION);
+        "CommandBasedTTY", &CommandBasedBackend::createInstanceSerial, {}, CHIMERATK_DEVICEACCESS_VERSION);
+    std::cout << "registered backend CommandBasedTTY" << std::endl;
+    BackendFactory::getInstance().registerBackendType(
+        "CommandBasedTCP", &CommandBasedBackend::createInstanceEthernet, {}, CHIMERATK_DEVICEACCESS_VERSION);
+    std::cout << "registered backend CommandBasedTCP" << std::endl;
   }
 
   /********************************************************************************************************************/
