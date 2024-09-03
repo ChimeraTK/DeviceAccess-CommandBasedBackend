@@ -36,12 +36,12 @@ namespace ChimeraTK {
     ~CommandBasedBackend() override = default;
 
     /** Open the device */
-    void open();
+    void open() override;
 
     /** Close the device */
     void close() override {
       _commandHandler.reset();
-      _opened.store(false);
+      _opened = false;
     }
 
     /** Send a single command through and receive response. */
@@ -59,16 +59,7 @@ namespace ChimeraTK {
     template<typename UserType>
     boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(const RegisterPath& registerPathName,
         size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
-      // TODO look into the catalogue.
-      if(registerPathName != "/cwFrequency") {
-        throw ChimeraTK::logic_error("unknown register " + registerPathName);
-      }
-      DataDescriptor dataDescriptor(DataDescriptor::FundamentalType::numeric, true, true, 11);
-      // DataDescriptor(FundamentalType fundamentalType_, bool isIntegral_ = false, bool isSigned_ = false,
-      //  size_t nDigits_ = 0, size_t nFractionalDigits_ = 0, DataType rawDataType_ = DataType::none,
-      //  DataType transportLayerDataType_ = DataType::none)
-      auto registerInfo = CommandBasedBackendRegisterInfo("SOUR:FREQ:CW", registerPathName, 1, 1,
-          CommandBasedBackendRegisterInfo::IoDirection::READ_WRITE, {}, dataDescriptor); // placeholder catalog info
+      auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
 
       return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
           registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
@@ -86,30 +77,7 @@ namespace ChimeraTK {
       }
     };
 
-    /**
-     *  Return the register catalogue with detailed information on all registers.
-     *  for now this returns an empty RegisterCatalog
-     */
-    RegisterCatalogue getRegisterCatalogue() const override {
-      return RegisterCatalogue(_registerMap->clone()); // TODO
-      // return RegisterCatalogue(nullptr);//_registerMap->clone()); //TODO
-      // Trying to call
-      //  RegisterCatalogue(std::unique_ptr<BackendRegisterCatalogueBase>&& impl);
-      // std::unique_ptr<BackendRegisterCatalogue<CommandBasedBackendRegisterInfo>> _registerMap;
-      // expect to use copy constructor
-
-      // CommandBAsedBackendRegisterInfo line 68:
-      /* std::unique_ptr<BackendRegisterInfoBase> clone() const override {
-                return std::make_unique<CommandBasedBackendRegisterInfo>(*this);
-            }
-      */
-    }
-
-    /**
-     *  Return the device metadata catalogue
-     *  Placeholder: return an empty one.
-     */
-    // MetadataCatalogue getMetadataCatalogue() const override { return {}; }
+    RegisterCatalogue getRegisterCatalogue() const override;
 
     /** Get a NDRegisterAccessor object from the register name. */
     /*template<typename UserType>
@@ -139,7 +107,7 @@ namespace ChimeraTK {
     /// mutex for protecting ordered port access
     std::mutex _mux;
     std::unique_ptr<CommandHandler> _commandHandler;
-    std::unique_ptr<BackendRegisterCatalogue<CommandBasedBackendRegisterInfo>> _registerMap;
+    BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
   }; // end class CommandBasedBackend
 
 } // end namespace ChimeraTK
