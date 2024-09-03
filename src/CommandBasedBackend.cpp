@@ -12,8 +12,13 @@ namespace ChimeraTK {
   CommandBasedBackend::CommandBasedBackend(std::string serialDevice) : _device(serialDevice), _mux() {
     _commandBasedBackendType = CommandBasedBackendType::SERIAL;
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
-    _registerMap = std::make_unique<
-        BackendRegisterCatalogue<CommandBasedBackendRegisterInfo>>(); // store a blank RegisterCatalog, TODO
+
+    // fill the catalogue from the map file
+    // WORKAROUND: Hard-Code the entries
+    DataDescriptor intDataDescriptor(
+        DataDescriptor::FundamentalType::numeric, /*isIntegral*/ true, /*isSigned*/ true, /*nDigits*/ 11);
+    _backendCatalogue.addRegister({"SOUR:FREQ:CW", "/cwFrequency", 1, 1,
+        CommandBasedBackendRegisterInfo::IoDirection::READ_WRITE, {}, intDataDescriptor});
   }
 
   /*****************************************************************************************************************/
@@ -32,6 +37,12 @@ namespace ChimeraTK {
     // Backends have to call this function at the end of a successful open() call
     setOpenedAndClearException();
   } // end open
+
+  /*****************************************************************************************************************/
+
+  RegisterCatalogue CommandBasedBackend::getRegisterCatalogue() const {
+    return RegisterCatalogue(_backendCatalogue.clone());
+  }
 
   /*****************************************************************************************************************/
 
