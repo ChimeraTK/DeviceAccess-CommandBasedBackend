@@ -45,6 +45,7 @@ namespace ChimeraTK {
     NDRegisterAccessor<UserType>::buffer_2D[0].resize(_registerInfo.getNumberOfElements());
     readTransferBuffer.resize(1); //_registerInfo.getNumberOfElements());
 
+    this->_exceptionBackend = dev;
     //_dataConverter = detail::createDataConverter<DataConverterType>(_registerInfo);
   } // end constructor CommandBasedBackendRegisterAccessor
 
