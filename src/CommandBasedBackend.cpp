@@ -4,6 +4,7 @@
 #include "CommandBasedBackend.h"
 
 #include "CommandBasedBackendRegisterAccessor.h"
+#include "SerialCommandHandler.h"
 
 namespace ChimeraTK {
 
@@ -40,8 +41,22 @@ namespace ChimeraTK {
 
   /*****************************************************************************************************************/
 
+  void CommandBasedBackend::close() {
+    _commandHandler.reset();
+    _opened = false;
+  }
+
+  /*****************************************************************************************************************/
+
   RegisterCatalogue CommandBasedBackend::getRegisterCatalogue() const {
     return RegisterCatalogue(_backendCatalogue.clone());
+  }
+
+  /*****************************************************************************************************************/
+
+  boost::shared_ptr<DeviceBackend> CommandBasedBackend::createInstance(
+      std::string instance, [[maybe_unused]] std::map<std::string, std::string> parameters) {
+    return boost::make_shared<CommandBasedBackend>(instance);
   }
 
   /*****************************************************************************************************************/
@@ -59,6 +74,19 @@ namespace ChimeraTK {
     assert(_opened);
     std::lock_guard<std::mutex> lock(_mux);
     return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);
+  }
+
+  /*****************************************************************************************************************/
+
+  std::string CommandBasedBackend::readDeviceInfo() {
+    return "Device: " + _device + " timeout: " + std::to_string(_timeoutInMilliseconds);
+  }
+
+  /*****************************************************************************************************************/
+
+  CommandBasedBackend::BackendRegisterer::BackendRegisterer() {
+    BackendFactory::getInstance().registerBackendType(
+        "CommandBasedTTY", &CommandBasedBackend::createInstance, {}, CHIMERATK_DEVICEACCESS_VERSION);
   }
 
   /*****************************************************************************************************************/

@@ -85,7 +85,7 @@ namespace ChimeraTK {
       return std::list<boost::shared_ptr<TransferElement>>();
     }
 
-    virtual void replaceTransferElement([[maybe_unused]] boost::shared_ptr<TransferElement> newElement) {
+    virtual void replaceTransferElement([[maybe_unused]] boost::shared_ptr<TransferElement> newElement) override {
     } // mayReplaceTransferElement = false, so this is just empty.
 
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -177,4 +177,5 @@ namespace ChimeraTK {
 
   }; // end class CommandBasedBackendRegisterAccessor
 
+  DECLARE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
 } // namespace ChimeraTK
