@@ -4,7 +4,6 @@
 
 #include "CommandBasedBackendRegisterInfo.h"
 #include "CommandHandler.h"
-#include "SerialCommandHandler.h"
 
 #include <ChimeraTK/AccessMode.h>
 #include <ChimeraTK/BackendFactory.h>
@@ -30,19 +29,10 @@ namespace ChimeraTK {
     // Constructor for Serial communication
     CommandBasedBackend(std::string serialDevice);
 
-    // Constructor for Ethernet network communication
-    CommandBasedBackend();
-
     ~CommandBasedBackend() override = default;
 
-    /** Open the device */
     void open() override;
-
-    /** Close the device */
-    void close() override {
-      _commandHandler.reset();
-      _opened = false;
-    }
+    void close() override;
 
     /** Send a single command through and receive response. */
     std::string sendCommand(std::string cmd);
@@ -50,52 +40,20 @@ namespace ChimeraTK {
     /** Send a single command through and receive a vector (len nLinesExpected) responses. */
     std::vector<std::string> sendCommand(std::string cmd, const size_t nLinesExpected);
 
-    /** Get a NDRegisterAccessor object from the register name. */
-    // boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor(
-    // template<typename UserType>
-    // boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
-    // CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, AccessModeFlags flags) {
-
     template<typename UserType>
-    boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(const RegisterPath& registerPathName,
-        size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
-      auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
-
-      return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
-          registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
-    }
+    boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
+        const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags);
 
     static boost::shared_ptr<DeviceBackend> createInstance(
-        std::string instance, [[maybe_unused]] std::map<std::string, std::string> parameters) {
-      return boost::make_shared<CommandBasedBackend>(instance);
-    }
+        std::string instance, std::map<std::string, std::string> parameters);
 
     struct BackendRegisterer {
-      BackendRegisterer() {
-        BackendFactory::getInstance().registerBackendType(
-            "CommandBasedTTY", &CommandBasedBackend::createInstance, {}, CHIMERATK_DEVICEACCESS_VERSION);
-      }
+      BackendRegisterer();
     };
 
     RegisterCatalogue getRegisterCatalogue() const override;
 
-    /** Get a NDRegisterAccessor object from the register name. */
-    /*template<typename UserType>
-    boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor(
-        const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags);
-        */
-
-    /** Return a device information string containing hardware details like the
-     * firmware version number or the slot number used by the board. The format
-     * and contained information of this string is completely backend
-     * implementation dependent, so the string may only be printed to the user as
-     * an informational output. Do not try to parse this string or extract
-     * information from it programmatically. */
-    std::string readDeviceInfo() override {
-      return "Device: " + _device + " timeout: " + std::to_string(_timeoutInMilliseconds);
-    }
-
-    void activateAsyncRead() noexcept override {} // Martin: leave empty.
+    std::string readDeviceInfo() override;
 
     /*----------------------------------------------------------------------------------------------------------------*/
 
@@ -109,5 +67,18 @@ namespace ChimeraTK {
     std::unique_ptr<CommandHandler> _commandHandler;
     BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
   }; // end class CommandBasedBackend
+
+  /*****************************************************************************************************************/
+  /*****************************************************************************************************************/
+  /*****************************************************************************************************************/
+
+  template<typename UserType>
+  boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
+      const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
+    auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
+
+    return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(
+        DeviceBackend::shared_from_this(), registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
+  }
 
 } // end namespace ChimeraTK
