@@ -5,9 +5,12 @@
 
 #include "CommandBasedBackend.h"
 #include "CommandBasedBackendRegisterInfo.h"
+#include <inja/inja.hpp>
+
+#include <regex>
+#include <string>
 
 namespace ChimeraTK {
-
   template<typename UserType>
 
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
@@ -16,7 +19,7 @@ namespace ChimeraTK {
       AccessModeFlags flags)
   : NDRegisterAccessor<UserType>(registerPathName, flags), _numberOfElements(numberOfElements),
     _elementOffsetInRegister(elementOffsetInRegister), _registerInfo(registerInfo),
-    _dev(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
+    _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
     assert(_registerInfo.getNumberOfChannels() != 0);
     assert(_registerInfo.getNumberOfElements() != 0);
     assert(_registerInfo.getNumberOfDimensions() < 2); // implementation only for scalar and 1D
@@ -31,7 +34,7 @@ namespace ChimeraTK {
 
     flags.checkForUnknownFlags({}); // require no flags.
 
-    if(!_dev) {
+    if(!_backend) {
       throw ChimeraTK::logic_error("CommandBasedBackendRegisterAccessor is used with a backend which is not "
                                    "a CommandBasedBackend.");
     }
@@ -46,16 +49,69 @@ namespace ChimeraTK {
     readTransferBuffer.resize(1); //_registerInfo.getNumberOfElements());
 
     this->_exceptionBackend = dev;
-    //_dataConverter = detail::createDataConverter<DataConverterType>(_registerInfo);
+
+    std::string valueRegex;
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::INT64) {
+      valueRegex = "([+-]?[0-9]+)";
+    }
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
+      valueRegex = "([+-]?[0-9]+)";
+    }
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
+      valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+    }
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::STRING) {
+      valueRegex = "(.*)";
+    }
+    assert(!valueRegex.empty());
+    std::cout << "!!!DEBUG: valueRegex: " << valueRegex << std::endl;
+    std::cout << "!!!DEBUG: pattern: " << _registerInfo.readResponsePattern << std::endl;
+
+    // prepare the readResponseRegex
+    inja::json replacePatterns;
+    replacePatterns["x"] = {};
+    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
+      // Fixme: does not know about formating
+      replacePatterns["x"].push_back(valueRegex);
+    }
+
+    // FIXME: pass this through the template engine
+    try {
+      auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
+      std::cout << "!!!DEBUG: RegexText: " << regexText << std::endl;
+      readResponseRegex = regexText;
+    }
+    catch(std::regex_error& e) {
+      throw ChimeraTK::logic_error(
+          "Regex error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
+    }
+    catch(inja::ParserError& e) {
+      throw ChimeraTK::logic_error(
+          "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
+    }
+    // FIXME: checking the mark_count is not reliable. There might be additional
+    // capture groups. Possible solution:
+    // Replace the {{x.i}} with REPLACEMEi., spit the string at the REPLACEMEs and
+    // scan the snippets between for capture groups. Remember the positions and amounts of the
+    // capture groups as they will show up in the scan result.
+    // Also remember which index is found at which position so you know which
+    // subgroup has the value you are looking for. Then re-run
+    // inja on the original input and put in the matching regexps.
+    if(readResponseRegex.mark_count() != _registerInfo.nElements) {
+      throw ChimeraTK::logic_error("Wrong number of capture groups (" + std::to_string(readResponseRegex.mark_count()) +
+          ") in readResponsePattern \"" + _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath +
+          ", expected " + std::to_string(_registerInfo.nElements));
+    }
+
   } // end constructor CommandBasedBackendRegisterAccessor
 
   /*******************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreRead([[maybe_unused]] TransferType) {
-    if(!_dev->isOpen()) {
+    if(!_backend->isOpen()) {
       throw ChimeraTK::logic_error("Device not opened.");
     }
-    if(_registerInfo.isNotReadable()) {
+    if(!_registerInfo.isReadable()) {
       throw ChimeraTK::logic_error(
           "NumericAddressedBackend: Writing to a non-writeable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
@@ -65,27 +121,14 @@ namespace ChimeraTK {
   /*******************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doReadTransferSynchronously() {
-    if(!_dev->isFunctional()) {
+    if(!_backend->isFunctional()) {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    // actual read call to backend.
+    // FIXME: properly create the read command through the template engine
+    auto readCommand = _registerInfo.readCommandPattern;
 
-    std::string readCommand = _registerInfo.getCommandName() + "?";
-
-    // FIXME: This implementation is not general. Often there is only one line of answer
-    // for scalar and 1D.
-    switch(_registerInfo.getNumberOfDimensions()) {
-      case 0:
-        readTransferBuffer[0] = _dev->sendCommand(readCommand);
-        break;
-      case 1:
-        readTransferBuffer = _dev->sendCommand(readCommand, _registerInfo.getNumberOfElements());
-        break;
-      default:
-        throw ChimeraTK::logic_error(
-            "Dimension 2. CommandBasedBackendRegisterAccessor is used only with a scalars and 1D register.");
-    } // end switch
+    readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
 
   } // end doReadTransferSync
 
@@ -93,21 +136,34 @@ namespace ChimeraTK {
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPostRead(
       [[maybe_unused]] TransferType t, bool updateDataBuffer) {
-    // Martin: converts text response to number. Fill it into the user buffer. TODO
-    // TODO make use of UserType
+    // Martin: converts text response to number. Fill it into the user buffer.
     /*
      *  Transfer type is an enum in TransferElement.h
      *  options are:
      *  TransferType::{read, readNonBlocking, readLatest, write, writeDestructively }
      */
     if(updateDataBuffer) {
-      size_t end = _registerInfo.getNumberOfElements();
-      if(readTransferBuffer.size() < end) {
-        end = readTransferBuffer.size();
+      // For technical reasons the response has been read line by line.
+      // Combine them back into a single response string.
+      std::string combinedReadString;
+      for(const auto& line : readTransferBuffer) {
+        combinedReadString += line + _registerInfo.delimiter;
       }
 
-      for(size_t i = 0; i < end; i++) {
-        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(readTransferBuffer[i]);
+      std::smatch valueMatch;
+      if(!std::regex_match(combinedReadString, valueMatch, readResponseRegex)) {
+        throw ChimeraTK::runtime_error(
+            "Could not extract values from \"" + combinedReadString + "\" in " + _registerInfo.registerPath);
+      }
+
+      std::cout << "!!!DEBUG: found matches ";
+      for(size_t i = 1; i < valueMatch.size(); ++i) {
+        std::cout << " \"" << valueMatch[1] << "\"";
+      }
+      std::cout << " in \"" << combinedReadString << "\"" << std::endl;
+
+      for(size_t i = 0; i < _numberOfElements; ++i) {
+        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(valueMatch[i + 1]);
       }
       this->_versionNumber = {};
     }
@@ -119,29 +175,29 @@ namespace ChimeraTK {
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreWrite(
       [[maybe_unused]] TransferType type, [[maybe_unused]] VersionNumber versionNumber) {
-    // TODO, what to do with the version number and TransferType?
-    // Martin: Swapps user buffer with the buffer sent to hardware
-    // TODO make use of UserType
-    // Takes data coming in, a number, put it into a string format. Here we prepare the write command that will get
-    // sent. We also get a ChimeraTK::VersionNumber
+    if(!_backend->isOpen()) throw ChimeraTK::logic_error("Device not opened.");
 
-    if(!_dev->isOpen()) throw ChimeraTK::logic_error("Device not opened.");
-
-    if(_registerInfo.isNotWritable()) {
+    if(!_registerInfo.isWriteable()) {
       throw ChimeraTK::logic_error(
           "NumericAddressedBackend: Writing to a non-writeable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
     }
 
-    // make a comma seperated list of values out of buffer_2D
-    std::ostringstream numericPart;
-    numericPart << buffer_2D[0][0];
-    for(size_t i = 1; i < _registerInfo.getNumberOfElements(); ++i) {
-      numericPart << "," << buffer_2D[0][0];
+    inja::json replacePatterns;
+    replacePatterns["x"] = {};
+    for(size_t i = 0; i < _numberOfElements; ++i) {
+      // Fixme: does not know about formating
+      replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
     }
 
     // Form the write command.
-    writeTransferBuffer = _registerInfo.getCommandName() + " " + numericPart.str();
+    try {
+      writeTransferBuffer = inja::render(_registerInfo.writeCommandPattern, replacePatterns);
+    }
+    catch(inja::ParserError& e) {
+      throw ChimeraTK::logic_error(
+          "Inja parser error in writeCommandPattern of " + _registerInfo.registerPath + ": " + e.what());
+    }
   } // end doPreWrite
 
   /*******************************************************************************************************************/
@@ -149,11 +205,11 @@ namespace ChimeraTK {
   template<typename UserType>
   bool CommandBasedBackendRegisterAccessor<UserType>::doWriteTransfer(
       [[maybe_unused]] ChimeraTK::VersionNumber versionNumber) {
-    if(!_dev->isFunctional()) {
+    if(!_backend->isFunctional()) {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _dev->sendCommand(writeTransferBuffer, 0);
+    _backend->sendCommand(writeTransferBuffer, 0);
     return false; // no data was lost
   }
 

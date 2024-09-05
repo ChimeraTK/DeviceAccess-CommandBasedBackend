@@ -11,80 +11,48 @@ namespace ChimeraTK {
   /**
     Holds info all about the command you're sending, but not about the device you're sending it to.
     */
-  class CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
-   public:
-    enum class IoDirection { READ_ONLY, WRITE_ONLY, READ_WRITE }; // TODO surely there's something like this already
+  struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
+    /// Internal representation type to which we have to convert successfully
+    enum class InternalType { INT64, UINT64, DOUBLE, STRING };
 
-    // CommandBasedBackendRegisterInfo() {} // needed and solves compiler bugs, replaced by default arguments
-    CommandBasedBackendRegisterInfo(std::string commandName = "", RegisterPath registerPath = "", uint nChannels = 1,
-        uint nElements = 1, IoDirection ioDir = IoDirection::READ_WRITE, AccessModeFlags accessModeFlags = {},
-        const DataDescriptor& dataDescriptor = {})
-    : _nChannels(nChannels), _nElements(nElements), _ioDir(ioDir), _accessModeFlags(accessModeFlags),
-      _registerPath(registerPath), _commandName(commandName), _dataDescriptor(dataDescriptor) {}
-
-    // Copy constructor
-    CommandBasedBackendRegisterInfo(const CommandBasedBackendRegisterInfo& other)
-    : _nChannels(other._nChannels), _nElements(other._nElements), _ioDir(other._ioDir),
-      _accessModeFlags(other._accessModeFlags), _registerPath(other._registerPath), _commandName(other._commandName),
-      _dataDescriptor(other._dataDescriptor) {}
+    CommandBasedBackendRegisterInfo(RegisterPath registerPath_ = {}, std::string writeCommandPattern_ = "",
+        std::string writeResponsePattern_ = "", std::string readCommandPattern_ = "",
+        std::string readResponsePattern_ = "", uint nElements_ = 1, size_t nLinesReadResponse_ = 1,
+        InternalType type = InternalType::INT64, std::string delimiter_ = "\r\n");
 
     ~CommandBasedBackendRegisterInfo() override = default;
 
-    /** Return full path name of the register (including modules) */
-    [[nodiscard]] RegisterPath getRegisterName() const override { return _registerPath; }
-    // The name identified in the DA interface.
-    // coming in through the constructor.
+    [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
 
-    CommandBasedBackendRegisterInfo& operator=(const CommandBasedBackendRegisterInfo& other) = default; //
+    CommandBasedBackendRegisterInfo& operator=(const CommandBasedBackendRegisterInfo& other) = default;
 
-    /** Return number of elements per channel */
-    [[nodiscard]] unsigned int getNumberOfElements() const override { return _nElements; }
+    [[nodiscard]] inline unsigned int getNumberOfElements() const override { return nElements; }
+    [[nodiscard]] inline unsigned int getNumberOfChannels() const override { return nChannels; }
+    [[nodiscard]] inline const DataDescriptor& getDataDescriptor() const override { return dataDescriptor; }
+    [[nodiscard]] inline bool isReadable() const override { return !readCommandPattern.empty(); }
+    [[nodiscard]] inline bool isWriteable() const override { return !writeCommandPattern.empty(); }
+    [[nodiscard]] inline AccessModeFlags getSupportedAccessModes() const override { return {}; }
 
-    /** Return number of channels in register */
-    [[nodiscard]] unsigned int getNumberOfChannels() const override { return _nChannels; }
-
-    /** Return number of dimensions of this register */
-    //[[nodiscard]] unsigned int getNumberOfDimensions() override { return getNumberOfDimensions(); }
-
-    /** Return desciption of the actual payload data for this register. See the
-     * description of DataDescriptor for more information. */
-    [[nodiscard]] const DataDescriptor& getDataDescriptor() const override { return _dataDescriptor; }
-
-    /** Return whether the register is readable. */
-    bool isReadable() const override { return _ioDir == IoDirection::READ_ONLY or _ioDir == IoDirection::READ_WRITE; }
-
-    inline bool isNotReadable() const { return _ioDir == IoDirection::WRITE_ONLY; }
-
-    inline bool isReadOnly() const { return _ioDir == IoDirection::READ_ONLY; }
-
-    /** Return whether the register is writeable. */
-    bool isWriteable() const override { return _ioDir == IoDirection::WRITE_ONLY or _ioDir == IoDirection::READ_WRITE; }
-
-    inline bool isNotWritable() const { return _ioDir == IoDirection::READ_ONLY; }
-
-    /** Return all supported AccessModes for this register */
-    [[nodiscard]] AccessModeFlags getSupportedAccessModes() const override { return _accessModeFlags; }
-
-    /** Create copy of the object */
-    [[nodiscard]] std::unique_ptr<BackendRegisterInfoBase> clone() const override {
+    [[nodiscard]] inline std::unique_ptr<BackendRegisterInfoBase> clone() const override {
       return std::make_unique<CommandBasedBackendRegisterInfo>(*this);
     }
 
-    std::string getCommandName() { return _commandName; }
+    unsigned int nChannels{1};
+    unsigned int nElements{1};
+    RegisterPath registerPath;
 
-   protected:
-    unsigned int _nChannels = 1;
-    unsigned int _nElements = 1;
-    IoDirection _ioDir; // RW flags
-    AccessModeFlags _accessModeFlags;
-    RegisterPath _registerPath;
+    std::string writeCommandPattern;
+    std::string writeResponsePattern;
+    size_t nLinesWriteResponse{0}; // fixme: extract from pattern
 
-    /** The SCPI base command.
-     *  This will likely get more complicated
-     */
-    std::string _commandName;
+    std::string readCommandPattern;
+    std::string readResponsePattern;
+    size_t nLinesReadResponse{1}; // fixme: extract from pattern
 
-    DataDescriptor _dataDescriptor;
+    InternalType internalType;
+    DataDescriptor dataDescriptor;
+    std::string delimiter;
+
   }; // end CommandBasedBackendRegisterInfo
 
 } // end namespace ChimeraTK

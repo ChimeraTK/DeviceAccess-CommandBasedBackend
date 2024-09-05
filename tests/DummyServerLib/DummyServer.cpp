@@ -158,13 +158,23 @@ void DummyServer::mainLoop() {
     }
     else if(data == "SAI?") {
       _serialPort->send(sai[0]);
-      _serialPort->send(sai[1]);
+      if(!sendTooFew) {
+        _serialPort->send(sai[1]);
+      }
     }
-    else if(data.find("ACC AXIS_1 ") == 0) {
-      setAcc(0, data);
-    }
-    else if(data.find("ACC AXIS_2 ") == 0) {
-      setAcc(1, data);
+    else if(data.find("ACC ") == 0) {
+      auto tokens = tokenise(data);
+      if(tokens.size() <= 3) {
+        _serialPort->send("12345 Syntax error: ACC needs axis and value");
+      }
+
+      setAcc(tokens[1], tokens[2]);
+      if(tokens.size() == 5) {
+        setAcc(tokens[3], tokens[4]);
+      }
+      if(tokens.size() != 5 && tokens.size() != 3) {
+        _serialPort->send("12345 Syntax error: ACC has wrong number of arguments");
+      }
     }
     else if(data == "ACC?") {
       if(responseWithDataAndSyntaxError) {
@@ -248,18 +258,25 @@ void DummyServer::mainLoop() {
   }
 }
 
-void DummyServer::setAcc(size_t i, const std::string& data) {
-  if(data.size() < 12) {
-    _serialPort->send("12345 Syntax error: ACC AXIS_1 needs an argument");
+void DummyServer::setAcc(const std::string& axis, const std::string& value) {
+  size_t i;
+  if(axis == "AXIS_1") {
+    i = 0;
+  }
+  else if(axis == "AXIS_2") {
+    i = 1;
+  }
+  else {
+    _serialPort->send("12345 Unknown axis: " + axis);
     return;
   }
   try {
-    acc[i] = std::stof(data.substr(11));
+    acc[i] = std::stof(value);
     if(_debug) {
       std::cout << "Setting acc[" << i << "] to " << acc[i] << std::endl;
     }
   }
   catch(...) {
-    _serialPort->send("12345 Syntax error in argument: " + data.substr(11));
+    _serialPort->send("12345 Syntax error in argument: " + value);
   }
 }

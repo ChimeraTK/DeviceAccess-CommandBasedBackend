@@ -42,7 +42,7 @@ class DummyServer {
   void mainLoop();
   std::unique_ptr<SerialPort> _serialPort;
 
-  void setAcc(size_t i, const std::string& data);
+  void setAcc(const std::string& axis, const std::string& value);
 
   bool _debug{true};
 

@@ -3,7 +3,6 @@
 
 #include "CommandBasedBackend.h"
 
-#include "CommandBasedBackendRegisterAccessor.h"
 #include "SerialCommandHandler.h"
 
 namespace ChimeraTK {
@@ -18,8 +17,24 @@ namespace ChimeraTK {
     // WORKAROUND: Hard-Code the entries
     DataDescriptor intDataDescriptor(
         DataDescriptor::FundamentalType::numeric, /*isIntegral*/ true, /*isSigned*/ true, /*nDigits*/ 11);
-    _backendCatalogue.addRegister({"SOUR:FREQ:CW", "/cwFrequency", 1, 1,
-        CommandBasedBackendRegisterInfo::IoDirection::READ_WRITE, {}, intDataDescriptor});
+
+    // smallest possible 5e-324, largest 2e308
+    DataDescriptor doubleDataDescriptor(DataDescriptor::FundamentalType::numeric, /*isIntegral*/ false,
+        /*isSigned*/ true, /*nDigits*/ 3 + 325, /*nFragtionalDigits*/ 325);
+
+    DataDescriptor stringDataDescriptor(DataDescriptor::FundamentalType::string);
+
+    _backendCatalogue.addRegister({"/cwFrequency", "SOUR:FREQ:CW {{x.0}}", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
+
+    _backendCatalogue.addRegister({"/ACC", "ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "", "ACC?",
+        "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", 2, 2, CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
+
+    _backendCatalogue.addRegister({"/SAI", "", "", "SAI?", R"delim({{x.0}}\r\n{{x.1}}\r\n)delim", 2, 2,
+        CommandBasedBackendRegisterInfo::InternalType::STRING});
+
+    _backendCatalogue.addRegister({"/myData", "", "", "CALC1:DATA:TRAC? 'myTrace' SDAT",
+        R"delim({{x.0}},{{x.1}},{{x.2}},{{x.3}},{{x.4}},{{x.5}},{{x.6}},{{x.7}},{{x.8}},{{x.9}}\r\n)delim", 10, 1,
+        CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
   }
 
   /*****************************************************************************************************************/
