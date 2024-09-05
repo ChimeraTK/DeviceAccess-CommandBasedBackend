@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "CommandBasedBackendRegisterAccessor.h"
 #include "CommandBasedBackendRegisterInfo.h"
 #include "CommandHandler.h"
 
@@ -17,9 +18,6 @@
 #include <mutex>
 
 namespace ChimeraTK {
-
-  template<typename UserType>
-  class CommandBasedBackendRegisterAccessor;
 
   class CommandBasedBackend : public DeviceBackendImpl {
     /******************************************************************************************************************/
