@@ -1,0 +1,2 @@
+@LOAD_LIB /home/killenb/software/build/ChimeraTK-DeviceAccess-CommandBasedBackend-debug/libChimeraTK-DeviceAccess-CommandBasedBackend.so
+CMD (CommandBasedTTY:/tmp/virtual-tty?map=test.cmdmap)

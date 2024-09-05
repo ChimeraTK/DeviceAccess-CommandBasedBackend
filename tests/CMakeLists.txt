@@ -1,22 +1,20 @@
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
-add_library(DummyServerLib DummyServer.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib dummy_lib_sources)
+add_library(DummyServerLib ${dummy_lib_sources})
 target_link_libraries(DummyServerLib PUBLIC ${PROJECT_NAME} )
 
-add_executable(dummy-server DummyServer-stand-alone.cpp)
+add_executable(dummy-server manual_tests/DummyServer-stand-alone.cpp)
 target_link_libraries(dummy-server PUBLIC DummyServerLib )
 
-add_executable(test_serialPort test_serialPort.cpp)
-target_link_libraries(test_serialPort PUBLIC ${PROJECT_NAME} DummyServerLib)
-add_test(test_serialPort test_serialPort)
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} testExecutables)
+foreach( testExecutableSrcFile ${testExecutables})
+  #NAME_WE means the base name without path and (longest) extension
+  get_filename_component(executableName ${testExecutableSrcFile} NAME_WE)
+  add_executable(${executableName} ${testExecutableSrcFile})
+  target_link_libraries(${executableName} PRIVATE ${PROJECT_NAME} ${Boost_LIBRARIES} DummyServerLib)
+  add_test(${executableName} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${executableName})
+endforeach(testExecutableSrcFile)
 
-add_executable(testStringUtils testStringUtils.cpp)
-target_link_libraries(testStringUtils PRIVATE ${PROJECT_NAME} ${Boost_LIBRARIES} )
-add_test(testStringUtils testStringUtils)
-
-add_executable(testCommandBasedBackendUnified testCommandBasedBackendUnified.cpp)
-target_link_libraries(testCommandBasedBackendUnified  PRIVATE ${Boost_LIBRARIES} ${PROJECT_NAME} DummyServerLib)
-add_test(testCommandBasedBackendUnified testCommandBasedBackendUnified)
-
-file(COPY mock.map mock.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-#file(COPY devMapFile.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY manual_tests/devices.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
