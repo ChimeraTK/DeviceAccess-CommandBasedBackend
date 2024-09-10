@@ -14,9 +14,10 @@
 
 /**********************************************************************************************************************/
 
-SerialCommandHandler::SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds)
+SerialCommandHandler::SerialCommandHandler(
+    const std::string& device, const std::string& delim, ulong timeoutInMilliseconds)
 : _timeout(timeoutInMilliseconds) {
-  _serialPort = std::make_unique<SerialPort>(device);
+  _serialPort = std::make_unique<SerialPort>(device, delim);
 }
 
 /**********************************************************************************************************************/
@@ -56,3 +57,13 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
 
   return outputStrVec;
 } // end sendCommand
+
+/**********************************************************************************************************************/
+
+std::string SerialCommandHandler::waitAndReadline() const {
+  auto readData = _serialPort->readline();
+  if(not readData.has_value()) {
+    throw std::logic_error("FIXME: BAD INTERFACE");
+  }
+  return readData.value();
+}

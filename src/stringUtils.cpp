@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "stringUtils.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -77,16 +79,22 @@ std::string replaceNewLines(const std::string& input) noexcept {
   // Replace '\n' with 'N'
   size_t pos = result.find('\n');
   while(pos != std::string::npos) {
-    result.replace(pos, 1, "N");
+    result.replace(pos, 1, "\\N");
     pos = result.find('\n', pos + 1);
   }
 
   // Replace '\r' with 'R'
   pos = result.find('\r');
   while(pos != std::string::npos) {
-    result.replace(pos, 1, "R");
+    result.replace(pos, 1, "\\R");
     pos = result.find('\r', pos + 1);
   }
 
   return result;
 } // end replaceNewlines
+
+/**********************************************************************************************************************/
+
+void toLowerCase(std::string& str) noexcept {
+  std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+}

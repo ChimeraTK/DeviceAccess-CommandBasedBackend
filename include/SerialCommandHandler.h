@@ -19,7 +19,8 @@ class SerialCommandHandler : public CommandHandler {
   /**
    * Open and setup the serial port, set the readback timeout parameter.
    */
-  SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds = 1000);
+  SerialCommandHandler(
+      const std::string& device, const std::string& delim = "\r\n", ulong timeoutInMilliseconds = 1000);
 
   ~SerialCommandHandler() override = default;
 
@@ -41,14 +42,7 @@ class SerialCommandHandler : public CommandHandler {
   /**
    * A simple blocking readline with no timeout. This can wait forever.
    */
-  std::string waitAndReadline() const {
-    // FIXME: is inline -> move to cc
-    auto readData = _serialPort->readline();
-    if(readData.has_value()) {
-      return readData.value();
-    }
-    throw std::logic_error("FIXME: BAD INTERFACE");
-  }
+  std::string waitAndReadline() const;
 
  protected:
   /**
