@@ -34,7 +34,7 @@ class SerialPort {
   /**
    * Closes the port.
    */
-  ~SerialPort(); //{ close(fileDescriptor); }
+  ~SerialPort();
 
   /**
    * Write str into the serial port, with _delim delimiter appended

@@ -5,6 +5,7 @@
 
 #include "CommandBasedBackend.h"
 #include "CommandBasedBackendRegisterInfo.h"
+#include "stringUtils.h"
 #include <inja/inja.hpp>
 
 #include <regex>
@@ -39,9 +40,6 @@ namespace ChimeraTK {
                                    "a CommandBasedBackend.");
     }
     // You're supposed to be allowed to make accessors before the device is functional. So don't test functionality here.
-    /*else if(not _dev->isFunctional()) { // Make sure the backend is open and working
-      throw ChimeraTK::runtime_error("Device is not functional when creating CommandBasedBackendRegisterAccessor");
-    }*/
 
     // allocated the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels()); // dimension);
@@ -55,7 +53,7 @@ namespace ChimeraTK {
       valueRegex = "([+-]?[0-9]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
-      valueRegex = "([+-]?[0-9]+)";
+      valueRegex = "((0x[0-9A-Fa-f]+)|([+]?[0-9]+))";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
@@ -63,7 +61,10 @@ namespace ChimeraTK {
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::STRING) {
       valueRegex = "(.*)";
     }
-    assert(!valueRegex.empty());
+
+    if(_registerInfo.internalType != CommandBasedBackendRegisterInfo::InternalType::VOID) {
+      assert(!valueRegex.empty());
+    }
     std::cout << "!!!DEBUG: valueRegex: " << valueRegex << std::endl;
     std::cout << "!!!DEBUG: pattern: " << _registerInfo.readResponsePattern << std::endl;
 
@@ -71,14 +72,16 @@ namespace ChimeraTK {
     inja::json replacePatterns;
     replacePatterns["x"] = {};
     for(size_t i = 0; i < _registerInfo.nElements; ++i) {
-      // Fixme: does not know about formating
+      // Fixme: does not know about formating TODO
       replacePatterns["x"].push_back(valueRegex);
     }
 
-    // FIXME: pass this through the template engine
+    // FIXME: pass this through the template engine //TODO
     try {
       auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
-      std::cout << "!!!DEBUG: RegexText: " << regexText << std::endl;
+      std::cout << "!!!DEBUG: RegexText: " << replaceNewLines(regexText) << " with read pattern "
+                << replaceNewLines(_registerInfo.readResponsePattern) << " and read command "
+                << replaceNewLines(_registerInfo.readCommandPattern) << std::endl;
       readResponseRegex = regexText;
     }
     catch(std::regex_error& e) {
@@ -89,7 +92,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error(
           "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
     }
-    // FIXME: checking the mark_count is not reliable. There might be additional
+    // FIXME: checking the mark_count is not reliable. There might be additional //TODO
     // capture groups. Possible solution:
     // Replace the {{x.i}} with REPLACEMEi., spit the string at the REPLACEMEs and
     // scan the snippets between for capture groups. Remember the positions and amounts of the
@@ -113,10 +116,11 @@ namespace ChimeraTK {
     }
     if(!_registerInfo.isReadable()) {
       throw ChimeraTK::logic_error(
-          "NumericAddressedBackend: Writing to a non-writeable register is not allowed (Register name: " +
+          "CommandBasedBackend: Commanding read to a non-readable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
     }
     _backend->_lastWrittenRegister = _registerInfo.registerPath;
+    // TODO here, prepare the read command into the writeTransferBuffer?
   }
 
   /********************************************************************************************************************/
@@ -126,7 +130,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    // FIXME: properly create the read command through the template engine
+    // FIXME: properly create the read command through the template engine //TODO
     auto readCommand = _registerInfo.readCommandPattern;
 
     readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
@@ -153,8 +157,8 @@ namespace ChimeraTK {
 
       std::smatch valueMatch;
       if(!std::regex_match(combinedReadString, valueMatch, readResponseRegex)) {
-        throw ChimeraTK::runtime_error(
-            "Could not extract values from \"" + combinedReadString + "\" in " + _registerInfo.registerPath);
+        throw ChimeraTK::runtime_error("Could not extract values from \"" + replaceNewLines(combinedReadString) +
+            "\" in " + _registerInfo.registerPath);
       }
 
       std::cout << "!!!DEBUG: found matches ";
@@ -180,7 +184,7 @@ namespace ChimeraTK {
 
     if(!_registerInfo.isWriteable()) {
       throw ChimeraTK::logic_error(
-          "NumericAddressedBackend: Writing to a non-writeable register is not allowed (Register name: " +
+          "CommandBasedBackend: Writing to a non-writeable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
     }
 

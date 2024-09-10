@@ -14,8 +14,8 @@ include(cmake/enable_code_coverage_report.cmake)
 include(cmake/enable_code_style_check.cmake)
 
 find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
-
-find_package(inja REQUIRED)
+find_package(nlohmann_json 03.07.0 REQUIRED) 
+find_package(inja 03.04.0 REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 file(GLOB_RECURSE headers "${CMAKE_SOURCE_DIR}/include/*")
