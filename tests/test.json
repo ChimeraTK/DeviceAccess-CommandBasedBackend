@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "mapFileFormatVersion": 1,
+    "commandBasedBackendType":"SERIAL",
+    "defaultRecoveryRegister":"/IDN",
+    "delim":"\r\n"
+  },
+  "registers": {
+      "/cwFrequency":{"writeCmd":"SOUR:FREQ:CW {{x.0}}", "writeResp":"", "readCmd":"SOUR:FREQ:CW?", "readResp":"([0-9]+)\r\n"},
+      "/cwFrequencyRO":{"writeCmd":"", "writeResp":"", "readCmd":"SOUR:FREQ:CW?", "readResp":"([0-9]+)\r\n"},
+      "/ACC":{"writeCmd":"ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "writeResp":"", "readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},
+
+    "/ACCRO":{"writeCmd":"", "writeResp":"", "readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},
+
+      "/SAI":{"writeCmd":"", "writeResp":"", "readCmd":"SAI?", "readResp":"{{x.0}}\r\n{{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"STRING"},
+
+      "/myData":{"writeCmd":"", "writeResp":"", "readCmd":"CALC1:DATA:TRAC? 'myTrace' SDAT", "readResp":"{% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n", "nElem":10, "nLnRead":1, "type":"DOUBLE"},
+
+        "/IDN":{"writeCmd":"", "writeResp":"", "readCmd":"*IDN?", "readResp":"(.*)\r\n", "nElem":1, "nLnRead":1, "type":"STRING"},
+
+        "/ACC1":{"writeCmd":"ACC 1 {{x.0}}", "writeResp":"", "readCmd":"ACC?", "readResp":"1={{x.0}}\n\r\n", "nElem":1, "nLnRead":1, "type":"DOUBLE"}
+  }
+}
+
+
+
+
+
+

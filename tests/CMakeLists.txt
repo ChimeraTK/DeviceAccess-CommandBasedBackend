@@ -17,4 +17,5 @@ foreach( testExecutableSrcFile ${testExecutables})
   add_test(${executableName} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${executableName})
 endforeach(testExecutableSrcFile)
 
-file(COPY manual_tests/devices.dmap DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY manual_tests/devices.dmap test.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+

@@ -18,7 +18,8 @@ CMakeLists.txt.user
 *~
 #files ending with .swp might show up when using vi
 *.swp
-
+.clangd
+fdA
 ######################
 # Project specific 'ignore patterns'
 #

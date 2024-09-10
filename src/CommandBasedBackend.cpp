@@ -18,40 +18,29 @@ namespace ChimeraTK {
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
     if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
-      try {
+      if(parameters.count("port") > 0) {
         _port = parameters.at("port");
       }
-      catch(std::out_of_range&) {
+      else {
         throw ChimeraTK::logic_error("Missing parameter \"port\" in CDD of backend CommandBasedTCP " + instance);
       }
     }
+    if(parameters.count("map") > 0) {
+      // parse map file and copy results to internal catalogues.
+      MapFile mapFile = parse(parameters["map"]);
+      _metaData = MetaData(mapFile.metaData);
+      _lastWrittenRegister = _metaData.defaultRecoveryRegister;
+      for(std::size_t i = 0; i < mapFile.registers.size(); ++i) {
+        // The delimiter is set in the metadata, but it's needed in the Reg.Accessor
+        // so we're copying the delimiter to the Reg.Info for each register
+        mapFile.registers[i].delimiter = _metaData.serialDelimiter;
 
-    // fill this from the map file
-    _defaultRecoveryRegister = "/IDN";
-    _lastWrittenRegister = _defaultRecoveryRegister;
-
-    // fill the catalogue from the map file
-    // WORKAROUND: Hard-Code the entries
-
-    _backendCatalogue.addRegister({"/cwFrequency", "SOUR:FREQ:CW {{x.0}}", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
-    _backendCatalogue.addRegister({"/cwFrequencyRO", "", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
-
-    _backendCatalogue.addRegister({"/ACC", "ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "", "ACC?",
-        "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", 2, 2, CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
-    _backendCatalogue.addRegister({"/ACCRO", "", "", "ACC?", "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", 2, 2,
-        CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
-
-    _backendCatalogue.addRegister({"/SAI", "", "", "SAI?", R"delim({{x.0}}\r\n{{x.1}}\r\n)delim", 2, 2,
-        CommandBasedBackendRegisterInfo::InternalType::STRING});
-
-    _backendCatalogue.addRegister({"/myData", "", "", "CALC1:DATA:TRAC? 'myTrace' SDAT",
-        R"delim({% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n)delim", 10, 1,
-        CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
-
-    _backendCatalogue.addRegister(
-        {"/IDN", "", "", "*IDN?", "(.*)\n", 1, 1, CommandBasedBackendRegisterInfo::InternalType::STRING, "\n"});
-    _backendCatalogue.addRegister({"/ACC1", "ACC 1 {{x.0}}", "", "ACC?", "1={{x.0}}\n", 1, 1,
-        CommandBasedBackendRegisterInfo::InternalType::DOUBLE, "\n"});
+        _backendCatalogue.addRegister(mapFile.registers[i]);
+      }
+    }
+    else {
+      throw ChimeraTK::logic_error("No map file parameter");
+    }
   }
 
   /********************************************************************************************************************/
@@ -59,7 +48,8 @@ namespace ChimeraTK {
   void CommandBasedBackend::open() {
     switch(_commandBasedBackendType) {
       case CommandBasedBackendType::SERIAL:
-        _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _timeoutInMilliseconds);
+        _commandHandler =
+            std::make_unique<SerialCommandHandler>(_instance, _metaData.serialDelimiter, _timeoutInMilliseconds);
         break;
       case CommandBasedBackendType::ETHERNET:
         _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _timeoutInMilliseconds);
@@ -122,7 +112,8 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesExpected) {
+  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, const size_t nLinesExpected) {
+    // assert(_opened);
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
     return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);

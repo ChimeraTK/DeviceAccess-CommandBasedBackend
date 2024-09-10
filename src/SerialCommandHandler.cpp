@@ -14,9 +14,10 @@
 
 /**********************************************************************************************************************/
 
-SerialCommandHandler::SerialCommandHandler(const std::string& device, ulong timeoutInMilliseconds)
+SerialCommandHandler::SerialCommandHandler(
+    const std::string& device, const std::string& delim, ulong timeoutInMilliseconds)
 : _timeout(timeoutInMilliseconds) {
-  _serialPort = std::make_unique<SerialPort>(device);
+  _serialPort = std::make_unique<SerialPort>(device, delim);
 }
 
 /**********************************************************************************************************************/

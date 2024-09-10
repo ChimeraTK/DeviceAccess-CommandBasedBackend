@@ -23,8 +23,8 @@ namespace ChimeraTK {
   class CommandBasedBackendRegisterAccessor : public NDRegisterAccessor<UserType> {
    public:
     CommandBasedBackendRegisterAccessor(const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev,
-        CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfWords,
-        size_t wordOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
+        CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfElements,
+        size_t elementOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
 
     [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() & !isWriteable(); }
 
@@ -38,6 +38,7 @@ namespace ChimeraTK {
 
     std::list<boost::shared_ptr<TransferElement>> getInternalElements() override {
       // return an empty list.
+      // return std::list<boost::shared_ptr<TransferElement>>();
       return {};
     }
 
@@ -79,6 +80,7 @@ namespace ChimeraTK {
     void doReadTransferSynchronously() override;
 
     std::regex readResponseRegex;
+    std::regex writeResponseRegex;
 
   }; // end class CommandBasedBackendRegisterAccessor
 
