@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+#include <array>
 #include <string>
 #include <vector>
 
@@ -38,3 +39,8 @@
  * This is only used for visualizing delimiters during debugging.
  */
 [[nodiscard]] std::string replaceNewLines(const std::string& input) noexcept;
+
+/**
+ * Convert string to lower case in-place. Use this to make inputs case insensitive.
+ */
+void toLowerCase(std::string& str) noexcept;
