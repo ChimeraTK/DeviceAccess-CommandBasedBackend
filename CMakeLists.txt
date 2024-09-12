@@ -1,5 +1,5 @@
-project(ChimeraTK-DeviceAccess-CommandBasedBackend) 
 cmake_minimum_required(VERSION 3.16.3)
+project(ChimeraTK-DeviceAccess-CommandBasedBackend)
 
 option(BUILD_TESTS "Build tests." ON)
 
