@@ -33,7 +33,7 @@ namespace ChimeraTK {
         CommandBasedBackendRegisterInfo::InternalType::STRING});
 
     _backendCatalogue.addRegister({"/myData", "", "", "CALC1:DATA:TRAC? 'myTrace' SDAT",
-        R"delim({{x.0}},{{x.1}},{{x.2}},{{x.3}},{{x.4}},{{x.5}},{{x.6}},{{x.7}},{{x.8}},{{x.9}}\r\n)delim", 10, 1,
+        R"delim({% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n)delim", 10, 1,
         CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
   }
 
