@@ -13,6 +13,10 @@ namespace ChimeraTK {
     _commandBasedBackendType = CommandBasedBackendType::SERIAL;
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
+    // fill this from the map file
+    _defaultRecoveryRegister = "/cwFrequency";
+    _lastWrittenRegister = _defaultRecoveryRegister;
+
     // fill the catalogue from the map file
     // WORKAROUND: Hard-Code the entries
     DataDescriptor intDataDescriptor(
@@ -25,9 +29,12 @@ namespace ChimeraTK {
     DataDescriptor stringDataDescriptor(DataDescriptor::FundamentalType::string);
 
     _backendCatalogue.addRegister({"/cwFrequency", "SOUR:FREQ:CW {{x.0}}", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
+    _backendCatalogue.addRegister({"/cwFrequencyRO", "", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
 
     _backendCatalogue.addRegister({"/ACC", "ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "", "ACC?",
         "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", 2, 2, CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
+    _backendCatalogue.addRegister({"/ACCRO", "", "", "ACC?", "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", 2, 2,
+        CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
 
     _backendCatalogue.addRegister({"/SAI", "", "", "SAI?", R"delim({{x.0}}\r\n{{x.1}}\r\n)delim", 2, 2,
         CommandBasedBackendRegisterInfo::InternalType::STRING});
@@ -49,6 +56,14 @@ namespace ChimeraTK {
         // intermediate debugging solution
         throw std::logic_error("CommandBasedBackend: FIXME: Unsupported type");
     }
+
+    // Try to read from the last register that has been used.
+    // Do not try writing as we don't have a valid value and would alter the device.
+    auto registerInfo = _backendCatalogue.getBackendRegister(_lastWrittenRegister);
+    // Accessor with the isRecoveryTestAccessor flag set to true
+    CommandBasedBackendRegisterAccessor<std::string> testAccessor(
+        DeviceBackend::shared_from_this(), registerInfo, _lastWrittenRegister, 0, 0, {}, true);
+    testAccessor.read();
 
     // Backends have to call this function at the end of a successful open() call
     setOpenedAndClearException();
@@ -85,8 +100,8 @@ namespace ChimeraTK {
 
   /*****************************************************************************************************************/
 
-  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, const size_t nLinesExpected) {
-    assert(_opened);
+  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesExpected) {
+    assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
     return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);
   }

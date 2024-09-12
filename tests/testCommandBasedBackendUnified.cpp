@@ -100,6 +100,7 @@ struct ScalarInt : public RegisterDescriptorBase {
 
 // Adding error scenarios which only work in read only as they don't apply for writing
 struct ScalarIntRO : public ScalarInt {
+  static std::string path() { return "/cwFrequencyRO"; }
   static size_t nRuntimeErrorCases() { return 4; }
   static bool isWriteable() { return false; }
 
@@ -113,10 +114,7 @@ struct StringArray : public RegisterDescriptorBase {
   static bool isWriteable() { return false; }
   static size_t nElementsPerChannel() { return 2; }
   static size_t writeQueueLength() { return std::numeric_limits<size_t>::max(); }
-  // FIXME: There is no error in re-opening yet, which is required.
-  // Currently we can only run one test
-  // static size_t nRuntimeErrorCases() { return 3; }
-  static size_t nRuntimeErrorCases() { return 1; }
+  static size_t nRuntimeErrorCases() { return 3; }
 
   using minimumUserType = std::string;
 
@@ -152,10 +150,6 @@ struct StringArray : public RegisterDescriptorBase {
   }
 
   static void setForceRuntimeError(bool enable, size_t caseNr) {
-    // Fixme: currently only the device not available test
-    RegisterDescriptorBase::setForceRuntimeError(enable, caseNr);
-    return;
-
     // Only the first two tests of setForceReadError are viable for an uninterpreted string
     if(caseNr < 2) {
       setForceReadError(enable, caseNr);
@@ -207,7 +201,9 @@ struct ArrayFloatMultiLine : public RegisterDescriptorBase {
 
 // Adding error scenarios which only work in read only as they don't apply for writing
 struct ArrayFloatMultiLineRO : public ArrayFloatMultiLine {
+  static std::string path() { return "/ACCRO"; }
   static size_t nRuntimeErrorCases() { return 4; }
+  static bool isWriteable() { return false; }
 
   static void setForceRuntimeError(bool enable, size_t caseNr) { setForceReadError(enable, caseNr); }
 };
@@ -218,10 +214,7 @@ struct ArrayFloatSingleLine : public RegisterDescriptorBase {
   static std::string path() { return "/myData"; }
   static bool isWriteable() { return false; }
   static size_t nElementsPerChannel() { return 10; }
-  // FIXME: There is no error in re-opening yet, which is required.
-  // Currently we can only run one test
-  // static size_t nRuntimeErrorCases() { return 5; }
-  static size_t nRuntimeErrorCases() { return 1; }
+  static size_t nRuntimeErrorCases() { return 5; }
 
   using minimumUserType = float;
 
@@ -252,10 +245,6 @@ struct ArrayFloatSingleLine : public RegisterDescriptorBase {
     }
   }
   static void setForceRuntimeError(bool enable, size_t caseNr) {
-    // Fixme: currently only the device not available test
-    RegisterDescriptorBase::setForceRuntimeError(enable, caseNr);
-    return;
-
     if(caseNr < 4) {
       setForceReadError(enable, caseNr);
     }
@@ -271,9 +260,9 @@ BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
   std::cout << "*** testRegisterAccessor *** " << std::endl;
   ChimeraTK::UnifiedBackendTest<>()
       .addRegister<ScalarInt>()
-      //.addRegister<ScalarIntRO>()
+      .addRegister<ScalarIntRO>()
       .addRegister<ArrayFloatMultiLine>()
-      //.addRegister<ArrayFloatMultiLineRO>()
+      .addRegister<ArrayFloatMultiLineRO>()
       .addRegister<ArrayFloatSingleLine>()
       .addRegister<StringArray>()
       .runTests(cdd());

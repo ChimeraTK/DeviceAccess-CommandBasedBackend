@@ -16,10 +16,10 @@ namespace ChimeraTK {
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
-      AccessModeFlags flags)
+      AccessModeFlags flags, bool isRecoveryTestAccessor)
   : NDRegisterAccessor<UserType>(registerPathName, flags), _numberOfElements(numberOfElements),
     _elementOffsetInRegister(elementOffsetInRegister), _registerInfo(registerInfo),
-    _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
+    _isRecoveryTestAccessor(isRecoveryTestAccessor), _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
     assert(_registerInfo.getNumberOfChannels() != 0);
     assert(_registerInfo.getNumberOfElements() != 0);
     assert(_registerInfo.getNumberOfDimensions() < 2); // implementation only for scalar and 1D
@@ -108,7 +108,7 @@ namespace ChimeraTK {
   /*******************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreRead([[maybe_unused]] TransferType) {
-    if(!_backend->isOpen()) {
+    if(!_backend->isOpen() && !_isRecoveryTestAccessor) {
       throw ChimeraTK::logic_error("Device not opened.");
     }
     if(!_registerInfo.isReadable()) {
@@ -116,12 +116,13 @@ namespace ChimeraTK {
           "NumericAddressedBackend: Writing to a non-writeable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
     }
+    _backend->_lastWrittenRegister = _registerInfo.registerPath;
   }
 
   /*******************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doReadTransferSynchronously() {
-    if(!_backend->isFunctional()) {
+    if(!_backend->isFunctional() && !_isRecoveryTestAccessor) {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
@@ -197,6 +198,14 @@ namespace ChimeraTK {
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
           "Inja parser error in writeCommandPattern of " + _registerInfo.registerPath + ": " + e.what());
+    }
+
+    // remember this register as the last used one if the register is readable
+    if(_registerInfo.isReadable()) {
+      _backend->_lastWrittenRegister = _registerInfo.registerPath;
+    }
+    else { // if not readable use the default read register
+      _backend->_lastWrittenRegister = _backend->_defaultRecoveryRegister;
     }
   } // end doPreWrite
 

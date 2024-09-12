@@ -24,7 +24,7 @@ namespace ChimeraTK {
    public:
     CommandBasedBackendRegisterAccessor(const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev,
         CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfWords,
-        size_t wordOffsetInRegister, AccessModeFlags flags);
+        size_t wordOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
 
     [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() & !isWriteable(); }
 
@@ -37,11 +37,11 @@ namespace ChimeraTK {
     }
 
     std::list<boost::shared_ptr<TransferElement>> getInternalElements() override {
-      // return and empty list.
-      return std::list<boost::shared_ptr<TransferElement>>();
+      // return an empty list.
+      return {};
     }
 
-    virtual void replaceTransferElement([[maybe_unused]] boost::shared_ptr<TransferElement> newElement) override {
+    void replaceTransferElement([[maybe_unused]] boost::shared_ptr<TransferElement> newElement) override {
     } // mayReplaceTransferElement = false, so this is just empty.
 
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -51,6 +51,16 @@ namespace ChimeraTK {
     size_t _numberOfElements;
     size_t _elementOffsetInRegister;
     CommandBasedBackendRegisterInfo _registerInfo;
+
+    /**
+     *  Flag whether the accessor is used internally to test functionality during open().
+     *  Setting this flag bypasses the tests whether the backend is opened or functional
+     *  when reading.
+     *
+     *  Attention: An accessor with this flag turned on does not comply to the specification
+     *  and must not be given out!
+     */
+    bool _isRecoveryTestAccessor;
 
     /** the backend to use for the actual hardware access */
     boost::shared_ptr<CommandBasedBackend> _backend;
