@@ -12,8 +12,19 @@ namespace ChimeraTK {
   : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(writeCommandPattern_),
     writeResponsePattern(writeResponsePattern_), readCommandPattern(readCommandPattern_),
     readResponsePattern(readResponsePattern_), nLinesReadResponse(nLinesReadResponse_), internalType(type),
-    delimiter(delimiter_) {}
-
-  /********************************************************************************************************************/
+    delimiter(delimiter_) {
+    if(internalType == InternalType::INT64) {
+      dataDescriptor = DataDescriptor(DataType::int64);
+    }
+    if(internalType == InternalType::UINT64) {
+      dataDescriptor = DataDescriptor(DataType::uint64);
+    }
+    if(internalType == InternalType::DOUBLE) {
+      dataDescriptor = DataDescriptor(DataType::float64);
+    }
+    if(internalType == InternalType::STRING) {
+      dataDescriptor = DataDescriptor(DataType::string);
+    }
+  }
 
 } // namespace ChimeraTK

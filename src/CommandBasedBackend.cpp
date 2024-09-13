@@ -19,14 +19,6 @@ namespace ChimeraTK {
 
     // fill the catalogue from the map file
     // WORKAROUND: Hard-Code the entries
-    DataDescriptor intDataDescriptor(
-        DataDescriptor::FundamentalType::numeric, /*isIntegral*/ true, /*isSigned*/ true, /*nDigits*/ 11);
-
-    // smallest possible 5e-324, largest 2e308
-    DataDescriptor doubleDataDescriptor(DataDescriptor::FundamentalType::numeric, /*isIntegral*/ false,
-        /*isSigned*/ true, /*nDigits*/ 3 + 325, /*nFragtionalDigits*/ 325);
-
-    DataDescriptor stringDataDescriptor(DataDescriptor::FundamentalType::string);
 
     _backendCatalogue.addRegister({"/cwFrequency", "SOUR:FREQ:CW {{x.0}}", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
     _backendCatalogue.addRegister({"/cwFrequencyRO", "", "", "SOUR:FREQ:CW?", "([0-9]+)\r\n"});
