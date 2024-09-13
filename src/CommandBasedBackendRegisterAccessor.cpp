@@ -11,37 +11,32 @@
 #include <string>
 
 namespace ChimeraTK {
-  template<typename UserType>
 
+  /** Temporary exception which cannot be caught. It is a backend bug due to
+   *  incomplete implementation.
+   */
+  class incomplete_implementation : public std::exception {
+   public:
+    explicit incomplete_implementation(std::string message) noexcept;
+    [[nodiscard]] const char* what() const noexcept override;
+
+   private:
+    std::string _message;
+  };
+
+  template<typename UserType>
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
-      const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
-      AccessModeFlags flags, bool isRecoveryTestAccessor)
-  : NDRegisterAccessor<UserType>(registerPathName, flags), _numberOfElements(numberOfElements),
-    _elementOffsetInRegister(elementOffsetInRegister), _registerInfo(registerInfo),
+      const RegisterPath& registerPathName, AccessModeFlags flags, bool isRecoveryTestAccessor)
+  : NDRegisterAccessor<UserType>(registerPathName, flags), _registerInfo(registerInfo),
     _isRecoveryTestAccessor(isRecoveryTestAccessor), _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
     assert(_registerInfo.getNumberOfChannels() != 0);
     assert(_registerInfo.getNumberOfElements() != 0);
     assert(_registerInfo.getNumberOfDimensions() < 2); // implementation only for scalar and 1D
 
-    // 0 means all elements descrived in registerInfo
-    if(_numberOfElements == 0) {
-      _numberOfElements = _registerInfo.getNumberOfElements();
-    }
-    if(_elementOffsetInRegister + _numberOfElements > _registerInfo.getNumberOfElements()) {
-      throw ChimeraTK::logic_error("Requested offset + nElemements exceeds register size in " + this->getName());
-    }
-
     flags.checkForUnknownFlags({}); // require no flags.
 
-    if(!_backend) {
-      throw ChimeraTK::logic_error("CommandBasedBackendRegisterAccessor is used with a backend which is not "
-                                   "a CommandBasedBackend.");
-    }
-    // You're supposed to be allowed to make accessors before the device is functional. So don't test functionality here.
-    /*else if(not _dev->isFunctional()) { // Make sure the backend is open and working
-      throw ChimeraTK::runtime_error("Device is not functional when creating CommandBasedBackendRegisterAccessor");
-    }*/
+    assert(_backend);
 
     // allocated the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels()); // dimension);
@@ -163,7 +158,7 @@ namespace ChimeraTK {
       }
       std::cout << " in \"" << combinedReadString << "\"" << std::endl;
 
-      for(size_t i = 0; i < _numberOfElements; ++i) {
+      for(size_t i = 0; i < _registerInfo.nElements; ++i) {
         buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(valueMatch[i + 1]);
       }
       this->_versionNumber = {};
@@ -186,7 +181,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    for(size_t i = 0; i < _numberOfElements; ++i) {
+    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
       // Fixme: does not know about formating
       replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
     }

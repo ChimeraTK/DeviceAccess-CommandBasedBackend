@@ -114,7 +114,7 @@ namespace ChimeraTK {
     if(ec == boost::asio::error::operation_aborted) {
       throw ChimeraTK::runtime_error("Read operation timed out");
     }
-    else if(ec) {
+    if(ec) {
       throw ChimeraTK::runtime_error(ec.message());
     }
 

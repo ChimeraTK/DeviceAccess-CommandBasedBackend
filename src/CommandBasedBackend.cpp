@@ -75,7 +75,7 @@ namespace ChimeraTK {
     auto registerInfo = _backendCatalogue.getBackendRegister(_lastWrittenRegister);
     // Accessor with the isRecoveryTestAccessor flag set to true
     CommandBasedBackendRegisterAccessor<std::string> testAccessor(
-        DeviceBackend::shared_from_this(), registerInfo, _lastWrittenRegister, 0, 0, {}, true);
+        DeviceBackend::shared_from_this(), registerInfo, _lastWrittenRegister, {}, true);
     testAccessor.read();
 
     // Backends have to call this function at the end of a successful open() call
@@ -146,14 +146,50 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+
+  /** Temporary exception which cannot be caught. It is a backend bug due to
+   *  incomplete implementation.
+   */
+  class incomplete_implementation : public std::exception {
+   public:
+    explicit incomplete_implementation(std::string message) noexcept : _message(std::move(message)) {}
+    [[nodiscard]] inline const char* what() const noexcept override { return _message.c_str(); }
+
+   private:
+    std::string _message;
+  };
+
+  /********************************************************************************************************************/
 
   template<typename UserType>
   boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
       const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
     auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
 
+    // Check to fulfil the specification (although the following temporary checks are more strict.
+    // We have to throw the right kind of exception here.
+    if(numberOfWords == 0) {
+      numberOfWords = registerInfo.nElements;
+    }
+    if(wordOffsetInRegister + numberOfWords > registerInfo.nElements) {
+      throw ChimeraTK::logic_error(
+          "Requested offset + nElements exceeds register size in " + registerInfo.registerPath);
+    }
+
+    // FIXME: Currently offsets and sub arrays are not implemented
+    if((numberOfWords != 0) && (numberOfWords != registerInfo.nElements)) {
+      throw incomplete_implementation(
+          "CommandBasedBackend bug: sub arrays are not supported yet. Register: " + registerInfo.registerPath);
+    }
+    if(wordOffsetInRegister != 0) {
+      throw incomplete_implementation(
+          "CommandBasedBackend bug: offsets are not supported. Register: " + registerInfo.registerPath);
+    }
+
     return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(
-        DeviceBackend::shared_from_this(), registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
+        DeviceBackend::shared_from_this(), registerInfo, registerPathName, flags);
   }
 
   /********************************************************************************************************************/

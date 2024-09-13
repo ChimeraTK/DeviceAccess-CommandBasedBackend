@@ -18,13 +18,16 @@ namespace ChimeraTK {
 
   /**
    * Implementation of the NDRegisterAccessor for CommandBasedBackend for scalar and 1D registers.
+   *
+   * This implementation always has nElements as described in the RegisterInfo, and wordOffsetInRegister =0;
+   * SubArrays are implemented with a decorator pattern as described in https://redmine.msktools.desy.de/issues/13530
    */
   template<typename UserType> //, DataConverterType>
   class CommandBasedBackendRegisterAccessor : public NDRegisterAccessor<UserType> {
    public:
     CommandBasedBackendRegisterAccessor(const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev,
-        CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfWords,
-        size_t wordOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
+        CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, AccessModeFlags flags,
+        bool isRecoveryTestAccessor = false);
 
     [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() & !isWriteable(); }
 
@@ -48,8 +51,6 @@ namespace ChimeraTK {
    protected:
     using NDRegisterAccessor<UserType>::buffer_2D;
 
-    size_t _numberOfElements;
-    size_t _elementOffsetInRegister;
     CommandBasedBackendRegisterInfo _registerInfo;
 
     /**
