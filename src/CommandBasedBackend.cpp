@@ -147,5 +147,18 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  template<typename UserType>
+  boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
+      const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
+    auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
+
+    return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(
+        DeviceBackend::shared_from_this(), registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
+  }
+
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+
   static CommandBasedBackend::BackendRegisterer gCommandBasedBackendRegisterer;
 } // end namespace ChimeraTK
