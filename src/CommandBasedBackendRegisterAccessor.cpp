@@ -105,7 +105,7 @@ namespace ChimeraTK {
 
   } // end constructor CommandBasedBackendRegisterAccessor
 
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreRead([[maybe_unused]] TransferType) {
     if(!_backend->isOpen() && !_isRecoveryTestAccessor) {
@@ -119,7 +119,7 @@ namespace ChimeraTK {
     _backend->_lastWrittenRegister = _registerInfo.registerPath;
   }
 
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doReadTransferSynchronously() {
     if(!_backend->isFunctional() && !_isRecoveryTestAccessor) {
@@ -133,7 +133,7 @@ namespace ChimeraTK {
 
   } // end doReadTransferSync
 
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPostRead(
       [[maybe_unused]] TransferType t, bool updateDataBuffer) {
@@ -170,8 +170,8 @@ namespace ChimeraTK {
     }
   } // end doPostRead
 
-  /*******************************************************************************************************************/
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreWrite(
@@ -209,7 +209,7 @@ namespace ChimeraTK {
     }
   } // end doPreWrite
 
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   template<typename UserType>
   bool CommandBasedBackendRegisterAccessor<UserType>::doWriteTransfer(
@@ -222,7 +222,7 @@ namespace ChimeraTK {
     return false; // no data was lost
   }
 
-  /*******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   // Magic from SupportedUserTypes.h
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);

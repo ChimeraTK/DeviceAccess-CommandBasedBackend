@@ -7,7 +7,7 @@
 
 namespace ChimeraTK {
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   CommandBasedBackend::CommandBasedBackend(std::string serialDevice) : _device(serialDevice), _mux() {
     _commandBasedBackendType = CommandBasedBackendType::SERIAL;
@@ -44,7 +44,7 @@ namespace ChimeraTK {
         CommandBasedBackendRegisterInfo::InternalType::DOUBLE});
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void CommandBasedBackend::open() {
     switch(_commandBasedBackendType) {
@@ -69,27 +69,27 @@ namespace ChimeraTK {
     setOpenedAndClearException();
   } // end open
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void CommandBasedBackend::close() {
     _commandHandler.reset();
     _opened = false;
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   RegisterCatalogue CommandBasedBackend::getRegisterCatalogue() const {
     return RegisterCatalogue(_backendCatalogue.clone());
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   boost::shared_ptr<DeviceBackend> CommandBasedBackend::createInstance(
       std::string instance, [[maybe_unused]] std::map<std::string, std::string> parameters) {
     return boost::make_shared<CommandBasedBackend>(instance);
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   std::string CommandBasedBackend::sendCommand(std::string cmd) {
     assert(_opened);
@@ -98,7 +98,7 @@ namespace ChimeraTK {
     return _commandHandler->sendCommand(std::move(cmd));
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesExpected) {
     assert(_commandHandler);
@@ -106,20 +106,20 @@ namespace ChimeraTK {
     return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   std::string CommandBasedBackend::readDeviceInfo() {
     return "Device: " + _device + " timeout: " + std::to_string(_timeoutInMilliseconds);
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   CommandBasedBackend::BackendRegisterer::BackendRegisterer() {
     BackendFactory::getInstance().registerBackendType(
         "CommandBasedTTY", &CommandBasedBackend::createInstance, {}, CHIMERATK_DEVICEACCESS_VERSION);
   }
 
-  /*****************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static CommandBasedBackend::BackendRegisterer gCommandBasedBackendRegisterer;
 } // end namespace ChimeraTK

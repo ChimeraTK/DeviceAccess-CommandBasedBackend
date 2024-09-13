@@ -14,4 +14,6 @@ namespace ChimeraTK {
     readResponsePattern(readResponsePattern_), nLinesReadResponse(nLinesReadResponse_), internalType(type),
     delimiter(delimiter_) {}
 
+  /********************************************************************************************************************/
+
 } // namespace ChimeraTK
