@@ -5,8 +5,6 @@
 // Define a name for the test module.
 #define BOOST_TEST_MODULE CommandBasedBackend
 // Only after defining the name include the unit test header.
-#include <boost/test/unit_test.hpp>
-using namespace boost::unit_test_framework;
 
 #include "DummyServer.h"
 
@@ -14,12 +12,15 @@ using namespace boost::unit_test_framework;
 
 using namespace ChimeraTK;
 
+#include <boost/test/unit_test.hpp>
+using namespace boost::unit_test_framework;
+
 /**********************************************************************************************************************/
 
 static DummyServer dummyServer;
 
 std::string cdd() {
-  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.cmdmap)";
+  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)";
 }
 
 /**********************************************************************************************************************/

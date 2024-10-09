@@ -36,7 +36,7 @@ namespace ChimeraTK {
     std::string sendCommand(std::string cmd);
 
     /** Send a single command through and receive a vector (len nLinesExpected) responses. */
-    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected);
+    std::vector<std::string> sendCommand(std::string cmd, const size_t nLinesExpected);
 
     template<typename UserType>
     boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
@@ -48,13 +48,26 @@ namespace ChimeraTK {
     static boost::shared_ptr<DeviceBackend> createInstanceEthernet(
         std::string instance, std::map<std::string, std::string> parameters);
 
-    struct BackendRegisterer {
+    struct BackendRegisterer { // TODO why?
       BackendRegisterer();
     };
 
     RegisterCatalogue getRegisterCatalogue() const override;
 
     std::string readDeviceInfo() override;
+
+    struct MetaData {
+      // CommandBasedBackendType commandBasedBackendType{CommandBasedBackendType::SERIAL};
+      // This is no longer metadata from map file, moved to DMap
+      std::string defaultRecoveryRegister;
+      std::string serialDelimiter{"\r\n"};
+    };
+    struct MapFile {
+      MetaData metaData;
+      ChimeraTK::RegisterPath defaultRecoveryRegister;
+      std::vector<CommandBasedBackendRegisterInfo> registers;
+    };
+    // TODO consider making these private with from_json as a friend.
 
     /*----------------------------------------------------------------------------------------------------------------*/
 
@@ -75,9 +88,15 @@ namespace ChimeraTK {
     std::unique_ptr<CommandHandler> _commandHandler;
     BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
-    ChimeraTK::RegisterPath _defaultRecoveryRegister; // used if last accessed register is write only or at first open()
+    MetaData _metaData;
+
     /** The last register that war attempted to be written. Might have failed and is re-tried on open. */
     ChimeraTK::RegisterPath _lastWrittenRegister;
+
+    /**
+     * Can throws ChimeraTK::logic_error if map file not found
+     */
+    CommandBasedBackend::MapFile parse(const std::string& file_name);
 
     template<typename UserType>
     friend class CommandBasedBackendRegisterAccessor;
