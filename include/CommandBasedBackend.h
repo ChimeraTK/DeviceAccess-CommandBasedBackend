@@ -13,9 +13,12 @@
 #include <ChimeraTK/DeviceBackendImpl.h>
 
 #include <boost/make_shared.hpp>
+#include <nlohmann/json.hpp>
 
 #include <memory>
 #include <mutex>
+
+using json = nlohmann::json;
 
 namespace ChimeraTK {
 
@@ -48,17 +51,18 @@ namespace ChimeraTK {
     static boost::shared_ptr<DeviceBackend> createInstanceEthernet(
         std::string instance, std::map<std::string, std::string> parameters);
 
-    struct BackendRegisterer {
+    struct BackendRegisterer { 
       BackendRegisterer();
     };
 
     RegisterCatalogue getRegisterCatalogue() const override;
 
     std::string readDeviceInfo() override;
-
+    
     /*----------------------------------------------------------------------------------------------------------------*/
 
    protected:
+
     CommandBasedBackendType _commandBasedBackendType;
 
     ///  The device node for serial communication, or the host name for network communication
@@ -75,12 +79,23 @@ namespace ChimeraTK {
     std::unique_ptr<CommandHandler> _commandHandler;
     BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
-    ChimeraTK::RegisterPath _defaultRecoveryRegister; // used if last accessed register is write only or at first open()
+    struct MetaData {
+      std::string defaultRecoveryRegister;
+      std::string serialDelimiter{"\r\n"};
+    } _metaData;
+    friend void from_json(const json& j, CommandBasedBackend::MetaData& m);
+
     /** The last register that war attempted to be written. Might have failed and is re-tried on open. */
     ChimeraTK::RegisterPath _lastWrittenRegister;
 
+    /**
+     * Can throws ChimeraTK::logic_error if map file not found
+     */
+    void parseJsonAndPopulateCatalogue(const std::string& file_name);
+
     template<typename UserType>
     friend class CommandBasedBackendRegisterAccessor;
+
   }; // end class CommandBasedBackend
 
   /********************************************************************************************************************/
