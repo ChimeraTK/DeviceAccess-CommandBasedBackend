@@ -1,13 +1,12 @@
 {
+  "mapFileFormatVersion": 1,
   "metadata": {
-    "mapFileFormatVersion": 1,
-    "commandBasedBackendType":"SERIAL",
     "defaultRecoveryRegister":"/IDN",
     "delimiter":"\r\n"
   },
   "registers": {
-      "/cwFrequency":{"writeCmd":"SOUR:FREQ:CW {{x.0}}", "readCmd":"SOUR:FREQ:CW?", "readResp":"([0-9]+)\r\n"},
-      "/cwFrequencyRO":{"readCmd":"SOUR:FREQ:CW?", "readResp":"([0-9]+)\r\n"},
+      "/cwFrequency":{"writeCmd":"SOUR:FREQ:CW {{x.0}}", "readCmd":"SOUR:FREQ:CW?", "readResp":"{{x.0}}\r\n", "type":"INT64"},
+      "/cwFrequencyRO":{"readCmd":"SOUR:FREQ:CW?", "readResp":"{{x.0}}\r\n", "type":"INT64"},
       "/ACC":{"writeCmd":"ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},
 
     "/ACCRO":{"readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},

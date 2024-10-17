@@ -1,5 +1,5 @@
-project(ChimeraTK-DeviceAccess-CommandBasedBackend)
 cmake_minimum_required(VERSION 3.16.3)
+project(ChimeraTK-DeviceAccess-CommandBasedBackend)
 
 option(BUILD_TESTS "Build tests." ON)
 
@@ -14,7 +14,7 @@ include(cmake/enable_code_coverage_report.cmake)
 include(cmake/enable_code_style_check.cmake)
 
 find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
-find_package(nlohmann_json 03.08.0 REQUIRED) # inja requires nlohmann  >= v3.8.0
+find_package(nlohmann_json 03.07.0 REQUIRED) 
 find_package(inja 03.04.0 REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -42,4 +42,3 @@ install(TARGETS ${PROJECT_NAME}
 # we support our cmake EXPORTS as imported targets
 set(PROVIDES_EXPORTED_TARGETS 1)
 include(${CMAKE_SOURCE_DIR}/cmake/create_cmake_config_files.cmake)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")

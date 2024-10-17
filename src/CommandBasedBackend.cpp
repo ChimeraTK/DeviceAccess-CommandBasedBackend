@@ -15,36 +15,31 @@ using json = nlohmann::json;
 
 namespace ChimeraTK {
 
-    // These are found and used by json::get
-  void from_json(const json& j, CommandBasedBackend::MetaData& m);
-  CommandBasedBackendRegisterInfo getJsonToCommandBasedBackendRegisterInfo(const json& j, const std::string& regKey);
+  CommandBasedBackendRegisterInfo registerInfoFromJson(const json& j, const std::string& regKey);
 
-  /*********************************************************************************************************************/
-
-  namespace CommandBasedBackendJsonParserInfo {
+  /********************************************************************************************************************/
 
     const int requiredMapFileFormatVersion = 1;
 
-    /*******************************************************************************************************************/
+    /******************************************************************************************************************/
 
     enum mapFileTopLevelKeys {
-      METADATA = 0,
+      MAP_FILE_FORMAT_VERSION = 0,
+      METADATA,
       REGISTERS,
       N_TOP_LEVEL_KEYS // Keep this at the end so as to automatically be the count of keys
     };
     
     static const std::array<std::string, N_TOP_LEVEL_KEYS> topLevelKeyStrs = {
         // indexed by mapFileTopLevelKeys so keep them in the same order
-        "metadata", "registers"};
+        "mapFileFormatVersion", "metadata", "registers"};
     inline std::string to_str(mapFileTopLevelKeys keyEnum) {
       return topLevelKeyStrs[keyEnum];
     }
     /******************************************************************************************************************/
 
     enum mapFileMetadataKeys {
-      MAP_FILE_FORMAT_VERSION = 0,
-      COMMAND_BASED_BACKEND_TYPE,
-      DEFAULT_RECOVERY_REGISTER,
+      DEFAULT_RECOVERY_REGISTER=0,
       DELIMITER,
       // Add other keys here
       N_METADATA_KEYS // Keep this at the end so as to automatically be the count of keys
@@ -52,7 +47,7 @@ namespace ChimeraTK {
 
     static const std::array<std::string, N_METADATA_KEYS> metadataKeyStrs = {
         // indexed by mapFileMetadataKeys so keep them in the same order
-        "mapFileFormatVersion", "commandBasedBackendType", "defaultRecoveryRegister", "delimiter"};
+        "defaultRecoveryRegister", "delimiter"};
     inline std::string to_str(mapFileMetadataKeys keyEnum) {
       return metadataKeyStrs[keyEnum];
     }
@@ -92,10 +87,7 @@ namespace ChimeraTK {
       return registerTypeStrs[static_cast<int>(eType)];
     }
 
-  } // end namespace CommandBasedBackendJsonParserInfo
-
-  /******************************************************************************************************************/
-  /******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   CommandBasedBackend::CommandBasedBackend(
       CommandBasedBackendType type, std::string instance, std::map<std::string, std::string> parameters)
@@ -103,18 +95,16 @@ namespace ChimeraTK {
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
     if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
-      if(parameters.count("port") > 0) {
-        _port = parameters.at("port");
-      }
-      else {
+      if(parameters.count("port") == 0) {
         throw ChimeraTK::logic_error("Missing parameter \"port\" in CDD of backend CommandBasedTCP " + instance);
       }
+      _port = parameters.at("port");
     }
     if(parameters.count("map") > 0) {
       // parse map file and copy results to internal catalogues.
       parseJsonAndPopulateCatalogue(parameters["map"]);
 
-      _lastWrittenRegister = _metaData.defaultRecoveryRegister;
+      _lastWrittenRegister = _defaultRecoveryRegister;
     }
     else {
       throw ChimeraTK::logic_error("No map file parameter");
@@ -127,7 +117,7 @@ namespace ChimeraTK {
     switch(_commandBasedBackendType) {
       case CommandBasedBackendType::SERIAL:
         _commandHandler =
-            std::make_unique<SerialCommandHandler>(_instance, _metaData.serialDelimiter, _timeoutInMilliseconds);
+            std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
         break;
       case CommandBasedBackendType::ETHERNET:
         _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _timeoutInMilliseconds);
@@ -191,7 +181,6 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesExpected) {
-    // assert(_opened);
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
     return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);
@@ -219,8 +208,6 @@ namespace ChimeraTK {
   static CommandBasedBackend::BackendRegisterer gCommandBasedBackendRegisterer;
 
   /********************************************************************************************************************/
-  /********************************************************************************************************************/
-  using namespace CommandBasedBackendJsonParserInfo;
 
   /**
    * Throws a ChimeraTK::logic_error if the json key is not in an std::array of valid keys
@@ -242,7 +229,7 @@ namespace ChimeraTK {
     }
   }
 
-  /******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void CommandBasedBackend::parseJsonAndPopulateCatalogue(const std::string& mapFileName) {
     std::ifstream file(mapFileName);
@@ -253,48 +240,42 @@ namespace ChimeraTK {
     json j;
     file >> j;
 
-    if(!j.contains(to_str(METADATA)) || !j.contains(to_str(REGISTERS))) {
-      throw ChimeraTK::logic_error("Missing keys in JSON data");
-    }
-
     throwIfHasInvalidJsonKey(j, topLevelKeyStrs, "Map file top level has unknown key");
 
-    _metaData = j.at(to_str(METADATA)).template get<CommandBasedBackend::MetaData>();
-    // get() calls from_json(const json& j, CommandBasedBackend::MetaData& m)
+    if( j.contains(to_str(MAP_FILE_FORMAT_VERSION))) {
+        int mapFileFormatVersion = j.value(to_str(MAP_FILE_FORMAT_VERSION), 0);
+        if( mapFileFormatVersion != requiredMapFileFormatVersion) {
+            throw ChimeraTK::logic_error("Incorrect map file format version " + std::to_string(mapFileFormatVersion) +
+                    ", version " + std::to_string(requiredMapFileFormatVersion) + " required.");
+        }
+    } else {
+        throw ChimeraTK::logic_error("Missing mapFileFormatVersion key in metadata");
+    }
 
-    for(auto& [key, value] : j.at(to_str(REGISTERS)).items()) {
-      throwIfHasInvalidJsonKey(value, registerKeyStrs, "Map file registry entry " + key + " has unknown key");
+    if(j.contains(to_str(METADATA)) ) {
+        const json& metaDataJson = j.at(to_str(METADATA));
+        _defaultRecoveryRegister = RegisterPath(metaDataJson.value(to_str(DEFAULT_RECOVERY_REGISTER), ""));
+        _serialDelimiter = j.value(to_str(DELIMITER),"\r\n");
+    } else {
+        throw ChimeraTK::logic_error("Missing keys "+ to_str(METADATA) +" in JSON data");
+    }
 
-      CommandBasedBackendRegisterInfo reg = getJsonToCommandBasedBackendRegisterInfo(value, key);
-      reg.registerPath = RegisterPath(key);
-      _backendCatalogue.addRegister(reg);
+    if(j.contains(to_str(REGISTERS))) {
+        for(auto& [key, value] : j.at(to_str(REGISTERS)).items()) {
+            _backendCatalogue.addRegister(registerInfoFromJson(value, key));
+        }
+    }
+    else {
+        throw ChimeraTK::logic_error("Missing keys "+ to_str(REGISTERS) +" in JSON data");
     }
   }
 
   /********************************************************************************************************************/
 
-  void from_json(const json& j, CommandBasedBackend::MetaData& m) {
-    if(!j.contains(to_str(MAP_FILE_FORMAT_VERSION))) {
-      throw ChimeraTK::logic_error("Missing mapFileFormatVersion key in metadata");
-    }
-
-    throwIfHasInvalidJsonKey(j, metadataKeyStrs, "Map file metadata has unknown key");
-
-    if(int mapFileFormatVersion = j.value(to_str(MAP_FILE_FORMAT_VERSION), 0);
-        mapFileFormatVersion != requiredMapFileFormatVersion) {
-      throw ChimeraTK::logic_error("Incorrect map file format version " + std::to_string(mapFileFormatVersion) +
-          ", version " + std::to_string(requiredMapFileFormatVersion) + " required.");
-    }
-
-    m.defaultRecoveryRegister = RegisterPath(j.value(to_str(DEFAULT_RECOVERY_REGISTER), ""));
-
-    j.at(to_str(DELIMITER)).get_to(m.serialDelimiter);
-  }
-
-  /******************************************************************************************************************/
-
-  CommandBasedBackendRegisterInfo getJsonToCommandBasedBackendRegisterInfo(const json& j, const std::string& regKey) {
+  CommandBasedBackendRegisterInfo registerInfoFromJson(const json& j, const std::string& regKey) {
     // regKey is the key (register path) whose value is j. This is needed information for debugging
+
+    throwIfHasInvalidJsonKey(j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
 
     if(not(j.contains(to_str(READ_CMD)) or j.contains(to_str(WRITE_CMD)))) {
       throw ChimeraTK::logic_error("A non-empty " + to_str(READ_CMD) + " or " + to_str(WRITE_CMD) +
@@ -320,7 +301,10 @@ namespace ChimeraTK {
     CommandBasedBackendRegisterInfo::InternalType
         eType; //{ INT64=0 , UINT64, DOUBLE, STRING, VOID };
 
-    std::string typeStr = j.value(to_str(TYPE), to_str(CommandBasedBackendRegisterInfo::InternalType::STRING));
+    std::string typeStr = j.value(to_str(TYPE), "invalid");
+    if (typeStr == "invalid") {
+        throw ChimeraTK::logic_error("type is required but is missing for register "+regKey);
+    }
     toLowerCase(typeStr);
 
     //throw if void type and sending reading or writing.
@@ -354,8 +338,7 @@ namespace ChimeraTK {
          InternalType type = InternalType::INT64
        );
        */
-    return {{}, // regpath = key, but the key not accessible here.
-                // Rely on from_json(j,MetaData) to set this
+    return {RegisterPath(regKey),
         j.value(to_str(WRITE_CMD), ""), j.value(to_str(WRITE_RESP), ""), j.value(to_str(READ_CMD), ""),
         j.value(to_str(READ_RESP), ""), (uint)j.value(to_str(N_ELEM), 1), (size_t)j.value(to_str(N_LN_READ), 1), eType};
     //We may later add input for nChannels = j.value("nChan",1);

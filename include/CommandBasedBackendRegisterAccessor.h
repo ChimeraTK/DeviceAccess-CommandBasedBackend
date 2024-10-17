@@ -38,7 +38,6 @@ namespace ChimeraTK {
 
     std::list<boost::shared_ptr<TransferElement>> getInternalElements() override {
       // return an empty list.
-      // return std::list<boost::shared_ptr<TransferElement>>();
       return {};
     }
 
@@ -80,7 +79,6 @@ namespace ChimeraTK {
     void doReadTransferSynchronously() override;
 
     std::regex readResponseRegex;
-    std::regex writeResponseRegex;
 
   }; // end class CommandBasedBackendRegisterAccessor
 

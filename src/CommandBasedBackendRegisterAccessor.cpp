@@ -50,7 +50,7 @@ namespace ChimeraTK {
 
     std::string valueRegex;
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::INT64) {
-      valueRegex = "((0x[0-9A-Fa-f]+)|([+-]?[0-9]+))";
+      valueRegex = "([+-]?[0-9]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
       valueRegex = "((0x[0-9A-Fa-f]+)|([+]?[0-9]+))";
@@ -209,7 +209,7 @@ namespace ChimeraTK {
       _backend->_lastWrittenRegister = _registerInfo.registerPath;
     }
     else { // if not readable use the default read register
-      _backend->_lastWrittenRegister = _backend->_metaData.defaultRecoveryRegister;
+      _backend->_lastWrittenRegister = _backend->_defaultRecoveryRegister;
     }
   } // end doPreWrite
 

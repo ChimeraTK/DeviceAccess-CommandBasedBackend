@@ -77,13 +77,11 @@ namespace ChimeraTK {
     /// mutex for protecting ordered port access
     std::mutex _mux;
     std::unique_ptr<CommandHandler> _commandHandler;
-    BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
-    struct MetaData {
-      std::string defaultRecoveryRegister;
-      std::string serialDelimiter{"\r\n"};
-    } _metaData;
-    friend void from_json(const json& j, CommandBasedBackend::MetaData& m);
+    //Obtained from map file
+    std::string _defaultRecoveryRegister;
+    std::string _serialDelimiter; 
+    BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
     /** The last register that war attempted to be written. Might have failed and is re-tried on open. */
     ChimeraTK::RegisterPath _lastWrittenRegister;
