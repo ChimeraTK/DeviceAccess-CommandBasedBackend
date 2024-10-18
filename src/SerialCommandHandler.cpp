@@ -57,13 +57,13 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
 
   return outputStrVec;
 } // end sendCommand
- 
+
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::waitAndReadline() const {
-    auto readData = _serialPort->readline();
-    if(not readData.has_value()) {
-        throw std::logic_error("FIXME: BAD INTERFACE");
-    } 
-    return readData.value();
+  auto readData = _serialPort->readline();
+  if(not readData.has_value()) {
+    throw std::logic_error("FIXME: BAD INTERFACE");
+  }
+  return readData.value();
 }

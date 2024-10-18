@@ -5,6 +5,7 @@
 #include "CommandBasedBackendRegisterAccessor.h"
 #include "CommandBasedBackendRegisterInfo.h"
 #include "CommandHandler.h"
+#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/AccessMode.h>
 #include <ChimeraTK/BackendFactory.h>
@@ -13,7 +14,6 @@
 #include <ChimeraTK/DeviceBackendImpl.h>
 
 #include <boost/make_shared.hpp>
-#include <nlohmann/json.hpp>
 
 #include <memory>
 #include <mutex>
@@ -51,18 +51,17 @@ namespace ChimeraTK {
     static boost::shared_ptr<DeviceBackend> createInstanceEthernet(
         std::string instance, std::map<std::string, std::string> parameters);
 
-    struct BackendRegisterer { 
+    struct BackendRegisterer {
       BackendRegisterer();
     };
 
     RegisterCatalogue getRegisterCatalogue() const override;
 
     std::string readDeviceInfo() override;
-    
+
     /*----------------------------------------------------------------------------------------------------------------*/
 
    protected:
-
     CommandBasedBackendType _commandBasedBackendType;
 
     ///  The device node for serial communication, or the host name for network communication
@@ -78,9 +77,9 @@ namespace ChimeraTK {
     std::mutex _mux;
     std::unique_ptr<CommandHandler> _commandHandler;
 
-    //Obtained from map file
+    // Obtained from map file
     std::string _defaultRecoveryRegister;
-    std::string _serialDelimiter; 
+    std::string _serialDelimiter;
     BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
     /** The last register that war attempted to be written. Might have failed and is re-tried on open. */
