@@ -13,18 +13,26 @@ namespace ChimeraTK {
     writeResponsePattern(writeResponsePattern_), readCommandPattern(readCommandPattern_),
     readResponsePattern(readResponsePattern_), nLinesReadResponse(nLinesReadResponse_), internalType(type),
     delimiter(delimiter_) {
-    if(internalType == InternalType::INT64) {
-      dataDescriptor = DataDescriptor(DataType::int64);
+    // set dataDescriptor from type.
+    if(type == InternalType::INT64) {
+      dataDescriptor = DataDescriptor(
+          DataDescriptor::FundamentalType::numeric, /*isIntegral*/ true, /*isSigned*/ true, /*nDigits*/ 11);
     }
-    if(internalType == InternalType::UINT64) {
-      dataDescriptor = DataDescriptor(DataType::uint64);
+    else if(type == InternalType::UINT64) {
+      dataDescriptor = DataDescriptor(
+          DataDescriptor::FundamentalType::numeric, /*isIntegral*/ true, /*isSigned*/ false, /*nDigits*/ 11);
     }
-    if(internalType == InternalType::DOUBLE) {
-      dataDescriptor = DataDescriptor(DataType::float64);
+    else if(type == InternalType::DOUBLE) {
+      // smallest possible 5e-324, largest 2e308
+      dataDescriptor = DataDescriptor(DataDescriptor::FundamentalType::numeric, /*isIntegral*/ false,
+          /*isSigned*/ true, /*nDigits*/ 3 + 325, /*nFragmentalDigits*/ 325);
     }
-    if(internalType == InternalType::STRING) {
-      dataDescriptor = DataDescriptor(DataType::string);
+    else if(type == InternalType::STRING) {
+      dataDescriptor = DataDescriptor(DataDescriptor::FundamentalType::string);
     }
-  }
+    else if(type == InternalType::VOID) {
+      dataDescriptor = DataDescriptor(DataDescriptor::FundamentalType::nodata);
+    }
+  } // end constructor
 
 } // namespace ChimeraTK

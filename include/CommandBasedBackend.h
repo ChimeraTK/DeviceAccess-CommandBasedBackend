@@ -5,6 +5,7 @@
 #include "CommandBasedBackendRegisterAccessor.h"
 #include "CommandBasedBackendRegisterInfo.h"
 #include "CommandHandler.h"
+#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/AccessMode.h>
 #include <ChimeraTK/BackendFactory.h>
@@ -16,6 +17,8 @@
 
 #include <memory>
 #include <mutex>
+
+using json = nlohmann::json;
 
 namespace ChimeraTK {
 
@@ -73,14 +76,23 @@ namespace ChimeraTK {
     /// mutex for protecting ordered port access
     std::mutex _mux;
     std::unique_ptr<CommandHandler> _commandHandler;
+
+    // Obtained from map file
+    std::string _defaultRecoveryRegister;
+    std::string _serialDelimiter;
     BackendRegisterCatalogue<CommandBasedBackendRegisterInfo> _backendCatalogue;
 
-    ChimeraTK::RegisterPath _defaultRecoveryRegister; // used if last accessed register is write only or at first open()
     /** The last register that war attempted to be written. Might have failed and is re-tried on open. */
     ChimeraTK::RegisterPath _lastWrittenRegister;
 
+    /**
+     * Can throws ChimeraTK::logic_error if map file not found
+     */
+    void parseJsonAndPopulateCatalogue(const std::string& file_name);
+
     template<typename UserType>
     friend class CommandBasedBackendRegisterAccessor;
+
   }; // end class CommandBasedBackend
 
   /********************************************************************************************************************/

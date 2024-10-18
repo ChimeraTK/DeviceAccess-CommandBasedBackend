@@ -38,3 +38,8 @@
  * This is only used for visualizing delimiters during debugging.
  */
 [[nodiscard]] std::string replaceNewLines(const std::string& input) noexcept;
+
+/**
+ * Convert string to lower case in-place. Use this to make inputs case insensitive.
+ */
+void toLowerCase(std::string& str) noexcept;

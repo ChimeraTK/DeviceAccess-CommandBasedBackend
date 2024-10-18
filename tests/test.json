@@ -1,0 +1,28 @@
+{
+  "mapFileFormatVersion": 1,
+  "metadata": {
+    "defaultRecoveryRegister":"/IDN",
+    "delimiter":"\r\n"
+  },
+  "registers": {
+      "/cwFrequency":{"writeCmd":"SOUR:FREQ:CW {{x.0}}", "readCmd":"SOUR:FREQ:CW?", "readResp":"{{x.0}}\r\n", "type":"INT64"},
+      "/cwFrequencyRO":{"readCmd":"SOUR:FREQ:CW?", "readResp":"{{x.0}}\r\n", "type":"INT64"},
+      "/ACC":{"writeCmd":"ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}", "readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},
+
+    "/ACCRO":{"readCmd":"ACC?", "readResp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"DOUBLE"},
+
+      "/SAI":{"readCmd":"SAI?", "readResp":"{{x.0}}\r\n{{x.1}}\r\n", "nElem":2, "nLnRead":2, "type":"STRING"},
+
+      "/myData":{"readCmd":"CALC1:DATA:TRAC? 'myTrace' SDAT", "readResp":"{% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n", "nElem":10, "nLnRead":1, "type":"DOUBLE"},
+
+        "/IDN":{"readCmd":"*IDN?", "readResp":"(.*)\r\n", "nElem":1, "nLnRead":1, "type":"STRING"},
+
+        "/ACC1":{"writeCmd":"ACC 1 {{x.0}}", "readCmd":"ACC?", "readResp":"1={{x.0}}\n\r\n", "nElem":1, "nLnRead":1, "type":"DOUBLE"}
+  }
+}
+
+
+
+
+
+

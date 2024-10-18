@@ -19,7 +19,7 @@ using namespace ChimeraTK;
 static DummyServer dummyServer;
 
 std::string cdd() {
-  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.cmdmap)";
+  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)";
 }
 
 /**********************************************************************************************************************/
