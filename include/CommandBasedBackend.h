@@ -5,7 +5,6 @@
 #include "CommandBasedBackendRegisterAccessor.h"
 #include "CommandBasedBackendRegisterInfo.h"
 #include "CommandHandler.h"
-#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/AccessMode.h>
 #include <ChimeraTK/BackendFactory.h>
@@ -17,8 +16,6 @@
 
 #include <memory>
 #include <mutex>
-
-using json = nlohmann::json;
 
 namespace ChimeraTK {
 

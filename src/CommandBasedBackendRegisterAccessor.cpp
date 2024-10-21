@@ -9,6 +9,7 @@
 #include <inja/inja.hpp>
 
 #include <regex>
+#include <sstream>
 #include <string>
 
 namespace ChimeraTK {
@@ -53,7 +54,10 @@ namespace ChimeraTK {
       valueRegex = "([+-]?[0-9]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
-      valueRegex = "((0x[0-9A-Fa-f]+)|([+]?[0-9]+))";
+      valueRegex = "([+]?[0-9]+)";
+    }
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+      valueRegex = "([0-9A-Fa-f]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
@@ -162,13 +166,15 @@ namespace ChimeraTK {
       }
 
       std::cout << "!!!DEBUG: found matches ";
-      for(size_t i = 1; i < valueMatch.size(); ++i) {
-        std::cout << " \"" << valueMatch[1] << "\"";
+      for(size_t i = 1; i <= valueMatch.size(); ++i) {
+        std::cout << " \"" << valueMatch[i] << "\"";
       }
       std::cout << " in \"" << combinedReadString << "\"" << std::endl;
 
+      std::string hexIndicator =
+          (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
-        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(valueMatch[i + 1]);
+        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + 1));
       }
       this->_versionNumber = {};
     }
@@ -190,9 +196,18 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    for(size_t i = 0; i < _numberOfElements; ++i) {
-      // Fixme: does not know about formating
-      replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+      for(size_t i = 0; i < _numberOfElements; ++i) {
+        std::ostringstream oss;
+        oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
+        replacePatterns["x"].push_back(oss.str());
+      }
+    }
+    else {
+      for(size_t i = 0; i < _numberOfElements; ++i) {
+        // FIXME: does not know about formating
+        replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
+      }
     }
 
     // Form the write command.

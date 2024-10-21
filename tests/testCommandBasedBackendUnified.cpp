@@ -256,6 +256,50 @@ struct ArrayFloatSingleLine : public RegisterDescriptorBase {
 
 /**********************************************************************************************************************/
 
+struct ArrayHexMultiLine : public RegisterDescriptorBase {
+  static std::string path() { return "/myHex"; }
+  static bool isWriteable() { return true; }
+  static size_t nElementsPerChannel() { return 3; }
+
+  using minimumUserType = uint64_t;
+
+  template<typename UserType>
+  std::vector<std::vector<UserType>> generateValue([[maybe_unused]] bool raw = false) {
+    assert(!raw);
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      v[e] = userTypeToUserType<UserType>(dummyServer.hex[e]) + 17 + 3 * e;
+    }
+    return {v};
+  }
+
+  template<typename UserType>
+  std::vector<std::vector<UserType>> getRemoteValue([[maybe_unused]] bool raw = false) {
+    assert(!raw);
+    std::vector<UserType> v(nElementsPerChannel());
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      v[e] = userTypeToUserType<UserType>(dummyServer.hex[e]);
+    }
+    return {v};
+  }
+
+  void setRemoteValue() {
+    auto val = generateValue<minimumUserType>();
+    for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
+      dummyServer.hex[e] = val[0][e];
+    }
+  }
+};
+
+/**********************************************************************************************************************/
+
+struct ArrayHexInt8 : public ArrayHexMultiLine {
+  static std::string paty() { return "/myHex"; }
+  using minimumUserType = uint8_t;
+};
+
+/**********************************************************************************************************************/
+
 BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
   std::cout << "*** testRegisterAccessor *** " << std::endl;
   ChimeraTK::UnifiedBackendTest<>()
@@ -265,6 +309,8 @@ BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
       .addRegister<ArrayFloatMultiLineRO>()
       .addRegister<ArrayFloatSingleLine>()
       .addRegister<StringArray>()
+      .addRegister<ArrayHexMultiLine>()
+      .addRegister<ArrayHexInt8>()
       .runTests(cdd());
 }
 

@@ -6,11 +6,13 @@
 #include "stringUtils.h"
 
 #include <ChimeraTK/Exception.h>
+#include <ChimeraTK/SupportedUserTypes.h>
 
 #include <boost/process.hpp>
 
 #include <cstdlib> //for atoi quacking test, DEBUG
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -195,6 +197,30 @@ void DummyServer::mainLoop() {
     else if(data == "ACC? AXIS2") {
       _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
     }
+
+    else if(data.find("HEX ") == 0) {
+      auto tokens = tokenise(data);
+      if(tokens.size() == 4) {
+        for(size_t i = 0; i < tokens.size() - 1; i++) {
+          setHex(i, tokens[i + 1]);
+        }
+      }
+      else {
+        _serialPort->send("12345 Syntax error: HEX has wrong number of arguments");
+      }
+    }
+    else if(data == "HEX?") {
+      if(responseWithDataAndSyntaxError) {
+        _serialPort->send("_0x" + getHexStr(hex[0]));
+      }
+      else {
+        _serialPort->send("0x" + getHexStr(hex[0]));
+      }
+      if(!sendTooFew) {
+        _serialPort->send("0x" + getHexStr(hex[1]));
+        _serialPort->send(getHexStr(hex[2]));
+      }
+    }
     else if(data.find("SOUR:FREQ:CW ") == 0) {
       if(data.size() < 14) {
         _serialPort->send("12345 Syntax error: SOUR:FREQ:CW needs an argument");
@@ -281,4 +307,32 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
   catch(...) {
     _serialPort->send("12345 Syntax error in argument: " + value);
   }
+}
+
+void DummyServer::setHex(size_t i, const std::string& value) {
+  if(i > 2) {
+    _serialPort->send("12345 Unknown element: " + i);
+    return;
+  }
+  try {
+    if(value.length() >= 2 and (value[0] == '0') and ((value[1] == 'x') or (value[1] == 'X'))) {
+      hex[i] = ChimeraTK::userTypeToUserType<uint64_t, std::string>(value);
+    }
+    else {
+      hex[i] = ChimeraTK::userTypeToUserType<uint64_t, std::string>("0x" + value);
+    }
+
+    if(_debug) {
+      std::cout << "Setting hex[" << i << "] to " << std::hex << hex[i] << std::endl;
+    }
+  }
+  catch(...) {
+    _serialPort->send("12345 Syntax error in argument: " + value);
+  }
+}
+
+std::string getHexStr(uint64_t h) {
+  std::ostringstream oss;
+  oss << std::hex << h;
+  return oss.str();
 }
