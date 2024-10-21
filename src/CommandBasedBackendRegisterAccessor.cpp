@@ -170,8 +170,15 @@ namespace ChimeraTK {
       }
       std::cout << " in \"" << combinedReadString << "\"" << std::endl;
 
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(valueMatch[i + 1]);
+      if(_backend._commandBasedBackendType != InternalType::HEX){
+          for(size_t i = 0; i < _numberOfElements; ++i) {
+              buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(valueMatch[i + 1]);
+          }
+
+      } else {
+          for(size_t i = 0; i < _numberOfElements; ++i) {
+              buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(force0xHex(valueMatch[i + 1]));
+          }
       }
       this->_versionNumber = {};
     }

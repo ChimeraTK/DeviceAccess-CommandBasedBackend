@@ -43,3 +43,16 @@
  * Convert string to lower case in-place. Use this to make inputs case insensitive.
  */
 void toLowerCase(std::string& str) noexcept;
+
+/**
+ * Assumes str represents a hexidecimal number. This returns a copy of str that will definitely start with "0x"
+ * This is useful for userTypeToUserType to recognize the number as hex and interpret it correctly.
+ *
+ * Behavior: 
+ * "0xABC" -> "0xABC"
+ * "0XABC" -> "0XABC"
+ * "ABC" -> "0xABC"
+ * "NAN" -> "0xNAN".
+ * "" -> "0x"
+ */
+[[nodiscard]] std::string force0xHex(std::string& str) noexcept;
