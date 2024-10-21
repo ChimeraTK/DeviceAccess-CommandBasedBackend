@@ -55,4 +55,4 @@ void toLowerCase(std::string& str) noexcept;
  * "NAN" -> "0xNAN".
  * "" -> "0x"
  */
-[[nodiscard]] std::string force0xHex(std::string& str) noexcept;
+[[nodiscard]] std::string force0xHex(const std::string& str) noexcept;

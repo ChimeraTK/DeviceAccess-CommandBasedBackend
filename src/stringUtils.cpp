@@ -101,7 +101,7 @@ void toLowerCase(std::string& str) noexcept {
 
 /**********************************************************************************************************************/
 
-std::string force0xHex(std::string& str) noexcept {
+std::string force0xHex(const std::string& str) noexcept {
   if(str.length() >= 2 and (str[0] == '0') and ((str[1] == 'x') or (str[1] == 'X'))) {
     return str;
   }
