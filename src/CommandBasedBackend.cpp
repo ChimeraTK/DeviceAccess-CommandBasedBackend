@@ -72,7 +72,7 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
-  static constexpr size_t N_TYPES = 6;
+  static constexpr size_t N_TYPES = 7;
   static const std::array<std::string, N_TYPES> registerTypeStrs = {
       // indexed by CommandBasedBackendRegisterInfo::InternalType so keep them in the same order:
       //{ INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID };
@@ -83,6 +83,7 @@ namespace ChimeraTK {
       "double",
       "string",
       "void",
+      "invalid"
   };
   inline std::string to_str(CommandBasedBackendRegisterInfo::InternalType eType) {
     return registerTypeStrs[static_cast<int>(eType)];
@@ -336,7 +337,7 @@ namespace ChimeraTK {
          std::string readResponsePattern_ = "",
          uint nElements_ = 1,
          size_t nLinesReadResponse_ = 1,
-         InternalType type = InternalType::INT64
+         InternalType type
        );
        */
     return {RegisterPath(regKey), j.value(to_str(WRITE_CMD), ""), j.value(to_str(WRITE_RESP), ""),

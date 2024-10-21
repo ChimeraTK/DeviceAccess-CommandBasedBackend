@@ -53,7 +53,10 @@ namespace ChimeraTK {
       valueRegex = "([+-]?[0-9]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
-      valueRegex = "((0x[0-9A-Fa-f]+)|([+]?[0-9]+))";
+      valueRegex = "([+]?[0-9]+)";
+    }
+    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+      valueRegex = "([0x]?[0-9A-Fa-f]+)";
     }
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";

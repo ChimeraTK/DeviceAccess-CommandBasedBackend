@@ -98,3 +98,14 @@ std::string replaceNewLines(const std::string& input) noexcept {
 void toLowerCase(std::string& str) noexcept {
   std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 }
+
+/**********************************************************************************************************************/
+
+std::string force0xHex(std::string& str) noexcept {
+  if(str.length() >= 2 and (str[0] == '0') and ((str[1] == 'x') or (str[1] == 'X'))) {
+    return str;
+  }
+  else {
+    return "0x" + str;
+  }
+}
