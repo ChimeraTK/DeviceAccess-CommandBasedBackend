@@ -20,6 +20,7 @@ class DummyServer {
   uint64_t cwFrequency{1300000000};
   float trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
   std::string sai[2]{"AXIS_1", "AXIS_2"};
+  uint64_t hex[3]{0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
 
   std::atomic_bool sendNothing{false};
   std::atomic_bool sendTooFew{false};
@@ -43,6 +44,7 @@ class DummyServer {
   std::unique_ptr<SerialPort> _serialPort;
 
   void setAcc(const std::string& axis, const std::string& value);
+  void setHex(size_t i, const std::string& value);
 
   bool _debug{true};
 
@@ -52,3 +54,8 @@ class DummyServer {
 
   std::string _backportNode;
 };
+
+/**
+ * Returns the hexidecimal representation of the uint64_t with no "0x" prefix.
+ */
+std::string getHexStr(uint64_t h);
