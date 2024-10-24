@@ -17,7 +17,8 @@
 
         "/IDN":{"readCmd":"*IDN?", "readResp":"(.*)\r\n", "nElem":1, "nLnRead":1, "type":"STRING"},
 
-        "/ACC1":{"writeCmd":"ACC 1 {{x.0}}", "readCmd":"ACC?", "readResp":"1={{x.0}}\n\r\n", "nElem":1, "nLnRead":1, "type":"DOUBLE"}
+        "/ACC1":{"writeCmd":"ACC 1 {{x.0}}", "readCmd":"ACC?", "readResp":"1={{x.0}}\n\r\n", "nElem":1, "nLnRead":1, "type":"DOUBLE"},
+        "/myHex":{"writeCmd":"HEX 1 {{x.0}} 2 {{x.1}} 3 {{x.2}}", "readCmd":"HEX?", "readResp":"1={{x.0}}\r\n2={{x.1}}\r\n3={{x.2}}\r\n","nElem":3, "nLnRead":3, "type":"HEX"}
   }
 }
 

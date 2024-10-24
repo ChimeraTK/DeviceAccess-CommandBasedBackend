@@ -193,6 +193,46 @@ void DummyServer::mainLoop() {
     else if(data == "ACC? AXIS2") {
       _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
     }
+
+    else if(data.find("HEX ") == 0) {
+      auto tokens = tokenise(data);
+      if(tokens.size() <= 3) {
+        _serialPort->send("12345 Syntax error: HEX needs axis and value");
+      }
+
+      setHex(tokens[1], tokens[2]);
+      if(tokens.size() == 5) {
+        setHex(tokens[3], tokens[4]);
+      }
+      if(tokens.size() == 7) {
+        setHex(tokens[3], tokens[4]);
+        setHex(tokens[5], tokens[6]);
+      }
+      if(tokens.size() != 5 && tokens.size() != 3 && tokens.size() != 7) {
+        _serialPort->send("12345 Syntax error: HEX has wrong number of arguments");
+      }
+    }
+    else if(data == "HEX?") {
+      if(responseWithDataAndSyntaxError) {
+        _serialPort->send("_1=" + hex[0]);
+      }
+      else {
+        _serialPort->send("1=" + hex[0]);
+      }
+      if(!sendTooFew) {
+        _serialPort->send("2=" + hex[1]);
+        _serialPort->send("3=" + hex[2]);
+      }
+    }
+    else if(data == "HEX? 1") {
+      _serialPort->send("1=" + hex[0]);
+    }
+    else if(data == "HEX? 2") {
+      _serialPort->send("2=" + hex[1]);
+    }
+    else if(data == "HEX? 3") {
+      _serialPort->send("3=" + hex[2]);
+    }
     else if(data.find("SOUR:FREQ:CW ") == 0) {
       if(data.size() < 14) {
         _serialPort->send("12345 Syntax error: SOUR:FREQ:CW needs an argument");
@@ -274,6 +314,32 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
     acc[i] = std::stof(value);
     if(_debug) {
       std::cout << "Setting acc[" << i << "] to " << acc[i] << std::endl;
+    }
+  }
+  catch(...) {
+    _serialPort->send("12345 Syntax error in argument: " + value);
+  }
+}
+
+void DummyServer::setHex(const std::string& axis, const std::string& value) {
+  size_t i;
+  if(axis == "AXIS_1" or axis == "1") {
+    i = 0;
+  }
+  else if(axis == "AXIS_2" or axis == "2") {
+    i = 1;
+  }
+  else if(axis == "AXIS_3" or axis == "3") {
+    i = 2;
+  }
+  else {
+    _serialPort->send("12345 Unknown axis: " + axis);
+    return;
+  }
+  try {
+    hex[i] = value;
+    if(_debug) {
+      std::cout << "Setting hex[" << i << "] to " << hex[i] << std::endl;
     }
   }
   catch(...) {
