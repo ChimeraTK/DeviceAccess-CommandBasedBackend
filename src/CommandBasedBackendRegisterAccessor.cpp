@@ -44,7 +44,7 @@ namespace ChimeraTK {
 
     // Allocate the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels());
-    NDRegisterAccessor<UserType>::buffer_2D[0].resize(_registerInfo.getNumberOfElements());
+    NDRegisterAccessor<UserType>::buffer_2D[0].resize(_numberOfElements);
     readTransferBuffer.resize(1);
 
     this->_exceptionBackend = dev;
@@ -153,7 +153,8 @@ namespace ChimeraTK {
       std::string hexIndicator =
           (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
-        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + 1));
+        buffer_2D[0][i] =
+            userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
       }
       this->_versionNumber = {};
     }
