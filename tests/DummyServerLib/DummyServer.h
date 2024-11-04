@@ -43,6 +43,7 @@ class DummyServer {
   std::atomic<float> trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
   LockingString sai[2]{"AXIS_1", "AXIS_2"};
   std::atomic<uint64_t> hex[3]{0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
+  std::atomic<uint64_t> voidCounter{0};
 
   std::atomic_bool sendNothing{false};
   std::atomic_bool sendTooFew{false};

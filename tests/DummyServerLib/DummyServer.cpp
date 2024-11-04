@@ -160,6 +160,10 @@ void DummyServer::mainLoop() {
         std::cout << "Received debug clear command" << std::endl;
       }
     }
+    else if(data == u8"\u0018") {
+      voidCounter++;
+      std::cout << "Received Emergency Stop Movement command." << std::endl;
+    }
     else if(data == "*IDN?") {
       _serialPort->send("Dummy server for command based serial backend.");
     }

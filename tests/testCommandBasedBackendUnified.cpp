@@ -76,6 +76,62 @@ void setForceReadError(bool enable, size_t caseNr) {
 
 /**********************************************************************************************************************/
 
+// A "hacked" void write test. The unified backend test is designed to compare values of written data to detect a
+// successful write, which conceptually does not work for void. Instead, this register descriptor uses the
+// minimalUserType Boolean and returns "true" as generated remote value. The actual test whether writing was successful
+// is done in getRemoteValue().
+//
+// If this tests should fail, consider implementing a proper Void test in the UnifiedBackendTest instead of patching up
+// this hack!
+struct VoidType : public RegisterDescriptorBase {
+  static std::string path() { return "/emergencyStopMovement"; }
+  static bool isReadable() { return false; }
+  static bool isWriteable() { return true; }
+  static size_t nElementsPerChannel() { return 1; }
+
+  using minimumUserType = ChimeraTK::Boolean;
+
+  // always reset to 0. Not needed as this is only used for the reading test
+  void setRemoteValue() { dummyServer.voidCounter = 0; }
+
+  // GenerateValue usually ensures that the value used for the write test is different from the values used before to
+  // make sure the test is sensitive. This does not apply for void. However, it is also the expected value after the
+  // write test. In this hack we return "true" and expect "getRemoteValue", which does the
+  // actual test here, also to return "true".
+  template<typename Type>
+  std::vector<std::vector<Type>> generateValue([[maybe_unused]] bool raw = false) {
+    // Reset the write counter. If a write was successful, it is increased in the dummy server when it receives the
+    // command.
+    dummyServer.voidCounter = 0;
+    return {{Type(true)}};
+  }
+
+  // Return whether the void counter has increased as "value".
+  // The actual comparison of the counter, i.e. the logical evaluation of the test, is done here.
+  // This allows to print a dedicated warning for this hacked void write test which improves the comprehensibility
+  // of the error message. The unified backend test reporting "false is not true" for a void type register is not
+  // very helpful.
+  template<typename UserType>
+  std::vector<std::vector<UserType>> getRemoteValue([[maybe_unused]] bool raw = false) {
+    // Only check that the counter is not 0 any more, i.e. the write has been done at least once.
+    // It might be that in future the UnifiedBackendTest is calling write multiple times to implement further tests,
+    // and this test should not break then. To check that it is written exactly once a dedicated Void test should be
+    // introduced to the UnifiedBackendTest.
+    // We wait with timeout because the counter is incremented in another thread inside the dummy server.
+    auto stopTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(3000);
+    while(dummyServer.voidCounter == 0) {
+      if(std::chrono::steady_clock::now() > stopTime) {
+        std::cout << "   Expected write not detected in void type register " << path() << std::endl;
+        return {{UserType(false)}};
+      }
+      usleep(1000);
+    }
+    return {{UserType(true)}};
+  }
+};
+
+/**********************************************************************************************************************/
+
 struct ScalarInt : public RegisterDescriptorBase {
   static std::string path() { return "/cwFrequency"; }
   static bool isWriteable() { return true; }
@@ -309,6 +365,7 @@ BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
       .addRegister<ArrayFloatMultiLineRO>()
       .addRegister<ArrayFloatSingleLine>()
       .addRegister<StringArray>()
+      .addRegister<VoidType>()
       .addRegister<ArrayHexMultiLine>()
       .addRegister<ArrayHexInt8>()
       .runTests(cdd());

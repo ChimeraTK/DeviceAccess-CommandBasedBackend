@@ -67,10 +67,17 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.internalType != CommandBasedBackendRegisterInfo::InternalType::VOID) {
+      if(valueRegex.empty()) {
+        std::cerr << "DEBUG: empty valueRegex for " << registerPathName << std::endl;
+      }
       assert(!valueRegex.empty());
     }
     std::cout << "!!!DEBUG: valueRegex: " << valueRegex << std::endl;
     std::cout << "!!!DEBUG: pattern: " << _registerInfo.readResponsePattern << std::endl;
+
+    if(!_registerInfo.isReadable()) {
+      return;
+    }
 
     // prepare the readResponseRegex
     inja::json replacePatterns;
