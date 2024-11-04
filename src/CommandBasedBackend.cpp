@@ -309,11 +309,24 @@ namespace ChimeraTK {
     }
     toLowerCase(typeStr);
 
-    // throw if void type and sending reading or writing.
-    if(typeStr == to_str(CommandBasedBackendRegisterInfo::InternalType::VOID) and
-        ((j.value(to_str(READ_CMD), "") != "") or (j.value(to_str(WRITE_RESP), "") != ""))) {
-      throw ChimeraTK::logic_error(
-          "Void type has a " + to_str(READ_CMD) + " or a " + to_str(WRITE_RESP) + " for register " + regKey);
+    if(typeStr == to_str(CommandBasedBackendRegisterInfo::InternalType::VOID)) {
+      if(j.value(to_str(READ_CMD), "") != "") {
+        throw ChimeraTK::logic_error(
+            "Void type must be write-only but has a " + to_str(READ_CMD) + " for register " + regKey);
+      }
+      if(j.value(to_str(N_ELEM), 1) != 1) {
+        throw ChimeraTK::logic_error("Void type must only have 1 element but has a " + to_str(N_ELEM) + " = " +
+            j.at(to_str(N_ELEM)) + " for register " + regKey);
+      }
+      if(j.value(to_str(N_LN_READ), 1) != 1) {
+        throw ChimeraTK::logic_error(
+            "Void type is read-only but has non-default " + to_str(N_LN_READ) + " for register " + regKey);
+      }
+      std::string writeCommandPattern = j.value(to_str(WRITE_CMD), "");
+      if(writeCommandPattern.find("{{x") != std::string::npos) {
+        throw ChimeraTK::logic_error("Illegal inja template in " + to_str(WRITE_CMD) + " = \"" + writeCommandPattern +
+            "\" for void-type register " + regKey);
+      }
     }
 
     for(size_t iType = 0; iType < N_TYPES;) {

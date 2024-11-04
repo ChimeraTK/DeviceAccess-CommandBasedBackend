@@ -16,7 +16,7 @@
       "/myData":{"readCmd":"CALC1:DATA:TRAC? 'myTrace' SDAT", "readResp":"{% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n", "nElem":10, "nLnRead":1, "type":"DOUBLE"},
 
         "/IDN":{"readCmd":"*IDN?", "readResp":"(.*)\r\n", "nElem":1, "nLnRead":1, "type":"STRING"},
-
+        "/emergencyStopMovement":{"writeCmd":"\u0018","type":"VOID"},
         "/ACC1":{"writeCmd":"ACC 1 {{x.0}}", "readCmd":"ACC?", "readResp":"1={{x.0}}\n\r\n", "nElem":1, "nLnRead":1, "type":"DOUBLE"},
         "/myHex":{"writeCmd":"HEX 0x{{x.0}} 0x{{x.1}} {{x.2}}", "readCmd":"HEX?", "readResp":"0x{{x.0}}\r\n0x{{x.1}}\r\n{{x.2}}\r\n","nElem":3, "nLnRead":3, "type":"HEX"}
   }
