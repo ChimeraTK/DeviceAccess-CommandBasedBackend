@@ -1,4 +1,8 @@
 find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+find_program(SOCAT socat REQUIRED)
+if(NOT SOCAT)
+        message(FATAL_ERROR "socat not found!")
+endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib dummy_lib_sources)
