@@ -301,7 +301,7 @@ namespace ChimeraTK {
           " for register " + regKey);
     }
 
-    CommandBasedBackendRegisterInfo::InternalType eType; //{ INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID }
+    CommandBasedBackendRegisterInfo::InternalType eType{}; //{ INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID }
 
     std::string typeStr = j.value(to_str(TYPE), "invalid");
     if(typeStr == "invalid") {

@@ -219,7 +219,7 @@ struct ArrayFloatSingleLine : public RegisterDescriptorBase {
   using minimumUserType = float;
 
   template<typename UserType>
-  std::vector<std::vector<UserType>> generateValue(bool raw = false) {
+  std::vector<std::vector<UserType>> generateValue([[maybe_unused]] bool raw = false) {
     assert(!raw);
     std::vector<UserType> v(nElementsPerChannel());
     for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {

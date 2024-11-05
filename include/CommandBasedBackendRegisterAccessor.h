@@ -26,7 +26,7 @@ namespace ChimeraTK {
         CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfElements,
         size_t elementOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
 
-    [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() & !isWriteable(); }
+    [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() && !isWriteable(); }
 
     [[nodiscard]] bool isReadable() const override { return _registerInfo.isReadable(); }
 
