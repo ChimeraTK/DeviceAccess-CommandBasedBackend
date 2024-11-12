@@ -5,6 +5,8 @@
 #include "SerialPort.h"
 #include "stringUtils.h"
 
+#include <ChimeraTK/Exception.h>
+
 #include <boost/process.hpp>
 
 #include <cstdlib> //for atoi quacking test, DEBUG
@@ -60,7 +62,7 @@ void DummyServer::activate() {
       _serialPort = std::make_unique<SerialPort>(_backportNode);
       break;
     }
-    catch(std::runtime_error&) {
+    catch(ChimeraTK::runtime_error&) {
       if(i == maxTries - 1) {
         throw;
       }
