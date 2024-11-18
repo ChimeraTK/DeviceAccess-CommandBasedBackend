@@ -336,7 +336,7 @@ namespace ChimeraTK {
          std::string readResponsePattern_ = "",
          uint nElements_ = 1,
          size_t nLinesReadResponse_ = 1,
-         InternalType type = InternalType::INT64
+         InternalType type
        );
        */
     return {RegisterPath(regKey), j.value(to_str(WRITE_CMD), ""), j.value(to_str(WRITE_RESP), ""),
