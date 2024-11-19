@@ -15,12 +15,34 @@ class DummyServer {
   DummyServer(bool useRandomDevice = true);
   ~DummyServer();
 
-  float acc[2]{0.2, 0.3};
-  float mov[2]{1.2, 1.3};
-  uint64_t cwFrequency{1300000000};
-  float trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
-  std::string sai[2]{"AXIS_1", "AXIS_2"};
-  uint64_t hex[3]{0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
+  /**
+   * Helper class to have a thread safe string storage.
+   */
+  class LockingString {
+   public:
+    LockingString(const char* val) : _value(val) {}
+
+    operator std::string() const {
+      auto l = std::lock_guard(_mutex);
+      return _value;
+    }
+    LockingString& operator=(std::string const& val) {
+      auto l = std::lock_guard(_mutex);
+      _value = val;
+      return *this;
+    }
+
+   private:
+    std::string _value;
+    mutable std::mutex _mutex;
+  };
+
+  std::atomic<float> acc[2]{0.2, 0.3};
+  std::atomic<float> mov[2]{1.2, 1.3};
+  std::atomic<uint64_t> cwFrequency{1300000000};
+  std::atomic<float> trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
+  LockingString sai[2]{"AXIS_1", "AXIS_2"};
+  std::atomic<uint64_t> hex[3]{0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
 
   std::atomic_bool sendNothing{false};
   std::atomic_bool sendTooFew{false};
