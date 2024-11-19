@@ -311,7 +311,7 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
 
 void DummyServer::setHex(size_t i, const std::string& value) {
   if(i > 2) {
-    _serialPort->send("12345 Unknown element: " + i);
+    _serialPort->send("12345 Unknown element: " + std::to_string(i));
     return;
   }
   try {
