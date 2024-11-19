@@ -268,7 +268,7 @@ struct ArrayHexMultiLine : public RegisterDescriptorBase {
     assert(!raw);
     std::vector<UserType> v(nElementsPerChannel());
     for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
-      v[e] = userTypeToUserType<UserType>(dummyServer.hex[e]) + 17 + 3 * e;
+      v[e] = userTypeToUserType<UserType>(uint64_t(dummyServer.hex[e])) + 17 + 3 * e;
     }
     return {v};
   }
@@ -278,7 +278,7 @@ struct ArrayHexMultiLine : public RegisterDescriptorBase {
     assert(!raw);
     std::vector<UserType> v(nElementsPerChannel());
     for(uint32_t e = 0; e < nElementsPerChannel(); ++e) {
-      v[e] = userTypeToUserType<UserType>(dummyServer.hex[e]);
+      v[e] = userTypeToUserType<UserType>(uint64_t(dummyServer.hex[e]));
     }
     return {v};
   }
