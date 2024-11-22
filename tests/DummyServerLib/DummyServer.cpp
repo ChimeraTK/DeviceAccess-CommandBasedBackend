@@ -79,6 +79,7 @@ void DummyServer::activate() {
 
 void DummyServer::deactivate() {
   // First stop the main thread which is accessing the SerialPort object
+  std::cout << "DEBUG!!! << DummyServer::deactivate() joining main thread." << std::endl;
   if(_mainLoopThread.joinable()) {
     _stopMainLoop = true;
     // Try sending the read terminate several times. The main loop in another thread might just have started reading and
@@ -92,11 +93,13 @@ void DummyServer::deactivate() {
   _serialPort.reset();
 
   // Finally, stop the socat runner
+  std::cout << "DEBUG!!! << DummyServer::deactivate() stopping socat runner." << std::endl;
   assert(_socatRunner.running());
   _socatRunner.terminate();
   _socatRunner.wait();
 
   // Wait for "front door" file descriptor to become invalid
+  std::cout << "DEBUG!!! << DummyServer::deactivate() waiting for front door to close." << std::endl;
   while(true) {
     auto fd = ::open(deviceNode.c_str(), O_RDONLY | O_NOCTTY);
 
