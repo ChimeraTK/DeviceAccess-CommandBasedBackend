@@ -67,13 +67,8 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.internalType != CommandBasedBackendRegisterInfo::InternalType::VOID) {
-      if(valueRegex.empty()) {
-        std::cerr << "DEBUG: empty valueRegex for " << registerPathName << std::endl;
-      }
       assert(!valueRegex.empty());
     }
-    std::cout << "!!!DEBUG: valueRegex: " << valueRegex << std::endl;
-    std::cout << "!!!DEBUG: pattern: " << _registerInfo.readResponsePattern << std::endl;
 
     if(!_registerInfo.isReadable()) {
       return;
@@ -90,9 +85,6 @@ namespace ChimeraTK {
     // FIXME: pass this through the template engine //TODO
     try {
       auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
-      std::cout << "!!!DEBUG: RegexText: " << replaceNewLines(regexText) << " with read pattern "
-                << replaceNewLines(_registerInfo.readResponsePattern) << " and read command "
-                << replaceNewLines(_registerInfo.readCommandPattern) << std::endl;
       readResponseRegex = regexText;
     }
     catch(std::regex_error& e) {
@@ -166,12 +158,6 @@ namespace ChimeraTK {
         throw ChimeraTK::runtime_error("Could not extract values from \"" + replaceNewLines(combinedReadString) +
             "\" in " + _registerInfo.registerPath);
       }
-
-      std::cout << "!!!DEBUG: found matches ";
-      for(size_t i = 1; i <= valueMatch.size(); ++i) {
-        std::cout << " \"" << valueMatch[i] << "\"";
-      }
-      std::cout << " in \"" << combinedReadString << "\"" << std::endl;
 
       std::string hexIndicator =
           (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
