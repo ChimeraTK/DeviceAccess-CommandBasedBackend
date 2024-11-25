@@ -7,7 +7,7 @@
 
 #include <ChimeraTK/Exception.h>
 
-#include <chrono> //needed for timout type
+#include <chrono> //Needed for timeout type.
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -31,11 +31,6 @@ std::string SerialCommandHandler::sendCommand(std::string cmd) {
 /**********************************************************************************************************************/
 
 std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, const size_t nLinesExpected) {
-  /**
-   * Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings
-   * If those returns do not occur within timeout, throws ChimeraTK::runtime_error
-   */
-
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesExpected);
 
@@ -54,7 +49,7 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
       throw ChimeraTK::runtime_error(err);
     }
     outputStrVec.push_back(readStr);
-  } // end for
+  } 
 
   return outputStrVec;
 } // end sendCommand

@@ -7,28 +7,31 @@
 /**
  * Split a string by the delimiter, and return a vector of the resulting segments.
  * No delimiters are present in the resulting segments.
- * If the string starts/ends with a delimiter, there is an empty string at the beginning/end of the vector.
+ * If the string starts/ends with a delimiter, then there is an empty string at the beginning/end of the vector.
  */
 [[nodiscard]] std::vector<std::string> splitString(
     const std::string& stringToBeParsed, const std::string& delimiter) noexcept;
 
 /**
- * Search for whitespace separated text tokens in a string. No whitespace is retuned. The list might be empty if the
- * input string is empty or there is only whitespace.
+ * Parse the string into a vector of space-delimited tokens.
+ * No whitespace is retuned in the result.
+ * The vector may be empty, which occurs if the input string is empty or there is only whitespace.
  */
 [[nodiscard]] std::vector<std::string> tokenise(const std::string& stringToBeParsed);
 
 /**
  * Returns true if and only if the provided string ends in the delimiter delim.
- * Requires delim_size = delim.size()
+ * @param[in] delim The delimiter
+ # @param[in] delim_size Must equal delim.size()
  */
 [[nodiscard]] bool strEndsInDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept;
 
 /**
- * Removes the delimiter delim from str if it's present and returns the result
- * If no delimiter is found, returns the input
- * Use this to ensure that the resulting string doesn't end in the delimiter
- * Requires delim_size = delim.size()
+ * Removes the delimiter delim from str if it's present and returns the result.
+ * If no delimiter is found, then returns the input.
+ * Use this to ensure that the resulting string doesn't end in the delimiter.
+ * @param[in] delim The delimiter
+ # @param[in] delim_size Must equal delim.size()
  */
 [[nodiscard]] std::string stripDelim(
     const std::string& str, const std::string& delim, const size_t delim_size) noexcept;

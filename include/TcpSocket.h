@@ -27,7 +27,7 @@ namespace ChimeraTK {
     std::chrono::milliseconds _timeout;
     bool _opened = false;
 
-    std::string _delimiter{"\n"}; // FIXME: set from constructor parameter
+    std::string _delimiter{"\n"}; // FIXME: set from constructor parameter. Ticket 13532
   };
 
 } // namespace ChimeraTK

@@ -37,7 +37,7 @@ namespace ChimeraTK {
     }
 
     std::list<boost::shared_ptr<TransferElement>> getInternalElements() override {
-      // return an empty list.
+      // Return an empty list.
       return {};
     }
 

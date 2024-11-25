@@ -12,7 +12,7 @@ namespace ChimeraTK {
     Holds info all about the command you're sending, but not about the device you're sending it to.
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
-    /// Internal representation type to which we have to convert successfully
+    /** Internal representation type to which we have to convert successfully.*/
     enum class InternalType { INT64 = 0, UINT64, HEX, DOUBLE, STRING, VOID };
 
     CommandBasedBackendRegisterInfo(RegisterPath registerPath_ = {}, std::string writeCommandPattern_ = "",
@@ -50,6 +50,10 @@ namespace ChimeraTK {
 
     InternalType internalType;
     DataDescriptor dataDescriptor;
+
+    /**
+     * The delimiter between lines.
+     */
     std::string delimiter;
 
   }; // end CommandBasedBackendRegisterInfo

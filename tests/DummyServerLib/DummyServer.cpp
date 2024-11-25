@@ -10,7 +10,7 @@
 
 #include <boost/process.hpp>
 
-#include <cstdlib> //for atoi quacking test, DEBUG
+#include <cstdlib> //for atoi test, DEBUG
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -18,7 +18,7 @@
 
 DummyServer::DummyServer(bool useRandomDevice, bool debug) : _debug(debug) {
   if(useRandomDevice) {
-    // generate a random number to attach to the device name to muliple test can run in parallel
+    // Generate a random number to attach to the device name so muliple tests can run in parallel.
     // Initialise with high resolution clock as see so all processes get a different value.
     auto now = std::chrono::high_resolution_clock::now();
     auto epoch = std::chrono::nanoseconds(now.time_since_epoch()).count();
@@ -42,25 +42,25 @@ DummyServer::~DummyServer() {
     deactivate();
   }
   catch(...) {
-    // try/catch make the linter happy. We are beyond recovery here.
+    // Try/catch make the linter happy. We are beyond recovery here.
     std::terminate();
   }
 }
 
 void DummyServer::activate() {
   if(_mainLoopThread.joinable()) {
-    // main loop thread is running, already active
+    // Main loop thread is running, already active
     assert(_serialPort);
     assert(_socatRunner.running());
 
     return;
   }
 
-  // first start socat, which provides the virtual serial ports
+  // First start socat, which provides the virtual serial ports.
   _socatRunner = boost::process::child(boost::process::search_path("socat"),
       boost::process::args({"-d", "-d", "pty,raw,echo=0,link=" + deviceNode, "pty,raw,echo=0,link=" + _backportNode}));
 
-  // try to open the virtual tty with a timeout (1000 tries with 10  ms waiting time)
+  // Try to open the virtual tty with a timeout (1000 tries with 10  ms waiting time).
   static constexpr size_t maxTries = 1000;
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
@@ -78,13 +78,13 @@ void DummyServer::activate() {
     std::cout << "echoing port " << _backportNode << std::endl;
   }
 
-  // finally start the main loop, which accesses the serial port
+  // Finally start the main loop, which accesses the serial port.
   _stopMainLoop = false;
   _mainLoopThread = boost::thread([&]() { mainLoop(); });
 }
 
 void DummyServer::deactivate() {
-  // First stop the main thread which is accessing the SerialPort object
+  // First stop the main threadi, which is accessing the SerialPort object.
   if(_debug) {
     std::cout << "DEBUG!!! << DummyServer::deactivate() joining main thread." << std::endl;
   }
@@ -97,10 +97,10 @@ void DummyServer::deactivate() {
     } while(!_mainLoopThread.try_join_for(boost::chrono::milliseconds(10)));
   }
 
-  // Remove the SerialPort which is accessing the virtual serial ports provided by socat
+  // Remove the SerialPort which is accessing the virtual serial ports provided by socat.
   _serialPort.reset();
 
-  // Finally, stop the socat runner
+  // Finally, stop the socat runner.
   if(_debug) {
     std::cout << "DEBUG!!! << DummyServer::deactivate() stopping socat runner." << std::endl;
   }
@@ -108,7 +108,7 @@ void DummyServer::deactivate() {
   _socatRunner.terminate();
   _socatRunner.wait();
 
-  // Wait for "front door" file descriptor to become invalid
+  // Wait for the "front door" file descriptor to become invalid.
   if(_debug) {
     std::cout << "DEBUG!!! << DummyServer::deactivate() waiting for front door to close." << std::endl;
   }
@@ -274,7 +274,7 @@ void DummyServer::mainLoop() {
       _serialPort->send(std::to_string(cwFrequency));
     }
     else if(data.find("CALC1:DATA:TRAC? ") == 0) {
-      // found the only right trace in this simple dummy
+      // Seek the only one particular trace for this simple dummy server.
       if(data.find("CALC1:DATA:TRAC? 'myTrace'") == 0) {
         if(data.find("CALC1:DATA:TRAC? 'myTrace' SDAT") == 0) {
           std::string out;
@@ -313,7 +313,7 @@ void DummyServer::mainLoop() {
         }
         _serialPort->send(dat);
       }
-    } // end else
+    }
   }
 }
 
