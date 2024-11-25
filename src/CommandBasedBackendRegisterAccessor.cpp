@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
-//
+
 #include "CommandBasedBackendRegisterAccessor.h"
 
 #include "CommandBasedBackend.h"
@@ -24,9 +24,9 @@ namespace ChimeraTK {
     _isRecoveryTestAccessor(isRecoveryTestAccessor), _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
     assert(_registerInfo.getNumberOfChannels() != 0);
     assert(_registerInfo.getNumberOfElements() != 0);
-    assert(_registerInfo.getNumberOfDimensions() < 2); // implementation only for scalar and 1D
+    assert(_registerInfo.getNumberOfDimensions() < 2); // Implementation is only for scalar and 1D.
 
-    // 0 means all elements descrived in registerInfo
+    // Use 0 to means all elements are described in registerInfo.
     if(_numberOfElements == 0) {
       _numberOfElements = _registerInfo.getNumberOfElements();
     }
@@ -34,7 +34,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Requested offset + nElemements exceeds register size in " + this->getName());
     }
 
-    flags.checkForUnknownFlags({}); // require no flags.
+    flags.checkForUnknownFlags({}); // Required to have no flags.
 
     if(!_backend) {
       throw ChimeraTK::logic_error("CommandBasedBackendRegisterAccessor is used with a backend which is not "
@@ -42,10 +42,10 @@ namespace ChimeraTK {
     }
     // You're supposed to be allowed to make accessors before the device is functional. So don't test functionality here.
 
-    // allocated the buffers
-    NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels()); // dimension);
+    // Allocated the buffers
+    NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels());
     NDRegisterAccessor<UserType>::buffer_2D[0].resize(_registerInfo.getNumberOfElements());
-    readTransferBuffer.resize(1); //_registerInfo.getNumberOfElements());
+    readTransferBuffer.resize(1);
 
     this->_exceptionBackend = dev;
 
@@ -79,7 +79,7 @@ namespace ChimeraTK {
       return;
     }
 
-    // prepare the readResponseRegex
+    // Prepare the readResponseRegex.
     inja::json replacePatterns;
     replacePatterns["x"] = {};
     for(size_t i = 0; i < _registerInfo.nElements; ++i) {
@@ -145,22 +145,17 @@ namespace ChimeraTK {
     auto readCommand = _registerInfo.readCommandPattern;
 
     readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
-
-  } // end doReadTransferSync
+  }
 
   /********************************************************************************************************************/
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPostRead(
       [[maybe_unused]] TransferType t, bool updateDataBuffer) {
-    // Martin: converts text response to number. Fill it into the user buffer.
-    /*
-     *  Transfer type is an enum in TransferElement.h
-     *  options are:
-     *  TransferType::{read, readNonBlocking, readLatest, write, writeDestructively }
-     */
+    // Transfer type enum options: {read, readNonBlocking, readLatest, write, writeDestructively }
+
     if(updateDataBuffer) {
       // For technical reasons the response has been read line by line.
-      // Combine them back into a single response string.
+      // Combine them here back into a single response string.
       std::string combinedReadString;
       for(const auto& line : readTransferBuffer) {
         combinedReadString += line + _registerInfo.delimiter;

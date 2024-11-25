@@ -4,13 +4,13 @@
 
 #include <ChimeraTK/Exception.h>
 
-#include <chrono>  //needed for timout
-#include <cstring> //used for memset
+#include <chrono>  //Needed for timeout
+#include <cstring> //Used for memset
 #include <fcntl.h>
-#include <future> //needed for timeout
+#include <future>  //Needed for timeout
 #include <iostream>
 #include <string>
-#include <termios.h> //for termain IO interface
+#include <termios.h> //For termain IO interface
 #include <unistd.h>  //POSIX OS API
 
 /**********************************************************************************************************************/
@@ -27,15 +27,16 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
     throw ChimeraTK::runtime_error(err);
   }
 
-  termios tty; // Make an instance of the termios structure
-  // tcgetattr reads the current terminal settings into the tty structure.
+  // Make an instance tty of the termios structure.
+  // termios::tcgetattr reads the current terminal settings into the tty structure.
   // throw if this fails
-  if(tcgetattr(fileDescriptor, &tty) != 0) { // from termios
+  termios tty; 
+  if(tcgetattr(fileDescriptor, &tty) != 0) { 
     std::string err = "Error from tcgetattr\n";
     throw ChimeraTK::runtime_error(err);
   }
 
-  // Set baud rate, using termios
+  // Set baud rate using termios.
   int iCfsetospeed = cfsetospeed(&tty, (speed_t)B9600);
   int iCfsetispeed = cfsetispeed(&tty, (speed_t)B9600);
   if(iCfsetospeed < 0 or iCfsetispeed < 0) {
@@ -43,8 +44,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
     throw ChimeraTK::runtime_error(err);
   }
   // see https://www.man7.org/linux/man-pages/man3/termios.3.htmlL
-  tty.c_cflag &= ~PARENB; // disables parity generation and detection.
-  tty.c_cflag &= ~CSTOPB; // Use 1 stop bit, not 2
+  tty.c_cflag &= ~PARENB;        // disables parity generation and detection.
+  tty.c_cflag &= ~CSTOPB;        // Use 1 stop bit, not 2
   tty.c_cflag &= ~CSIZE;
   tty.c_cflag |= CS8;            // Use 8 bit chars.
   tty.c_cflag &= ~CRTSCTS;       // no flow control
@@ -54,7 +55,7 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tty.c_cc[VTIME] = 5;           // 0.5 seconds read timeout //Really??
   tty.c_cflag |= CREAD | CLOCAL; // turn on READ & ignore ctrl lines
 
-  // Flush Port, then applies attributes
+  // Flush Port, then applies attributes.
   tcflush(fileDescriptor, TCIFLUSH);
   if(tcsetattr(fileDescriptor, TCSANOW, &tty) != 0) { // from termios
     std::string err = "Error from tcsetattr\n";
@@ -72,7 +73,7 @@ SerialPort::~SerialPort() {
 
 void SerialPort::send(const std::string& str) const {
   std::string strToWrite = str + delim;
-  int bytesWritten = write(fileDescriptor, strToWrite.c_str(), strToWrite.size()); // from unistd
+  int bytesWritten = write(fileDescriptor, strToWrite.c_str(), strToWrite.size()); // unistd::write
 
   if(bytesWritten != static_cast<ssize_t>(strToWrite.size())) {
     std::string err = "Incomplete write";
@@ -88,15 +89,16 @@ std::optional<std::string> SerialPort::readline() noexcept {
   char readBuffer[readBufferLen];
 
   _terminateRead = false;
-  // search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
+  // Search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
   for(delimPos = _persistentBufferStr.find(delim); delimPos == std::string::npos;
       delimPos = _persistentBufferStr.find(delim)) {
     memset(readBuffer, 0, sizeof(readBuffer));
-    ssize_t __attribute__((unused)) bytesRead = read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // from unistd
+    ssize_t __attribute__((unused)) bytesRead =
+        read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // unistd::read
     if(_terminateRead) {
       return std::nullopt;
     }
-    // the -1 makes room for read to insert a '\0' null termination at the end
+    // The -1 makes room for read to insert a '\0' null termination at the end.
     _persistentBufferStr += std::string(readBuffer);
   }
 
@@ -111,13 +113,13 @@ std::optional<std::string> SerialPort::readline() noexcept {
 std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) {
   auto future = std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readline(); });
   if(future.wait_for(timeout) != std::future_status::timeout) {
-    // no timeout. Let's see if the optional has data
+    // No timeout occured, so check if the optional has data.
     auto readData = future.get();
     if(readData.has_value()) {
       return readData.value();
     }
   }
-  // If the code has not returned there has been a timeout or read has been abandoned
+  // If the code has not returned, then there has been a timeout or read has been abandoned.
 
   // In case of a timeout we have to tell the read to stop so the
   // async thread can complete.

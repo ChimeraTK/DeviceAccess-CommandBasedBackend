@@ -17,7 +17,7 @@ class CommandHandler {
 
   /**
    * Send a command to a SCPI device, read back nLinesExpected line of responce.
-   * Resulting vector will be nLinesExpected long or else throw
+   * Resulting vector will be nLinesExpected long or else throw a ChimeraTK::runtime_error
    */
   virtual std::vector<std::string> sendCommand(std::string cmd, const size_t nLinesExpected) = 0;
 

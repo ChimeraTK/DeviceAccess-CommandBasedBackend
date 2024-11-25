@@ -15,6 +15,14 @@ using namespace boost::unit_test_framework;
 
 static DummyServer dummyServer;
 
+/**
+ * Test write of the CommandBasedBackend's void-type accessor.
+ * This is a dedicated test of the Command based backend's ability to send a void-type command,
+ * that is, one with no numeric or other value content other than a simple command,
+ * and have that command received successfully.
+ * We simple confirm that the dummy server's counter starts at 0. Then as void-type command is sent.
+ * This is registered by the dummy and it's voidCounter is incremented to 1.
+ */
 BOOST_AUTO_TEST_CASE(voidWrite) {
   auto device = ChimeraTK::Device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)");
 

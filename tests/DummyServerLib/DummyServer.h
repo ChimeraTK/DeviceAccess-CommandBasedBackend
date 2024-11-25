@@ -10,8 +10,19 @@
 #include <atomic>
 #include <memory>
 
+/**
+ * A stand-in server class for the CommandBasedBackend to communicate with
+ * over for testing.
+ * The CommandBasedBackend is to send serial commands to the DummyServer,
+ * relayed by socat. The DummyServer then emulates as a target hardware device.
+ * Socat is started automatically in the constructor.
+ */
 class DummyServer {
  public:
+  /**
+   * useRandomDevice randomizes the serial communication port (the _backportNode)
+   * debug toggles printouts
+   */
   DummyServer(bool useRandomDevice = true, bool debug = false);
   ~DummyServer();
 
@@ -37,6 +48,8 @@ class DummyServer {
     mutable std::mutex _mutex;
   };
 
+  // These hold data values interogated by the CommandBasedBackend
+  // Their names reflect register names
   std::atomic<float> acc[2]{0.2, 0.3};
   std::atomic<float> mov[2]{1.2, 1.3};
   std::atomic<uint64_t> cwFrequency{1300000000};
@@ -53,9 +66,9 @@ class DummyServer {
   // Pause execution here to wait for the main thread to stop (e.g. because ^C has been pressed).
   void waitForStop();
 
-  // starts the socat runner and the main thread
+  // Starts the socat runner and the main thread
   void activate();
-  // stops the main thread and then terminates the socat runner
+  // Stops the main thread and then terminates the socat runner
   void deactivate();
 
   // The device node for the business logic. It normaly contains a random component, so

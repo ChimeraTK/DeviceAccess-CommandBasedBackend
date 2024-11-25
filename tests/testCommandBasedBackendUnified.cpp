@@ -24,7 +24,7 @@ std::string cdd() {
 
 /**********************************************************************************************************************/
 
-// common part of the register descriptors to avoid code duplication
+// Common parts of the register descriptors to avoid code duplication.
 struct RegisterDescriptorBase {
   static bool isReadable() { return true; }
   static ChimeraTK::AccessModeFlags supportedFlags() { return {}; }
@@ -54,7 +54,7 @@ struct RegisterDescriptorBase {
 
 /**********************************************************************************************************************/
 
-// handles cases 0 to 3 (wrong/incomplete responses or syntax errors)
+// Handles cases 0 to 3 (wrong/incomplete responses or syntax errors)
 void setForceReadError(bool enable, size_t caseNr) {
   switch(caseNr) {
     case 0:
@@ -91,7 +91,7 @@ struct VoidType : public RegisterDescriptorBase {
 
   using minimumUserType = ChimeraTK::Boolean;
 
-  // always reset to 0. Not needed as this is only used for the reading test
+  // Always reset to 0. Not needed as this is only used for the reading test
   void setRemoteValue() { dummyServer.voidCounter = 0; }
 
   // GenerateValue usually ensures that the value used for the write test is different from the values used before to
@@ -154,7 +154,7 @@ struct ScalarInt : public RegisterDescriptorBase {
 
 /**********************************************************************************************************************/
 
-// Adding error scenarios which only work in read only as they don't apply for writing
+// Adding error scenarios which only work in read only as they don't apply for writing.
 struct ScalarIntRO : public ScalarInt {
   static std::string path() { return "/cwFrequencyRO"; }
   static size_t nRuntimeErrorCases() { return 4; }
@@ -206,7 +206,7 @@ struct StringArray : public RegisterDescriptorBase {
   }
 
   static void setForceRuntimeError(bool enable, size_t caseNr) {
-    // Only the first two tests of setForceReadError are viable for an uninterpreted string
+    // Only the first two tests of setForceReadError are viable for an uninterpreted string.
     if(caseNr < 2) {
       setForceReadError(enable, caseNr);
     }
@@ -255,7 +255,7 @@ struct ArrayFloatMultiLine : public RegisterDescriptorBase {
 
 /**********************************************************************************************************************/
 
-// Adding error scenarios which only work in read only as they don't apply for writing
+// Adding error scenarios which only work in read only as they don't apply for writing.
 struct ArrayFloatMultiLineRO : public ArrayFloatMultiLine {
   static std::string path() { return "/ACCRO"; }
   static size_t nRuntimeErrorCases() { return 4; }

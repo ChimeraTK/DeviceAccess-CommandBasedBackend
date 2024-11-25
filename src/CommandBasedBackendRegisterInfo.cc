@@ -13,7 +13,7 @@ namespace ChimeraTK {
     writeResponsePattern(writeResponsePattern_), readCommandPattern(readCommandPattern_),
     readResponsePattern(readResponsePattern_), nLinesReadResponse(nLinesReadResponse_), internalType(type),
     delimiter(delimiter_) {
-    // set dataDescriptor from type.
+    // Set dataDescriptor from type.
     if(type == InternalType::INT64) {
       dataDescriptor = DataDescriptor(DataType::int64);
     }

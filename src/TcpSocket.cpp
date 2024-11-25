@@ -13,7 +13,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   void TcpSocket::connect() {
-    // Resolve the host and port, and connect to the server
+    // Resolve the host and port, and connect to the server.
     boost::system::error_code ec;
     try {
       auto endpoints = _resolver.resolve(_host, _port);
@@ -96,18 +96,18 @@ namespace ChimeraTK {
 
     timer.expires_after(timeout);
     timer.async_wait([&](const boost::system::error_code& error) {
-      // as boost::asio::error::operation_aborted is not set for timer, it
+      // As boost::asio::error::operation_aborted is not set for timer, it
       // means it has expired.
       if(!error) {
-        _socket.cancel(); // Cancel the socket operation on timeout
+        _socket.cancel(); // Cancel the socket operation on timeout.
       }
     });
 
     boost::asio::async_read_until(_socket, boost::asio::dynamic_buffer(response), _delimiter,
         [&](const boost::system::error_code& error, std::size_t /*bytes_transferred*/) {
           ec = error;
-          timer.cancel(); // Stop the timer if read completes
-                          // If the timer is canceled: error is boost::asio::error::operation_aborted
+          timer.cancel(); // Stop the timer if read completes.
+                          // If the timer is canceled: error is boost::asio::error::operation_aborted.
         });
 
     _io_context.run();
@@ -120,7 +120,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error(ec.message());
     }
 
-    // return the response without the delimiter
+    // Return the response without the delimiter.
     return response.substr(0, response.size() - _delimiter.size());
   }
 
