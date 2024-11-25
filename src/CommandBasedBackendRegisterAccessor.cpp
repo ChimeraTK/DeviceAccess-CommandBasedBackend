@@ -82,7 +82,6 @@ namespace ChimeraTK {
       replacePatterns["x"].push_back(valueRegex);
     }
 
-    // FIXME: pass this through the template engine //TODO
     try {
       auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
       readResponseRegex = regexText;
@@ -123,7 +122,6 @@ namespace ChimeraTK {
           _registerInfo.getRegisterName() + ").");
     }
     _backend->_lastWrittenRegister = _registerInfo.registerPath;
-    // TODO here, prepare the read command into the writeTransferBuffer?
   }
 
   /********************************************************************************************************************/
@@ -133,7 +131,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    // FIXME: properly create the read command through the template engine //TODO
+    // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readCommandPattern;
 
     readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
@@ -196,6 +194,7 @@ namespace ChimeraTK {
     else {
       for(size_t i = 0; i < _numberOfElements; ++i) {
         // FIXME: does not know about formating
+        // May need leading zeros or other formatting to satisfy 
         replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
       }
     }
