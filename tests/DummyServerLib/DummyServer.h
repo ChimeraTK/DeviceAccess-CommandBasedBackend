@@ -12,7 +12,7 @@
 
 class DummyServer {
  public:
-  DummyServer(bool useRandomDevice = true);
+  DummyServer(bool useRandomDevice = true, bool debug = false);
   ~DummyServer();
 
   /**
@@ -69,7 +69,7 @@ class DummyServer {
   void setAcc(const std::string& axis, const std::string& value);
   void setHex(size_t i, const std::string& value);
 
-  bool _debug{true};
+  bool _debug;
 
   boost::process::child _socatRunner;
   boost::thread _mainLoopThread;

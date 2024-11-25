@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-DummyServer::DummyServer(bool useRandomDevice) {
+DummyServer::DummyServer(bool useRandomDevice, bool debug) : _debug(debug) {
   if(useRandomDevice) {
     // generate a random number to attach to the device name to muliple test can run in parallel
     // Initialise with high resolution clock as see so all processes get a different value.
@@ -79,7 +79,9 @@ void DummyServer::activate() {
 
 void DummyServer::deactivate() {
   // First stop the main thread which is accessing the SerialPort object
-  std::cout << "DEBUG!!! << DummyServer::deactivate() joining main thread." << std::endl;
+  if(_debug) {
+    std::cout << "DEBUG!!! << DummyServer::deactivate() joining main thread." << std::endl;
+  }
   if(_mainLoopThread.joinable()) {
     _stopMainLoop = true;
     // Try sending the read terminate several times. The main loop in another thread might just have started reading and
@@ -93,13 +95,17 @@ void DummyServer::deactivate() {
   _serialPort.reset();
 
   // Finally, stop the socat runner
-  std::cout << "DEBUG!!! << DummyServer::deactivate() stopping socat runner." << std::endl;
+  if(_debug) {
+    std::cout << "DEBUG!!! << DummyServer::deactivate() stopping socat runner." << std::endl;
+  }
   assert(_socatRunner.running());
   _socatRunner.terminate();
   _socatRunner.wait();
 
   // Wait for "front door" file descriptor to become invalid
-  std::cout << "DEBUG!!! << DummyServer::deactivate() waiting for front door to close." << std::endl;
+  if(_debug) {
+    std::cout << "DEBUG!!! << DummyServer::deactivate() waiting for front door to close." << std::endl;
+  }
   while(true) {
     auto fd = ::open(deviceNode.c_str(), O_RDONLY | O_NOCTTY);
 
@@ -162,7 +168,9 @@ void DummyServer::mainLoop() {
     }
     else if(data == u8"\u0018") {
       voidCounter++;
-      std::cout << "Received Emergency Stop Movement command." << std::endl;
+      if(_debug) {
+        std::cout << "Received Emergency Stop Movement command." << std::endl;
+      }
     }
     else if(data == "*IDN?") {
       _serialPort->send("Dummy server for command based serial backend.");
@@ -271,7 +279,9 @@ void DummyServer::mainLoop() {
           if(sendTooFew) {
             auto lastComma = out.rfind(',');
             out = out.substr(0, lastComma);
-            std::cout << "sending with syntax error: " << out << std::endl;
+            if(_debug) {
+              std::cout << "sending with syntax error: " << out << std::endl;
+            }
           }
           _serialPort->send(out);
         }
