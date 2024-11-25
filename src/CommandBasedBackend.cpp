@@ -197,10 +197,8 @@ namespace ChimeraTK {
   CommandBasedBackend::BackendRegisterer::BackendRegisterer() {
     BackendFactory::getInstance().registerBackendType(
         "CommandBasedTTY", &CommandBasedBackend::createInstanceSerial, {}, CHIMERATK_DEVICEACCESS_VERSION);
-    std::cout << "registered backend CommandBasedTTY" << std::endl;
     BackendFactory::getInstance().registerBackendType(
         "CommandBasedTCP", &CommandBasedBackend::createInstanceEthernet, {}, CHIMERATK_DEVICEACCESS_VERSION);
-    std::cout << "registered backend CommandBasedTCP" << std::endl;
   }
 
   /********************************************************************************************************************/

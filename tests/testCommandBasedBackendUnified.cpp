@@ -121,7 +121,6 @@ struct VoidType : public RegisterDescriptorBase {
     auto stopTime = std::chrono::steady_clock::now() + std::chrono::milliseconds(3000);
     while(dummyServer.voidCounter == 0) {
       if(std::chrono::steady_clock::now() > stopTime) {
-        std::cout << "   Expected write not detected in void type register " << path() << std::endl;
         return {{UserType(false)}};
       }
       usleep(1000);
@@ -201,8 +200,6 @@ struct StringArray : public RegisterDescriptorBase {
     for(size_t i = 0; i < nElementsPerChannel(); ++i) {
       dummyServer.sai[i] = v[0][i];
     }
-
-    std::cout << "setRemoteValue: " << v[0][0] << " , " << v[0][1] << std::endl;
   }
 
   static void setForceRuntimeError(bool enable, size_t caseNr) {
@@ -357,7 +354,6 @@ struct ArrayHexInt8 : public ArrayHexMultiLine {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
-  std::cout << "*** testRegisterAccessor *** " << std::endl;
   ChimeraTK::UnifiedBackendTest<>()
       .addRegister<ScalarInt>()
       .addRegister<ScalarIntRO>()
