@@ -10,7 +10,6 @@
 
 #include <boost/process.hpp>
 
-#include <cstdlib> //for atoi test, DEBUG
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -153,25 +152,6 @@ void DummyServer::mainLoop() {
     if(sendGarbage) {
       _serialPort->send("gnrbBlrpnBrtz");
       continue;
-    }
-
-    if(data.find("send") == 0) { // A fake command e.g. "send 4" to test multiline readback //DEBUG section
-      if(data.size() < 6) {
-        _serialPort->send("12345 Syntax error: send command needs an argument");
-        continue;
-      }
-      if(data[4] != ' ') {
-        _serialPort->send("12345 Syntax error: unknown command: " + data);
-        continue;
-      }
-      int n = std::atoi(data.substr(5).c_str());
-      for(int i = 0; i < n; i++) {
-        std::string dat = "reply " + std::to_string(i);
-        if(_debug) {
-          std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
-        }
-        _serialPort->send(dat);
-      }
     }
     else if(data == "*CLS") {
       if(_debug) {
