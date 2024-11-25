@@ -42,11 +42,14 @@ namespace ChimeraTK {
 
     std::string writeCommandPattern;
     std::string writeResponsePattern;
-    size_t nLinesWriteResponse{0}; // fixme: extract from pattern
+    size_t nLinesWriteResponse{0}; // fixme: extract from pattern //TODO this should be fixed, coming from catalog
+                                   // TODO remove default value if it's set in the constructor
 
     std::string readCommandPattern;
     std::string readResponsePattern;
-    size_t nLinesReadResponse{1}; // fixme: extract from pattern
+    size_t nLinesReadResponse{1}; // fixme: extract from pattern //TODO this should be fixed, coming from catalog
+
+                                   // TODO remove default value if it's set in the constructor
 
     InternalType internalType;
     DataDescriptor dataDescriptor;
