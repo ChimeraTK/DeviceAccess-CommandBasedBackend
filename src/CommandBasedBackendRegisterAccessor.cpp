@@ -193,7 +193,9 @@ namespace ChimeraTK {
   template<typename UserType>
   void CommandBasedBackendRegisterAccessor<UserType>::doPreWrite(
       [[maybe_unused]] TransferType type, [[maybe_unused]] VersionNumber versionNumber) {
-    if(!_backend->isOpen()) throw ChimeraTK::logic_error("Device not opened.");
+    if(!_backend->isOpen()) {
+      throw ChimeraTK::logic_error("Device not opened.");
+    }
 
     if(!_registerInfo.isWriteable()) {
       throw ChimeraTK::logic_error(

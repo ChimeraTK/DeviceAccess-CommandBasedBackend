@@ -32,9 +32,13 @@ DummyServer::DummyServer(bool useRandomDevice, bool debug) : _debug(debug) {
 }
 
 DummyServer::~DummyServer() {
-  if(_debug) std::cout << "this is ~DummyServer" << std::endl;
+  if(_debug) {
+    std::cout << "this is ~DummyServer" << std::endl;
+  }
   try {
-    if(_debug) std::cout << "joining main thread" << std::endl;
+    if(_debug) {
+      std::cout << "joining main thread" << std::endl;
+    }
     deactivate();
   }
   catch(...) {
@@ -70,7 +74,9 @@ void DummyServer::activate() {
       }
     }
   }
-  if(_debug) std::cout << "echoing port " << _backportNode << std::endl; // DEBUG
+  if(_debug) {
+    std::cout << "echoing port " << _backportNode << std::endl;
+  }
 
   // finally start the main loop, which accesses the serial port
   _stopMainLoop = false;
@@ -127,14 +133,18 @@ void DummyServer::waitForStop() {
 void DummyServer::mainLoop() {
   uint64_t nIter = 0;
   while(true) {
-    if(_debug) std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl; // DEBUG
+    if(_debug) {
+      std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl;
+    }
     auto readValue = _serialPort->readline();
     if(!readValue.has_value() || _stopMainLoop) {
       return;
     }
     auto data = readValue.value();
 
-    if(_debug) std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl; // DEBUG
+    if(_debug) {
+      std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
+    }
 
     if(sendNothing) {
       continue;
@@ -157,7 +167,9 @@ void DummyServer::mainLoop() {
       int n = std::atoi(data.substr(5).c_str());
       for(int i = 0; i < n; i++) {
         std::string dat = "reply " + std::to_string(i);
-        if(_debug) std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl; // DEBUG
+        if(_debug) {
+          std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
+        }
         _serialPort->send(dat);
       }
     }
@@ -296,7 +308,9 @@ void DummyServer::mainLoop() {
     else {
       std::vector<std::string> lines = splitString(data, ";");
       for(const std::string& dat : lines) {
-        if(_debug) std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl; // DEBUG
+        if(_debug) {
+          std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
+        }
         _serialPort->send(dat);
       }
     } // end else

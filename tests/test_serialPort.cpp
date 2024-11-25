@@ -25,7 +25,6 @@ int main() {
     s.write(cmd);
     res = s.waitAndReadline(); // able to receive just fine after sending.
     if(res != cmd) {
-      std::cerr << "Serial Communication Test 0:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
       return std::max(1, testCode + ((int)l) + 1);
     }
   }
@@ -35,7 +34,6 @@ int main() {
   cmd = "test1";
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 1:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - cmd.size()));
   }
 
@@ -47,7 +45,6 @@ int main() {
   // cmd is 255 char long, sending 257 chars
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 2:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - 255));
   }
 
@@ -56,7 +53,6 @@ int main() {
   cmd = "test3";
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 3:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - cmd.size()));
   }
 
@@ -70,7 +66,6 @@ int main() {
   // cmd is 254 char long, sending 256 chars
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 4:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - 254));
   }
 
@@ -79,7 +74,6 @@ int main() {
   cmd = "test5";
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 5:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - cmd.size()));
   }
 
@@ -91,7 +85,6 @@ int main() {
   // cmd is 253 char long, sending 255 chars
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 6:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(1, (int)(testCode + res.size() - 253));
   }
 
@@ -100,7 +93,6 @@ int main() {
   cmd = "test7";
   res = s.sendCommand(cmd);
   if(res != cmd) {
-    std::cerr << "Serail Communication Test 7:\ntx'ed " << cmd << "\nrx'ed " << replaceNewLines(res) << std::endl;
     return std::max(testCode, 1);
   }
 
@@ -111,8 +103,6 @@ int main() {
   cmd = "send " + std::to_string(n);
   auto ret2 = s.sendCommand(cmd, n); // For n=5, expect ret = {"reply 0","reply 1","reply 2","reply 3","reply 4"}
   if(((int)ret2.size()) != n) {
-    std::cerr << "Serail Communication Test 8:\nReceived wrong length of responce. Expected " << n
-              << " items, received " << ret2.size() << std::endl;
     return std::max(1, (int)(testCode + itemCode + n - ret2.size())); // itemCode100
   }
   else {
@@ -120,8 +110,6 @@ int main() {
       itemCode = 100 * (i + 1);
       std::string expectedResponce = "reply " + std::to_string(i);
       if(ret2[i] != expectedResponce) {
-        std::cerr << "Serail Communication Test 8:\nIn reply item " << i << " expected " << expectedResponce
-                  << "\nbut rx'ed " << ret2[i] << std::endl;
         return std::max(1, (int)(testCode + itemCode + ret2[i].size() - expectedResponce.size()));
       }
 
@@ -133,20 +121,15 @@ int main() {
   cmd = "qwer;asdf";
   auto ret = s.sendCommand(cmd, 2); // Expect ret = {"qwer","asdf"}
   if(ret.size() != 2) {
-    std::cerr << "Serail Communication Test 9:\nReceived wrong length of responce. Expected " << n
-              << " items, received " << ret.size() << std::endl;
     return std::max(1, (int)(testCode + 0 + 2 - ret.size()));
   }
   else if(ret[0] != "qwer" or ret[1] != "asdf") {
-    std::cerr << "Serail Communication Test 9:\ntx'ed " << cmd
-              << "\nexpected {\"qwer\", \"asdf\"}\n rx'ed: " << std::endl;
-    for(const std::string& str : ret) {
-      std::cerr << replaceNewLines(str) << std::endl;
-    }
-    if(ret[0] != "qwer")
+    if(ret[0] != "qwer") {
       return std::max(1, (int)(testCode + 100 + ret[0].size() - 4));
-    else if(ret[1] != "asdf")
+    }
+    else if(ret[1] != "asdf") {
       return std::max(1, (int)(testCode + 200 + ret[0].size() - 4));
+    }
   }
 
   // ****************************************************************************************************************
