@@ -78,7 +78,7 @@ namespace ChimeraTK {
     inja::json replacePatterns;
     replacePatterns["x"] = {};
     for(size_t i = 0; i < _registerInfo.nElements; ++i) {
-      // Fixme: does not know about formating TODO
+      // FIXME: does not know about formating. TODO ticket 13534.
       replacePatterns["x"].push_back(valueRegex);
     }
 
@@ -94,14 +94,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error(
           "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
     }
-    // FIXME: checking the mark_count is not reliable. There might be additional //TODO
-    // capture groups. Possible solution:
-    // Replace the {{x.i}} with REPLACEMEi., spit the string at the REPLACEMEs and
-    // scan the snippets between for capture groups. Remember the positions and amounts of the
-    // capture groups as they will show up in the scan result.
-    // Also remember which index is found at which position so you know which
-    // subgroup has the value you are looking for. Then re-run
-    // inja on the original input and put in the matching regexps.
+    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
     if(readResponseRegex.mark_count() != _registerInfo.nElements) {
       throw ChimeraTK::logic_error("Wrong number of capture groups (" + std::to_string(readResponseRegex.mark_count()) +
           ") in readResponsePattern \"" + _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath +
@@ -193,8 +186,8 @@ namespace ChimeraTK {
     }
     else {
       for(size_t i = 0; i < _numberOfElements; ++i) {
-        // FIXME: does not know about formating
-        // May need leading zeros or other formatting to satisfy 
+        // FIXME: does not know about formating. TODO ticket 13534.
+        // May need leading zeros or other formatting to satisfy the hardware interface.
         replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
       }
     }
