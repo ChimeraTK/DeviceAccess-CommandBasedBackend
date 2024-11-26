@@ -12,6 +12,7 @@ include(cmake/set_default_build_to_release.cmake)
 include(cmake/set_default_flags.cmake)
 include(cmake/enable_code_coverage_report.cmake)
 include(cmake/enable_code_style_check.cmake)
+include(cmake/add_linter_target.cmake)
 
 find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
 find_package(nlohmann_json 03.07.0 REQUIRED) 
