@@ -31,7 +31,7 @@ std::vector<std::string> splitString(const std::string& stringToBeParsed, const 
 
 /**********************************************************************************************************************/
 
-std::vector<std::string> tokenise(const std::string& stringToBeParsed) {
+std::vector<std::string> tokenise(const std::string& stringToBeParsed) noexcept {
   std::vector<std::string> output;
   std::basic_stringstream inputStream(stringToBeParsed);
 

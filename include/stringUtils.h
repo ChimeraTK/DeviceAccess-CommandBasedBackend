@@ -17,7 +17,7 @@
  * No whitespace is retuned in the result.
  * The vector may be empty, which occurs if the input string is empty or there is only whitespace.
  */
-[[nodiscard]] std::vector<std::string> tokenise(const std::string& stringToBeParsed);
+[[nodiscard]] std::vector<std::string> tokenise(const std::string& stringToBeParsed) noexcept;
 
 /**
  * Returns true if and only if the provided string ends in the delimiter delim.

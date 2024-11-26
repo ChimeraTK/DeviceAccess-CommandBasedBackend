@@ -49,17 +49,17 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
       throw ChimeraTK::runtime_error(err);
     }
     outputStrVec.push_back(readStr);
-  } 
+  }
 
   return outputStrVec;
-} // end sendCommand
+}
 
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::waitAndReadline() const {
   auto readData = _serialPort->readline();
   if(not readData.has_value()) {
-    throw std::logic_error("FIXME: BAD INTERFACE");
+    throw ChimeraTK::logic_error("FIXME: BAD INTERFACE");
   }
   return readData.value();
 }
