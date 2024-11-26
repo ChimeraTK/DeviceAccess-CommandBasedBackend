@@ -115,7 +115,7 @@ namespace ChimeraTK {
      * @param[in] mapFileName The name and path to the map file.
      * @throws ChimeraTK::logic_error if map file not found
      */
-    void parseJsonAndPopulateCatalogue(const std::string& file_name);
+    void parseJsonAndPopulateCatalogue(const std::string& mapFileName);
 
     template<typename UserType>
     friend class CommandBasedBackendRegisterAccessor;

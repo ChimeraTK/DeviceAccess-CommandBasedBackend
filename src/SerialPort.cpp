@@ -7,7 +7,7 @@
 #include <chrono>  //Needed for timeout
 #include <cstring> //Used for memset
 #include <fcntl.h>
-#include <future>  //Needed for timeout
+#include <future> //Needed for timeout
 #include <iostream>
 #include <string>
 #include <termios.h> //For termain IO interface
@@ -30,8 +30,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   // Make an instance tty of the termios structure.
   // termios::tcgetattr reads the current terminal settings into the tty structure.
   // throw if this fails
-  termios tty; 
-  if(tcgetattr(fileDescriptor, &tty) != 0) { 
+  termios tty;
+  if(tcgetattr(fileDescriptor, &tty) != 0) {
     std::string err = "Error from tcgetattr\n";
     throw ChimeraTK::runtime_error(err);
   }
@@ -44,8 +44,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
     throw ChimeraTK::runtime_error(err);
   }
   // see https://www.man7.org/linux/man-pages/man3/termios.3.htmlL
-  tty.c_cflag &= ~PARENB;        // disables parity generation and detection.
-  tty.c_cflag &= ~CSTOPB;        // Use 1 stop bit, not 2
+  tty.c_cflag &= ~PARENB; // disables parity generation and detection.
+  tty.c_cflag &= ~CSTOPB; // Use 1 stop bit, not 2
   tty.c_cflag &= ~CSIZE;
   tty.c_cflag |= CS8;            // Use 8 bit chars.
   tty.c_cflag &= ~CRTSCTS;       // no flow control
