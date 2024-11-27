@@ -26,7 +26,7 @@ namespace ChimeraTK {
     assert(_registerInfo.getNumberOfElements() != 0);
     assert(_registerInfo.getNumberOfDimensions() < 2); // Implementation is only for scalar and 1D.
 
-    // Use 0 to means all elements are described in registerInfo.
+    // 0 indicates all elements are described in registerInfo.
     if(_numberOfElements == 0) {
       _numberOfElements = _registerInfo.getNumberOfElements();
     }
@@ -34,7 +34,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Requested offset + nElemements exceeds register size in " + this->getName());
     }
 
-    flags.checkForUnknownFlags({}); // Required to have no flags.
+    flags.checkForUnknownFlags({}); // No flags are required.
 
     if(!_backend) {
       throw ChimeraTK::logic_error("CommandBasedBackendRegisterAccessor is used with a backend which is not "
@@ -42,7 +42,7 @@ namespace ChimeraTK {
     }
     // You're supposed to be allowed to make accessors before the device is functional. So don't test functionality here.
 
-    // Allocated the buffers
+    // Allocate the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels());
     NDRegisterAccessor<UserType>::buffer_2D[0].resize(_registerInfo.getNumberOfElements());
     readTransferBuffer.resize(1);
