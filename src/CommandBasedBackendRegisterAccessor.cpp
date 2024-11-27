@@ -34,7 +34,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Requested offset + nElemements exceeds register size in " + this->getName());
     }
 
-    flags.checkForUnknownFlags({}); // No flags are required.
+    flags.checkForUnknownFlags({}); // Ensure that the user has not requested any flags, as none are supported.
 
     if(!_backend) {
       throw ChimeraTK::logic_error("CommandBasedBackendRegisterAccessor is used with a backend which is not "
