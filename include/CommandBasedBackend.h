@@ -93,11 +93,10 @@ namespace ChimeraTK {
 
     /**
      * The timeout parameter given to the command handler upon open().
-     * Also reported in readDeviceInfo().
-     * Avoid 1000 due to race conditions with a 1000ms timeout on
-     * CommandBasedBackendRegisterAccessor::doReadTransferSynchronously
+     * This becomes the timeout parameter of sendCommand
+     * Its reported in readDeviceInfo().
      */
-    ulong _timeoutInMilliseconds = 2000;
+    ulong _timeoutInMilliseconds = 1000;
 
     std::mutex _mux; /**< mutex for protecting ordered port access */
     std::unique_ptr<CommandHandler> _commandHandler;
