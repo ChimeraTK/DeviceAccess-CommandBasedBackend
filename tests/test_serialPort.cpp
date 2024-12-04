@@ -97,24 +97,7 @@ int main() {
   }
 
   // ****************************************************************************************************************
-  testCode = 8000; // TEST 8: 'send [N]' is a special code in dummy that makes it reply with N lines.
-  int itemCode = 0;
-  int n = 5;
-  cmd = "send " + std::to_string(n);
-  auto ret2 = s.sendCommand(cmd, n); // For n=5, expect ret = {"reply 0","reply 1","reply 2","reply 3","reply 4"}
-  if(((int)ret2.size()) != n) {
-    return std::max(1, (int)(testCode + itemCode + n - ret2.size())); // itemCode100
-  }
-  else {
-    for(int i = 0; i < n; i++) {
-      itemCode = 100 * (i + 1);
-      std::string expectedResponce = "reply " + std::to_string(i);
-      if(ret2[i] != expectedResponce) {
-        return std::max(1, (int)(testCode + itemCode + ret2[i].size() - expectedResponce.size()));
-      }
-
-    } // end for
-  }
+  // TEST 8: obsolete, removed
 
   // ****************************************************************************************************************
   testCode = 9000; // TEST 9: Test semicolon parsing into multiple return lines
