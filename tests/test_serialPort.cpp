@@ -1,120 +1,103 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE SerialPortTest
+#include <boost/test/unit_test.hpp>
+using namespace boost::unit_test_framework;
+
 #include "DummyServer.h"
 #include "SerialCommandHandler.h"
-#include "SerialPort.h"
-#include "stringUtils.h"
 
-#include <iostream>
 #include <string>
-#include <vector>
 
-int main() {
+struct SerialCommandHandlerFixture {
   DummyServer dummy;
+  SerialCommandHandler s;
 
-  int testCode = 0;
-  std::string cmd;
-  std::string res;
+  SerialCommandHandlerFixture() : s(dummy.deviceNode) {}
+};
 
-  SerialCommandHandler s(dummy.deviceNode);
+// Declares and registers a fixture used by all test cases under a test suite.
+// Each test case in the subtree of the test suite uses the fixture.
+BOOST_FIXTURE_TEST_SUITE(SerialCommandHandlerTests, SerialCommandHandlerFixture)
 
-  // ****************************************************************************************************************
-  testCode = 0; // TEST 0
+BOOST_AUTO_TEST_CASE(testSimpleReply) {
   for(long l = 0; l < 10; l++) {
-    cmd = "reply" + std::to_string(l);
+    std::string cmd = "reply" + std::to_string(l);
     s.write(cmd);
-    res = s.waitAndReadline(); // able to receive just fine after sending.
-    if(res != cmd) {
-      return std::max(1, testCode + ((int)l) + 1);
-    }
+    std::string res = s.waitAndReadline();
+    BOOST_TEST(res == cmd);
   }
+}
 
-  // ****************************************************************************************************************
-  testCode = 1000; // TEST 1
-  cmd = "test1";
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - cmd.size()));
-  }
+BOOST_AUTO_TEST_CASE(testBasicCommand) {
+  std::string cmd = "test1";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 2000; // TEST 2: cmd string longer than buffer
-  cmd = "test2aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
-        "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
-        "ccccccccccccccccccccccccccccc012345";
+BOOST_AUTO_TEST_CASE(testLongCommandBuffer) {
+  // Here the cmd string is longer than 256 character read buffer, forcing a multiple reads.
   // cmd is 255 char long, sending 257 chars
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - 255));
-  }
+  std::string cmd =
+      "test2aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
+      "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
+      "ccccccccccccccccccccccccccccc012345";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 3000; // TEST 3: catch any overflow from test 2
-  cmd = "test3";
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - cmd.size()));
-  }
+BOOST_AUTO_TEST_CASE(testLongCommandBufferFollowup) {
+  // Intermediate basic tests to see if the responce from the previous test overflows into the next reply.
+  std::string cmd = "test3";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 4000; // TEST 4:
-                   // responce has 2-character delimiter straddle read buffer, so first char of delimiter comes in
-                   // first buffer read, and second delimter char comes in second buffer read
-  cmd = "test4aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
-        "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
-        "ccccccccccccccccccccccccccccc01234";
-  // cmd is 254 char long, sending 256 chars
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - 254));
-  }
+BOOST_AUTO_TEST_CASE(testDelimiterStraddleBuffer) {
+  // cmd is 254 char long, so this sends 256 chars. The read buffer is 256 characters, so the repply comes in over two
+  // reads. res has 2-character delimiter straddle read buffer, so the first char of the delimiter comes into the buffer
+  // upon the first read, and second delimter char comes into the buffer upon the second read
+  std::string cmd =
+      "test4aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
+      "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
+      "ccccccccccccccccccccccccccccc01234";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 5000; // TEST 5: catch any overflow from test 4
-  cmd = "test5";
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - cmd.size()));
-  }
+BOOST_AUTO_TEST_CASE(testDelimiterStraddleBufferFollowup) {
+  std::string cmd = "test5";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 6000; // TEST 6: command, together with delimiter, is exactly the size of the buffer.
-  cmd = "test6aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
-        "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
-        "ccccccccccccccccccccccccccccc0123";
+BOOST_AUTO_TEST_CASE(testCommandExactBufferSize) {
   // cmd is 253 char long, sending 255 chars
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(1, (int)(testCode + res.size() - 253));
-  }
+  // So the command, together with delimiter, is exactly the size of the buffer.
+  std::string cmd =
+      "test6aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
+      "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
+      "ccccccccccccccccccccccccccccc0123";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  testCode = 7000; // TEST 7: catch any overflow from test 6
-  cmd = "test7";
-  res = s.sendCommand(cmd);
-  if(res != cmd) {
-    return std::max(testCode, 1);
-  }
+BOOST_AUTO_TEST_CASE(testExactBufferSizeFollowup) {
+  std::string cmd = "test7";
+  std::string res = s.sendCommand(cmd);
+  BOOST_TEST(res == cmd);
+}
 
-  // ****************************************************************************************************************
-  // TEST 8: obsolete, removed
+BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
+  std::string cmd = "qwer;asdf";
+  auto ret = s.sendCommand(cmd, 2);
+  BOOST_TEST(ret.size() == 2);
 
-  // ****************************************************************************************************************
-  testCode = 9000; // TEST 9: Test semicolon parsing into multiple return lines
-  cmd = "qwer;asdf";
-  auto ret = s.sendCommand(cmd, 2); // Expect ret = {"qwer","asdf"}
-  if(ret.size() != 2) {
-    return std::max(1, (int)(testCode + 0 + 2 - ret.size()));
+  if(ret.size() == 2) {
+    BOOST_TEST(ret[0] == "qwer");
+    BOOST_TEST(ret[1] == "asdf");
   }
-  else if(ret[0] != "qwer" or ret[1] != "asdf") {
-    if(ret[0] != "qwer") {
-      return std::max(1, (int)(testCode + 100 + ret[0].size() - 4));
-    }
-    else if(ret[1] != "asdf") {
-      return std::max(1, (int)(testCode + 200 + ret[0].size() - 4));
-    }
-  }
+}
 
-  // ****************************************************************************************************************
-  return 0; // All tests pass
-} // end main
+BOOST_AUTO_TEST_SUITE_END()
