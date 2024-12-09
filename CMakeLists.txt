@@ -5,7 +5,7 @@ option(BUILD_TESTS "Build tests." ON)
 
 set(${PROJECT_NAME}_MAJOR_VERSION 00)
 set(${PROJECT_NAME}_MINOR_VERSION 01)
-set(${PROJECT_NAME}_PATCH_VERSION 00)
+set(${PROJECT_NAME}_PATCH_VERSION 01)
 include(cmake/set_version_numbers.cmake)
 
 include(cmake/set_default_build_to_release.cmake)
@@ -14,7 +14,14 @@ include(cmake/enable_code_coverage_report.cmake)
 include(cmake/enable_code_style_check.cmake)
 
 find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
-find_package(nlohmann_json 03.07.0 REQUIRED) 
+
+#FIXME: nlohmann version 03.07 on focal is too old for inja.
+#That's why inja (there) brings its own version which is found by
+#the source code, but not by cmake.
+#Put back the explicit nlohmann dependency as soon as we abandoned focal.
+#
+#find_package(nlohmann_json 03.07.0 REQUIRED) 
+
 find_package(inja 03.04.0 REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
