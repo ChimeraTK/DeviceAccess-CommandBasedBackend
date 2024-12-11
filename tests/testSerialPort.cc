@@ -22,7 +22,7 @@ struct SerialCommandHandlerFixture {
 BOOST_FIXTURE_TEST_SUITE(SerialCommandHandlerTests, SerialCommandHandlerFixture)
 
 BOOST_AUTO_TEST_CASE(testSimpleReply) {
-  for(long l = 0; l < 10; l++) {
+  for(int32_t l = 0; l < 10; l++) {
     std::string cmd = "reply" + std::to_string(l);
     s.write(cmd);
     std::string res = s.waitAndReadline();

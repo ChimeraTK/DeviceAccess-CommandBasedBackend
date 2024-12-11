@@ -45,7 +45,7 @@ namespace ChimeraTK {
     // Allocate the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels());
     NDRegisterAccessor<UserType>::buffer_2D[0].resize(_numberOfElements);
-    readTransferBuffer.resize(1);
+    _readTransferBuffer.resize(1);
 
     this->_exceptionBackend = dev;
 
@@ -84,7 +84,7 @@ namespace ChimeraTK {
 
     try {
       auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
-      readResponseRegex = regexText;
+      _readResponseRegex = regexText;
     }
     catch(std::regex_error& e) {
       throw ChimeraTK::logic_error(
@@ -95,10 +95,11 @@ namespace ChimeraTK {
           "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
     }
     // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
-    if(readResponseRegex.mark_count() != _registerInfo.nElements) {
-      throw ChimeraTK::logic_error("Wrong number of capture groups (" + std::to_string(readResponseRegex.mark_count()) +
-          ") in readResponsePattern \"" + _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath +
-          ", expected " + std::to_string(_registerInfo.nElements));
+    if(_readResponseRegex.mark_count() != _registerInfo.nElements) {
+      throw ChimeraTK::logic_error("Wrong number of capture groups (" +
+          std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
+          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", expected " +
+          std::to_string(_registerInfo.nElements));
     }
 
   } // end constructor CommandBasedBackendRegisterAccessor
@@ -127,7 +128,7 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readCommandPattern;
 
-    readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
+    _readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
   }
 
   /********************************************************************************************************************/
@@ -140,12 +141,12 @@ namespace ChimeraTK {
       // For technical reasons the response has been read line by line.
       // Combine them here back into a single response string.
       std::string combinedReadString;
-      for(const auto& line : readTransferBuffer) {
+      for(const auto& line : _readTransferBuffer) {
         combinedReadString += line + _registerInfo.delimiter;
       }
 
       std::smatch valueMatch;
-      if(!std::regex_match(combinedReadString, valueMatch, readResponseRegex)) {
+      if(!std::regex_match(combinedReadString, valueMatch, _readResponseRegex)) {
         throw ChimeraTK::runtime_error("Could not extract values from \"" + replaceNewLines(combinedReadString) +
             "\" in " + _registerInfo.registerPath);
       }
@@ -195,7 +196,7 @@ namespace ChimeraTK {
 
     // Form the write command.
     try {
-      writeTransferBuffer = inja::render(_registerInfo.writeCommandPattern, replacePatterns);
+      _writeTransferBuffer = inja::render(_registerInfo.writeCommandPattern, replacePatterns);
     }
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
@@ -220,7 +221,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommand(writeTransferBuffer, 0);
+    _backend->sendCommand(_writeTransferBuffer, 0);
     return false; // no data was lost
   }
 

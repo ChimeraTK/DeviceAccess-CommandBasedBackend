@@ -24,7 +24,7 @@
  * @param[in] delim The delimiter
  # @param[in] delim_size Must equal delim.size()
  */
-[[nodiscard]] bool strEndsInDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept;
+[[nodiscard]] bool strEndsInDelim(const std::string& str, const std::string& delim, size_t delim_size) noexcept;
 
 /**
  * Removes the delimiter delim from str if it's present and returns the result.
@@ -33,8 +33,7 @@
  * @param[in] delim The delimiter
  # @param[in] delim_size Must equal delim.size()
  */
-[[nodiscard]] std::string stripDelim(
-    const std::string& str, const std::string& delim, const size_t delim_size) noexcept;
+[[nodiscard]] std::string stripDelim(const std::string& str, const std::string& delim, size_t delim_size) noexcept;
 
 /**
  * This replaces '\n' with 'N' and '\r' with 'R' and returns the modified string.
