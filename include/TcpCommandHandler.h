@@ -45,7 +45,7 @@ namespace ChimeraTK {
      * Typically cmd is a command.
      * @param[in] cmd The string to be written to the device.
      */
-    inline void write(std::string cmd) const { _tcpDevice->send(std::move(cmd)); }
+    inline void write(std::string& cmd) const { _tcpDevice->send(cmd); }
 
     /**
      * Reads from the Tcp network device.

@@ -12,17 +12,18 @@
 #include <string>
 #include <termios.h> //For termain IO interface
 #include <unistd.h>  //POSIX OS API
+#include <vector>
 
 /**********************************************************************************************************************/
 
 SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
-: delim(delimiter.size() < 1 ? "\n" : delimiter), delim_size(delim.size()) {
-  fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
-                                                                         // O_RDWR = open for read + write
-                                                                         // O_RDONLY = open read only
-                                                                         // O_WRONLY = open write only
-                                                                         // O_NOCTTY = no controlling termainl
-  if(fileDescriptor == -1) {
+: delim(delimiter.empty() ? "\n" : delimiter) {
+  _fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
+                                                                          // O_RDWR = open for read + write
+                                                                          // O_RDONLY = open read only
+                                                                          // O_WRONLY = open write only
+                                                                          // O_NOCTTY = no controlling termainl
+  if(_fileDescriptor == -1) {
     std::string err = "Unable to open device \"" + device + "\"";
     throw ChimeraTK::runtime_error(err);
   }
@@ -30,8 +31,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   // Make an instance tty of the termios structure.
   // termios::tcgetattr reads the current terminal settings into the tty structure.
   // throw if this fails
-  termios tty;
-  if(tcgetattr(fileDescriptor, &tty) != 0) {
+  termios tty{};
+  if(tcgetattr(_fileDescriptor, &tty) != 0) {
     std::string err = "Error from tcgetattr\n";
     throw ChimeraTK::runtime_error(err);
   }
@@ -43,7 +44,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
     std::string err = "Error setting IO speed\n";
     throw ChimeraTK::runtime_error(err);
   }
-  // see https://www.man7.org/linux/man-pages/man3/termios.3.htmlL
+  // see https://www.man7.org/linux/man-pages/man3/termios.3.html
+  // NOLINTBEGIN(hicpp-signed-bitwise)
   tty.c_cflag &= ~PARENB; // disables parity generation and detection.
   tty.c_cflag &= ~CSTOPB; // Use 1 stop bit, not 2
   tty.c_cflag &= ~CSIZE;
@@ -53,10 +55,11 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tty.c_cc[VMIN] = 0;            // VMIN defines the minimum number of characters to read
   tty.c_cc[VTIME] = 0;           // 0.5 seconds read timeout //FIXME hacked to be 0 for polling read test
   tty.c_cflag |= CREAD | CLOCAL; // turn on READ & ignore ctrl lines
+  // NOLINTEND(hicpp-signed-bitwise)
 
   // Flush Port, then applies attributes.
-  tcflush(fileDescriptor, TCIFLUSH);
-  if(tcsetattr(fileDescriptor, TCSANOW, &tty) != 0) { // from termios
+  tcflush(_fileDescriptor, TCIFLUSH);
+  if(tcsetattr(_fileDescriptor, TCSANOW, &tty) != 0) { // from termios
     std::string err = "Error from tcsetattr\n";
     throw ChimeraTK::runtime_error(err);
   }
@@ -65,14 +68,14 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
 /**********************************************************************************************************************/
 
 SerialPort::~SerialPort() {
-  close(fileDescriptor);
+  close(_fileDescriptor);
 }
 
 /**********************************************************************************************************************/
 
 void SerialPort::send(const std::string& str) const {
   std::string strToWrite = str + delim;
-  int bytesWritten = write(fileDescriptor, strToWrite.c_str(), strToWrite.size()); // unistd::write
+  ssize_t bytesWritten = write(_fileDescriptor, strToWrite.c_str(), strToWrite.size()); // unistd::write
 
   if(bytesWritten != static_cast<ssize_t>(strToWrite.size())) {
     std::string err = "Incomplete write";
@@ -85,21 +88,21 @@ void SerialPort::send(const std::string& str) const {
 std::optional<std::string> SerialPort::readline() noexcept {
   size_t delimPos;
   static constexpr int readBufferLen = 256;
-  char readBuffer[readBufferLen];
+  std::vector<char> readBuffer(readBufferLen, '\0'); // Initialize with zeros
 
   _terminateRead = false;
   // Search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
   for(delimPos = _persistentBufferStr.find(delim); delimPos == std::string::npos;
       delimPos = _persistentBufferStr.find(delim)) {
-    memset(readBuffer, 0, sizeof(readBuffer));
+    std::fill(readBuffer.begin(), readBuffer.end(), '\0');
     ssize_t __attribute__((unused)) bytesRead =
-        read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // unistd::read
+        read(_fileDescriptor, readBuffer.data(), readBuffer.size() - 1); // unistd::read
 
     if(_terminateRead) {
       return std::nullopt;
     }
     // The -1 makes room for read to insert a '\0' null termination at the end.
-    _persistentBufferStr += std::string(readBuffer);
+    _persistentBufferStr += std::string(readBuffer.data());
 
     if(bytesRead == 0) {
       usleep(1000);
@@ -108,7 +111,7 @@ std::optional<std::string> SerialPort::readline() noexcept {
 
   // Now the delimiter has been found at position delimPos.
   std::string outputStr = _persistentBufferStr.substr(0, delimPos);
-  _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim_size);
+  _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim.size());
   return std::make_optional(outputStr);
 } // end readline
 

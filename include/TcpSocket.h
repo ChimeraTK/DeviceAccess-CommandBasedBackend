@@ -23,7 +23,7 @@ namespace ChimeraTK {
      * @param[in] port The remote port to connect to.
      * @param[in] timeoutInMilliseconds Timeout duration for read/write operations, in milliseconds.
      */
-    TcpSocket(const std::string& host, const std::string& port, ulong timeoutInMilliseconds);
+    TcpSocket(std::string host, std::string port, ulong timeoutInMilliseconds);
 
     /**
      * @brief Sends a command to the connected remote host.

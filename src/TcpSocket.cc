@@ -5,9 +5,11 @@
 
 #include <ChimeraTK/Exception.h>
 
+#include <utility>
+
 namespace ChimeraTK {
-  TcpSocket::TcpSocket(const std::string& host, const std::string& port, ulong timeoutInMilliseconds)
-  : _io_context(), _socket(_io_context), _resolver(_io_context), _host(host), _port(port),
+  TcpSocket::TcpSocket(std::string host, std::string port, ulong timeoutInMilliseconds)
+  : _socket(_io_context), _resolver(_io_context), _host(std::move(host)), _port(std::move(port)),
     _timeout(std::chrono::milliseconds(timeoutInMilliseconds)) {}
 
   /********************************************************************************************************************/
@@ -116,7 +118,7 @@ namespace ChimeraTK {
     if(ec == boost::asio::error::operation_aborted) {
       throw ChimeraTK::runtime_error("Read operation timed out");
     }
-    else if(ec) {
+    if(ec) {
       throw ChimeraTK::runtime_error(ec.message());
     }
 

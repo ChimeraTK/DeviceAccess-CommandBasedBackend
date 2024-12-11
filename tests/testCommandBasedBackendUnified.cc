@@ -92,7 +92,7 @@ struct VoidType : public RegisterDescriptorBase {
   using minimumUserType = ChimeraTK::Boolean;
 
   // Always reset to 0. Not needed as this is only used for the reading test
-  void setRemoteValue() { dummyServer.voidCounter = 0; }
+  static void setRemoteValue() { dummyServer.voidCounter = 0; }
 
   // GenerateValue usually ensures that the value used for the write test is different from the values used before to
   // make sure the test is sensitive. This does not apply for void. However, it is also the expected value after the
