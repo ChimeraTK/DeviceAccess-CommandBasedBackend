@@ -65,8 +65,8 @@ namespace ChimeraTK {
     /** the backend to use for the actual hardware access */
     boost::shared_ptr<CommandBasedBackend> _backend;
 
-    std::vector<std::string> readTransferBuffer;
-    std::string writeTransferBuffer;
+    std::vector<std::string> _readTransferBuffer;
+    std::string _writeTransferBuffer;
 
     void doPreRead([[maybe_unused]] TransferType) override;
 
@@ -78,7 +78,7 @@ namespace ChimeraTK {
 
     void doReadTransferSynchronously() override;
 
-    std::regex readResponseRegex;
+    std::regex _readResponseRegex;
 
   }; // end class CommandBasedBackendRegisterAccessor
 

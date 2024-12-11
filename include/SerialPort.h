@@ -31,7 +31,7 @@ class SerialPort {
    * @param[in] delmimiter The line delimiter seperating serial port messages.
    * @throws ChimeraTK::runtime_error
    */
-  SerialPort(const std::string& device, const std::string& delimiter = "\r\n");
+  explicit SerialPort(const std::string& device, const std::string& delimiter = "\r\n");
 
   /**
    * Closes the port.
@@ -65,7 +65,7 @@ class SerialPort {
    * delim_size = delim.size();
    * Must come after delim here due to initaization order.
    */
-  const size_t delim_size;
+  const size_t delimSize;
 
   /**
    * Terminate a blocking read call.
@@ -76,7 +76,7 @@ class SerialPort {
   /**
    * The serial port handle.
    */
-  int fileDescriptor;
+  int _fileDescriptor;
 
   /**
    * Carries-over the not returned data from readline() call to the next.

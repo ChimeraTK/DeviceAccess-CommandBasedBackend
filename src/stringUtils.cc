@@ -50,8 +50,8 @@ std::vector<std::string> tokenise(const std::string& stringToBeParsed) noexcept 
 /**********************************************************************************************************************/
 
 bool strEndsInDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept {
-  int s = str.size() - 1;
-  int d = delim_size - 1;
+  int s = static_cast<int>(str.size()) - 1;
+  int d = static_cast<int>(delim_size) - 1;
   while(s >= 0 and d >= 0) {
     if(str[s--] != delim[d--]) {
       return false;
@@ -66,9 +66,7 @@ std::string stripDelim(const std::string& str, const std::string& delim, const s
   if(strEndsInDelim(str, delim, delim_size)) {
     return str.substr(0, str.size() - delim_size);
   }
-  else {
-    return str;
-  }
+  return str;
 }
 
 /**********************************************************************************************************************/

@@ -152,7 +152,7 @@ void DummyServer::mainLoop() {
       _serialPort->send("gnrbBlrpnBrtz");
       continue;
     }
-    else if(data == "*CLS") {
+    if(data == "*CLS") {
       if(_debug) {
         std::cout << "Received debug clear command" << std::endl;
       }
@@ -167,9 +167,9 @@ void DummyServer::mainLoop() {
       _serialPort->send("Dummy server for command based serial backend.");
     }
     else if(data == "SAI?") {
-      _serialPort->send(sai[0]);
+      _serialPort->send(static_cast<std::string>(sai[0]));
       if(!sendTooFew) {
-        _serialPort->send(sai[1]);
+        _serialPort->send(static_cast<std::string>(sai[1]));
       }
     }
     else if(data.find("ACC ") == 0) {

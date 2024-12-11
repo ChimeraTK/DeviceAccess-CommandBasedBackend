@@ -60,7 +60,7 @@ namespace ChimeraTK {
     std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected);
 
     template<typename UserType>
-    boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
+    boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl( // NOLINT
         const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags);
 
     static boost::shared_ptr<DeviceBackend> createInstanceSerial(
@@ -126,7 +126,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename UserType>
-  boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
+  boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl( // NOLINT
       const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
     auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
 
