@@ -46,7 +46,6 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   }
   // see https://www.man7.org/linux/man-pages/man3/termios.3.html
   constexpr auto PARENB_MASK = ~static_cast<unsigned int>(PARENB);
-  // constexpr unsigned int PARENB_MASK = ~static_cast<unsigned int>(PARENB);
   tty.c_cflag &= PARENB_MASK; // disables parity generation and detection.
 
   constexpr auto CSTOPB_MASK = ~static_cast<unsigned int>(CSTOPB);
