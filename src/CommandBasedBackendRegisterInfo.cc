@@ -11,7 +11,7 @@ namespace ChimeraTK {
       std::string writeCommandPattern_, std::string writeResponsePattern_, std::string readCommandPattern_,
       std::string readResponsePattern_, uint nElements_, size_t nLinesReadResponse_,
       CommandBasedBackendRegisterInfo::InternalType type, std::string delimiter_)
-  : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(std::move(std::move(writeCommandPattern_))),
+  : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(std::move(writeCommandPattern_)),
     writeResponsePattern(std::move(writeResponsePattern_)), readCommandPattern(std::move(readCommandPattern_)),
     readResponsePattern(std::move(readResponsePattern_)), nLinesReadResponse(nLinesReadResponse_), internalType(type),
     delimiter(std::move(delimiter_)) {

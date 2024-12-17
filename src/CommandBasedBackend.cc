@@ -93,7 +93,8 @@ namespace ChimeraTK {
   CommandBasedBackend::CommandBasedBackend(
       CommandBasedBackendType type, std::string instance, std::map<std::string, std::string> parameters)
   : _commandBasedBackendType(type) {
-    FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl); // NOLINT
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
     if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
       if(parameters.count("port") == 0) {
