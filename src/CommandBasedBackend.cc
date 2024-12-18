@@ -92,20 +92,19 @@ namespace ChimeraTK {
 
   CommandBasedBackend::CommandBasedBackend(
       CommandBasedBackendType type, std::string instance, std::map<std::string, std::string> parameters)
-  : _commandBasedBackendType(type) {
+  : _commandBasedBackendType(type), _instance(std::move(instance)) {
     // NOLINTNEXTLINE(readability-identifier-naming)
     FILL_VIRTUAL_FUNCTION_TEMPLATE_VTABLE(getRegisterAccessor_impl);
 
     if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
       if(parameters.count("port") == 0) {
-        throw ChimeraTK::logic_error("Missing parameter \"port\" in CDD of backend CommandBasedTCP " + instance);
+        throw ChimeraTK::logic_error("Missing parameter \"port\" in CDD of backend CommandBasedTCP " + _instance);
       }
       _port = parameters.at("port");
     }
     if(parameters.count("map") == 0) {
       throw ChimeraTK::logic_error("No map file parameter");
     }
-    _instance = std::move(instance);
 
     // Parse map file and copy results to internal catalogues.
     parseJsonAndPopulateCatalogue(parameters["map"]);
