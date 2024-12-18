@@ -17,7 +17,7 @@
 /**********************************************************************************************************************/
 
 SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
-: delim(delimiter.empty() ? "\n" : delimiter), delimSize(delim.size()) {
+: delim(delimiter.empty() ? "\n" : delimiter) {
   _fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY); // from fcntl
                                                              // O_RDWR = open for read + write
                                                              // O_RDONLY = open read only
@@ -120,7 +120,7 @@ std::optional<std::string> SerialPort::readline() noexcept {
 
   // Now the delimiter has been found at position delimPos.
   std::string outputStr = _persistentBufferStr.substr(0, delimPos);
-  _persistentBufferStr = _persistentBufferStr.substr(delimPos + delimSize);
+  _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim.size());
   return std::make_optional(outputStr);
 } // end readline
 

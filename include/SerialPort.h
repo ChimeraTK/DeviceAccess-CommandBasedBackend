@@ -62,12 +62,6 @@ class SerialPort {
   const std::string delim;
 
   /**
-   * delim_size = delim.size();
-   * Must come after delim here due to initaization order.
-   */
-  const size_t delimSize;
-
-  /**
    * Terminate a blocking read call.
    */
   void terminateRead();
