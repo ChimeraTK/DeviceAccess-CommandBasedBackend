@@ -190,7 +190,7 @@ struct StringArray : public RegisterDescriptorBase {
     std::vector<std::string> out(nElementsPerChannel());
 
     for(size_t i = 0; i < nElementsPerChannel(); ++i) {
-      out[i] = static_cast<std::string>(dummyServer.sai[i]);
+      out[i] = dummyServer.sai[i];
     }
     return {out};
   }
@@ -198,7 +198,7 @@ struct StringArray : public RegisterDescriptorBase {
   void setRemoteValue() {
     auto v = generateValue<minimumUserType>();
     for(size_t i = 0; i < nElementsPerChannel(); ++i) {
-      dummyServer.sai[i] = DummyServer::LockingString(v[0][i]);
+      dummyServer.sai[i] = v[0][i];
     }
   }
 

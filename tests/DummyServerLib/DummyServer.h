@@ -35,23 +35,18 @@ class DummyServer {
     explicit LockingString(const char* val) : _value(val) {}
     explicit LockingString(std::string val) : _value(std::move(val)) {}
 
-    explicit operator std::string() const {
+    LockingString(LockingString& other) = delete;
+    LockingString& operator=(LockingString&& other) = delete;
+
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    operator std::string() const {
       auto l = std::lock_guard(_mutex);
       return _value;
     }
+
     LockingString& operator=(std::string const& val) {
       auto l = std::lock_guard(_mutex);
       _value = val;
-      return *this;
-    }
-
-    // Move assignment operator needed b/c use of explicit
-    LockingString& operator=(LockingString&& other) noexcept {
-      if(this != &other) {
-        auto l1 = std::lock_guard(_mutex);
-        auto l2 = std::lock_guard(other._mutex);
-        _value = std::move(other._value);
-      }
       return *this;
     }
 
