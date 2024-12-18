@@ -9,7 +9,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib dummy_lib_source
 add_library(DummyServerLib ${dummy_lib_sources})
 target_link_libraries(DummyServerLib PUBLIC ${PROJECT_NAME} )
 
-add_executable(dummy-server manual_tests/DummyServer-stand-alone.cpp)
+add_executable(dummy-server manual_tests/DummyServer-stand-alone.cc)
 target_link_libraries(dummy-server PUBLIC DummyServerLib )
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} testExecutables)

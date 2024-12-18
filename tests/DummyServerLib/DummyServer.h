@@ -7,6 +7,7 @@
 #include <boost/process.hpp>
 #include <boost/thread.hpp>
 
+#include <array>
 #include <atomic>
 #include <memory>
 
@@ -23,7 +24,7 @@ class DummyServer {
    * useRandomDevice randomizes the serial communication port (the _backportNode)
    * debug toggles printouts
    */
-  DummyServer(bool useRandomDevice = true, bool debug = false);
+  explicit DummyServer(bool useRandomDevice = true, bool debug = false);
   ~DummyServer();
 
   /**
@@ -31,15 +32,26 @@ class DummyServer {
    */
   class LockingString {
    public:
-    LockingString(const char* val) : _value(val) {}
+    explicit LockingString(const char* val) : _value(val) {}
+    explicit LockingString(std::string val) : _value(std::move(val)) {}
 
-    operator std::string() const {
+    explicit operator std::string() const {
       auto l = std::lock_guard(_mutex);
       return _value;
     }
     LockingString& operator=(std::string const& val) {
       auto l = std::lock_guard(_mutex);
       _value = val;
+      return *this;
+    }
+
+    // Move assignment operator needed b/c use of explicit
+    LockingString& operator=(LockingString&& other) noexcept {
+      if(this != &other) {
+        auto l1 = std::lock_guard(_mutex);
+        auto l2 = std::lock_guard(other._mutex);
+        _value = std::move(other._value);
+      }
       return *this;
     }
 
@@ -50,12 +62,12 @@ class DummyServer {
 
   // These hold data values interogated by the CommandBasedBackend
   // Their names reflect register names
-  std::atomic<float> acc[2]{0.2, 0.3};
-  std::atomic<float> mov[2]{1.2, 1.3};
+  std::array<std::atomic<float>, 2> acc = {0.2F, 0.3F};
+  std::array<std::atomic<float>, 2> mov = {1.2F, 1.3F};
   std::atomic<uint64_t> cwFrequency{1300000000};
-  std::atomic<float> trace[10]{0., 1., 4., 9., 16., 25., 36., 49., 64., 81.};
-  LockingString sai[2]{"AXIS_1", "AXIS_2"};
-  std::atomic<uint64_t> hex[3]{0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
+  std::array<std::atomic<float>, 10> trace = {0.F, 1.F, 4.F, 9.F, 16.F, 25.F, 36.F, 49.F, 64.F, 81.F};
+  std::array<LockingString, 2> sai = {LockingString("AXIS_1"), LockingString("AXIS_2")};
+  std::array<std::atomic<uint64_t>, 3> hex = {0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
   std::atomic<uint64_t> voidCounter{0};
 
   std::atomic_bool sendNothing{false};

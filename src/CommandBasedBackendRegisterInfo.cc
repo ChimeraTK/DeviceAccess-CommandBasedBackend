@@ -3,16 +3,18 @@
 
 #include "CommandBasedBackendRegisterInfo.h"
 
+#include <utility>
+
 namespace ChimeraTK {
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(RegisterPath registerPath_,
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_,
       std::string writeCommandPattern_, std::string writeResponsePattern_, std::string readCommandPattern_,
       std::string readResponsePattern_, uint nElements_, size_t nLinesReadResponse_,
       CommandBasedBackendRegisterInfo::InternalType type, std::string delimiter_)
-  : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(writeCommandPattern_),
-    writeResponsePattern(writeResponsePattern_), readCommandPattern(readCommandPattern_),
-    readResponsePattern(readResponsePattern_), nLinesReadResponse(nLinesReadResponse_), internalType(type),
-    delimiter(delimiter_) {
+  : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(std::move(writeCommandPattern_)),
+    writeResponsePattern(std::move(writeResponsePattern_)), readCommandPattern(std::move(readCommandPattern_)),
+    readResponsePattern(std::move(readResponsePattern_)), nLinesReadResponse(nLinesReadResponse_), internalType(type),
+    delimiter(std::move(delimiter_)) {
     // Set dataDescriptor from type.
     if(type == InternalType::INT64) {
       dataDescriptor = DataDescriptor(DataType::int64);

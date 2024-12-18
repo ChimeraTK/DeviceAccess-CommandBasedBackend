@@ -23,7 +23,7 @@ class SerialCommandHandler : public CommandHandler {
    * @param delim The line delimiter seperating serial communication messages.
    * @param[in] timeoutInMilliseconds The timeout duration in ms
    */
-  SerialCommandHandler(
+  explicit SerialCommandHandler(
       const std::string& device, const std::string& delim = "\r\n", ulong timeoutInMilliseconds = 1000);
 
   ~SerialCommandHandler() override = default;
@@ -43,13 +43,13 @@ class SerialCommandHandler : public CommandHandler {
    * @returns A vector of strings containing the responce lines.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  std::vector<std::string> sendCommand(std::string cmd, const size_t nLinesExpected) override;
+  std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override;
 
   /**
    * Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
    */
-  void write(std::string cmd) const { _serialPort->send(cmd); }
+  void write(std::string& cmd) const { _serialPort->send(cmd); }
 
   /**
    * A simple blocking readline with no timeout. This can wait forever.
@@ -57,7 +57,7 @@ class SerialCommandHandler : public CommandHandler {
    * @returns The line read from the serail port.
    * @throws ChimeraTK::logic_error if interface fails to read a value.
    */
-  std::string waitAndReadline() const;
+  [[nodiscard]] std::string waitAndReadline() const;
 
  protected:
   /**

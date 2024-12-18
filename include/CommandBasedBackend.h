@@ -60,6 +60,7 @@ namespace ChimeraTK {
     std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected);
 
     template<typename UserType>
+    // NOLINTNEXTLINE(readability-identifier-naming)
     boost::shared_ptr<NDRegisterAccessor<UserType>> getRegisterAccessor_impl(
         const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags);
 
@@ -126,6 +127,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename UserType>
+  // NOLINTNEXTLINE(readability-identifier-naming)
   boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
       const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
     auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);

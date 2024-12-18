@@ -15,10 +15,10 @@ namespace ChimeraTK {
     /** Internal representation type to which we have to convert successfully.*/
     enum class InternalType { INT64 = 0, UINT64, HEX, DOUBLE, STRING, VOID };
 
-    CommandBasedBackendRegisterInfo(RegisterPath registerPath_ = {}, std::string writeCommandPattern_ = "",
-        std::string writeResponsePattern_ = "", std::string readCommandPattern_ = "",
-        std::string readResponsePattern_ = "", uint nElements_ = 1, size_t nLinesReadResponse_ = 1,
-        InternalType type = InternalType::INT64, std::string delimiter_ = "\r\n");
+    explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {},
+        std::string writeCommandPattern_ = "", std::string writeResponsePattern_ = "",
+        std::string readCommandPattern_ = "", std::string readResponsePattern_ = "", uint nElements_ = 1,
+        size_t nLinesReadResponse_ = 1, InternalType type = InternalType::INT64, std::string delimiter_ = "\r\n");
     ~CommandBasedBackendRegisterInfo() override = default;
 
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
