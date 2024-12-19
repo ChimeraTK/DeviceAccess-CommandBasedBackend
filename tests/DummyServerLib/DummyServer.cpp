@@ -87,10 +87,10 @@ void DummyServer::deactivate() {
   std::cout << "DEBUG!!! << DummyServer::deactivate() joining main thread."
             << std::endl; // FIXME TODO remove before release
   if(_mainLoopThread.joinable()) {
-    _stopMainLoop = true;
     // Try sending the read terminate several times. The main loop in another thread might just have started reading and
     // cleared it (race condition).
     do {
+      _stopMainLoop = true;
       _serialPort->terminateRead();
     } while(!_mainLoopThread.try_join_for(boost::chrono::milliseconds(10)));
   }
