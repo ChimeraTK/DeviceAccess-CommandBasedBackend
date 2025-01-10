@@ -17,11 +17,11 @@
 
 SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
 : delim(delimiter.size() < 1 ? "\n" : delimiter), delim_size(delim.size()) {
-  fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY); // from fcntl
-                                                            // O_RDWR = open for read + write
-                                                            // O_RDONLY = open read only
-                                                            // O_WRONLY = open write only
-                                                            // O_NOCTTY = no controlling termainl
+  fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
+                                                                         // O_RDWR = open for read + write
+                                                                         // O_RDONLY = open read only
+                                                                         // O_WRONLY = open write only
+                                                                         // O_NOCTTY = no controlling termainl
   if(fileDescriptor == -1) {
     std::string err = "Unable to open device \"" + device + "\"";
     throw ChimeraTK::runtime_error(err);
@@ -50,9 +50,8 @@ SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
   tty.c_cflag |= CS8;            // Use 8 bit chars.
   tty.c_cflag &= ~CRTSCTS;       // no flow control
   tty.c_lflag &= ~ICANON;        // Set non-canonical mode so VMIN and VTIME are effective
-  tty.c_cc[VMIN] = 0;            // 0: read blocks,  1: read doesn't block
-                                 // VMIN defines the minimum number of characters to read
-  tty.c_cc[VTIME] = 5;           // 0.5 seconds read timeout //Really??
+  tty.c_cc[VMIN] = 0;            // VMIN defines the minimum number of characters to read
+  tty.c_cc[VTIME] = 0;           // 0.5 seconds read timeout //FIXME hacked to be 0 for polling read test
   tty.c_cflag |= CREAD | CLOCAL; // turn on READ & ignore ctrl lines
 
   // Flush Port, then applies attributes.
@@ -95,11 +94,16 @@ std::optional<std::string> SerialPort::readline() noexcept {
     memset(readBuffer, 0, sizeof(readBuffer));
     ssize_t __attribute__((unused)) bytesRead =
         read(fileDescriptor, readBuffer, sizeof(readBuffer) - 1); // unistd::read
+
     if(_terminateRead) {
       return std::nullopt;
     }
     // The -1 makes room for read to insert a '\0' null termination at the end.
     _persistentBufferStr += std::string(readBuffer);
+
+    if(bytesRead == 0) {
+      usleep(1000);
+    }
   }
 
   // Now the delimiter has been found at position delimPos.
