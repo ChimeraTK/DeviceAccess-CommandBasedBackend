@@ -74,7 +74,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   static constexpr size_t N_TYPES = 6;
   static const std::array<std::string, N_TYPES> registerTypeStrs = {
-      // Indexed by CommandBasedBackendRegisterInfo::InternalType so keep them in the same order:
+      // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
       // { INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID };
       // Must be lower case.
       "int64",
@@ -84,7 +84,7 @@ namespace ChimeraTK {
       "string",
       "void",
   };
-  inline std::string toStr(CommandBasedBackendRegisterInfo::InternalType eType) {
+  inline std::string toStr(CommandBasedBackendRegisterInfo::TransportLayerType eType) {
     return registerTypeStrs[static_cast<int>(eType)];
   }
 
@@ -302,7 +302,7 @@ namespace ChimeraTK {
           "A non-empty " + toStr(WRITE_RESP) + " without a non-empty " + toStr(WRITE_CMD) + " for register " + regKey);
     }
 
-    CommandBasedBackendRegisterInfo::InternalType eType{};
+    CommandBasedBackendRegisterInfo::TransportLayerType eType{};
 
     std::string typeStr = j.value(toStr(TYPE), "invalid");
     if(typeStr == "invalid") {
@@ -310,7 +310,7 @@ namespace ChimeraTK {
     }
     toLowerCase(typeStr);
 
-    if(typeStr == toStr(CommandBasedBackendRegisterInfo::InternalType::VOID)) {
+    if(typeStr == toStr(CommandBasedBackendRegisterInfo::TransportLayerType::VOID)) {
       if(!j.value(toStr(READ_CMD), "").empty()) {
         throw ChimeraTK::logic_error(
             "Void type must be write-only but has a " + toStr(READ_CMD) + " for register " + regKey);
@@ -332,7 +332,7 @@ namespace ChimeraTK {
 
     for(size_t iType = 0; iType < N_TYPES;) {
       if(typeStr == registerTypeStrs[iType]) {
-        eType = static_cast<CommandBasedBackendRegisterInfo::InternalType>(iType);
+        eType = static_cast<CommandBasedBackendRegisterInfo::TransportLayerType>(iType);
         break;
       }
       if(++iType == N_TYPES) {
@@ -350,7 +350,7 @@ namespace ChimeraTK {
             std::string readResponsePattern_ = "",
             uint nElements_ = 1,
             size_t nLinesReadResponse_ = 1,
-            InternalType type = InternalType::INT64,
+            TransportLayerType type = TransportLayerType::INT64,
             std::string delimiter_ = "\r\n");
        */
     return CommandBasedBackendRegisterInfo(RegisterPath(regKey), j.value(toStr(WRITE_CMD), ""),

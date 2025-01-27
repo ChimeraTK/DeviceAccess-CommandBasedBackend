@@ -50,23 +50,23 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     std::string valueRegex;
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::INT64) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::INT64) {
       valueRegex = "([+-]?[0-9]+)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::UINT64) {
       valueRegex = "([+]?[0-9]+)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX) {
       valueRegex = "([0-9A-Fa-f]+)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DOUBLE) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::STRING) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
       valueRegex = "(.*)";
     }
 
-    if(_registerInfo.internalType != CommandBasedBackendRegisterInfo::InternalType::VOID) {
+    if(_registerInfo.transportLayerType != CommandBasedBackendRegisterInfo::TransportLayerType::VOID) {
       assert(!valueRegex.empty());
     }
 
@@ -152,7 +152,7 @@ namespace ChimeraTK {
       }
 
       std::string hexIndicator =
-          (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
+          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX ? "0x" : "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
         buffer_2D[0][i] =
             userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
@@ -179,7 +179,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX) {
       for(size_t i = 0; i < _numberOfElements; ++i) {
         std::ostringstream oss;
         oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
