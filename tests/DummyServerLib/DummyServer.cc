@@ -11,6 +11,7 @@
 #include <boost/process.hpp>
 
 #include <iostream>
+#include <signal.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -103,7 +104,10 @@ void DummyServer::deactivate() {
             << std::endl; // FIXME TODO remove before release
 
   assert(_socatRunner.running());
-  _socatRunner.terminate();
+  // Send SIGTERM to properly terminate socat.
+  // Don't use boost child's terminate(), which sends SIGKILL. This can lead to remaining device nodes which are not
+  // cleaned up properly.
+  kill(_socatRunner.id(), SIGTERM);
   _socatRunner.wait();
 
   // Wait for the "front door" file descriptor to become invalid.
