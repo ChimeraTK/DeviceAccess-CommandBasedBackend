@@ -72,17 +72,18 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
-  static constexpr size_t N_TYPES = 6;
-  static const std::array<std::string, N_TYPES> registerTypeStrs = {
-      // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
-      // { INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID };
-      // Must be lower case.
-      "int64",
-      "uint64",
-      "hex",
-      "double",
-      "string",
-      "void",
+  static const std::array<std::string,
+      static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)>
+      registerTypeStrs = {
+          // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
+          // TransportLayerType: { DEC_INT, HEX_INT, BIN_INT, DEC_FLOAT, STRING, VOID}
+          // Must be lower case.
+          "dec_int",
+          "hex_int",
+          "bin_int",
+          "dec_float",
+          "string",
+          "void",
   };
   inline std::string toStr(CommandBasedBackendRegisterInfo::TransportLayerType eType) {
     return registerTypeStrs[static_cast<int>(eType)];
@@ -330,12 +331,12 @@ namespace ChimeraTK {
       }
     }
 
-    for(size_t iType = 0; iType < N_TYPES;) {
+    for(size_t iType = 0; iType < static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES);) {
       if(typeStr == registerTypeStrs[iType]) {
         eType = static_cast<CommandBasedBackendRegisterInfo::TransportLayerType>(iType);
         break;
       }
-      if(++iType == N_TYPES) {
+      if(++iType == static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)) {
         throw ChimeraTK::logic_error("Unknown register " + toStr(TYPE) + " " + typeStr + " for regisgter " + regKey);
       }
     }

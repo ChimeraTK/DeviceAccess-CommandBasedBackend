@@ -50,16 +50,16 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     std::string valueRegex;
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::INT64) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::UINT64) {
-      valueRegex = "([+]?[0-9]+)";
-    }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
       valueRegex = "([0-9A-Fa-f]+)";
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DOUBLE) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::BIN_INT) {
+      valueRegex = "(.*)";
+    }
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_FLOAT) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
     }
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
@@ -152,7 +152,8 @@ namespace ChimeraTK {
       }
 
       std::string hexIndicator =
-          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX ? "0x" : "");
+          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT ? "0x" :
+                                                                                                              "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
         buffer_2D[0][i] =
             userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
@@ -179,7 +180,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
       for(size_t i = 0; i < _numberOfElements; ++i) {
         std::ostringstream oss;
         oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);

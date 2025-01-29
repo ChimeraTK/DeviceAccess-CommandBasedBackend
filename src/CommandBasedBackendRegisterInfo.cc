@@ -16,13 +16,13 @@ namespace ChimeraTK {
     readResponsePattern(std::move(readResponsePattern_)), nLinesReadResponse(nLinesReadResponse_),
     transportLayerType(type), delimiter(std::move(delimiter_)) {
     // Set dataDescriptor from type.
-    if(type == TransportLayerType::INT64) {
+    if(type == TransportLayerType::DEC_INT) {
       dataDescriptor = DataDescriptor(DataType::int64);
     }
-    else if(type == TransportLayerType::UINT64 or type == TransportLayerType::HEX) {
+    else if(type == TransportLayerType::HEX_INT) {
       dataDescriptor = DataDescriptor(DataType::uint64);
     }
-    else if(type == TransportLayerType::DOUBLE) {
+    else if(type == TransportLayerType::DEC_FLOAT) {
       dataDescriptor = DataDescriptor(DataType::float64);
     }
     else if(type == TransportLayerType::STRING) {
