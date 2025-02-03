@@ -2,17 +2,21 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "SerialPort.h"
 
+#include "stringUtils.h"
+
 #include <ChimeraTK/Exception.h>
 
 #include <chrono>  //Needed for timeout
 #include <cstring> //Used for memset
+#include <errno.h> //for errno
 #include <fcntl.h>
 #include <future> //Needed for timeout
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <termios.h> //For termain IO interface
 #include <unistd.h>  //POSIX OS API
-#include <vector>
 
 /**********************************************************************************************************************/
 
@@ -85,6 +89,19 @@ void SerialPort::send(const std::string& str) const {
 
 /**********************************************************************************************************************/
 
+// NEW, implementation complete
+void SerialPort::sendBinary(const std::string& hexData) const {
+  std::vector<unsigned char> binaryData = hexStringToBinary(hexData);
+  ssize_t bytesWritten = write(_fileDescriptor, binaryData.data(), binaryData.size()); // unistd::write
+
+  if(bytesWritten != static_cast<ssize_t>(binaryData.size())) {
+    std::string err = "Incomplete write";
+    throw ChimeraTK::runtime_error(err);
+  }
+}
+
+/**********************************************************************************************************************/
+
 std::optional<std::string> SerialPort::readline() noexcept {
   size_t delimPos;
   static constexpr int readBufferLen = 256;
@@ -117,6 +134,48 @@ std::optional<std::string> SerialPort::readline() noexcept {
 
 /**********************************************************************************************************************/
 
+// NEW, implementation complete
+std::optional<std::vector<unsigned char>> SerialPort::readBytes(const size_t numBytesToRead) {
+  // Each item in the vector<unsigned char> is one byte read.
+  // Read until we've read numBytesToRead, with possible interrupts through _terminateRead
+
+  std::vector<unsigned char> outputBuffer;
+  outputBuffer.reserve(numBytesToRead);
+  std::vector<unsigned char> readBuffer(numBytesToRead);
+
+  size_t bytesRead;
+  for(size_t totalBytesRead = 0; totalBytesRead < numBytesToRead; totalBytesRead += bytesRead) {
+    bytesRead = read(_fileDescriptor, readBuffer.data(), numBytesToRead - totalBytesRead); // unistd::read
+
+    if(_terminateRead) {
+      return std::nullopt;
+    }
+
+    if(bytesRead > 0) {
+      auto readBufferEnd = std::next(readBuffer.begin(), bytesRead);
+
+      // Move bytesRead bytes from readBuffer to outputBuffer.
+      outputBuffer.insert(
+          outputBuffer.end(), std::make_move_iterator(readBuffer.begin()), std::make_move_iterator(readBufferEnd));
+
+      // readBuffer is now in an indeterminate state, so clean it up
+      readBuffer.erase(readBuffer.begin(), readBufferEnd);
+    }
+    else if(bytesRead == 0) { // read EOF, wait for reconnection.
+      usleep(1000);
+    }
+    else {
+      char errorMsg[256];
+      sprintf(errorMsg, "Read error: %s (%s)", strerrorname_np(errno), strerrordesc_np(errno));
+      throw ChimeraTK::runtime_error(std::string(errorMsg));
+    }
+  }
+
+  return std::make_optional(outputBuffer);
+}
+
+/**********************************************************************************************************************/
+
 std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) {
   auto future = std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readline(); });
   if(future.wait_for(timeout) != std::future_status::timeout) {
@@ -134,6 +193,28 @@ std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& tim
   std::string err = "readline operation timed out.";
   throw ChimeraTK::runtime_error(err);
 } // end readlineWithTimeout
+
+/**********************************************************************************************************************/
+// NEW implementation complete
+std::vector<unsigned char> SerialPort::readBytesWithTimeout(
+    const size_t numBytesToRead, const std::chrono::milliseconds& timeout) {
+  auto future = std::async(std::launch::async,
+      [&]() -> std::optional<std::vector<unsigned char>> { return this->readBytes(numBytesToRead); });
+  if(future.wait_for(timeout) != std::future_status::timeout) {
+    // No timeout occured, so check if the optional has data.
+    auto readData = future.get();
+    if(readData.has_value()) {
+      return readData.value();
+    }
+  }
+  // If the code has not returned, then there has been a timeout or read has been abandoned.
+
+  // In case of a timeout we have to tell the read to stop so the
+  // async thread can complete.
+  terminateRead();
+  std::string err = "readline operation timed out.";
+  throw ChimeraTK::runtime_error(err);
+}
 
 /**********************************************************************************************************************/
 

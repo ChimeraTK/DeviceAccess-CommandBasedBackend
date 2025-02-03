@@ -96,3 +96,26 @@ std::string replaceNewLines(const std::string& input) noexcept {
 void toLowerCase(std::string& str) noexcept {
   std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 }
+
+/**********************************************************************************************************************/
+
+std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcept {
+  size_t hexDataLength = hexData.length();
+
+  std::vector<unsigned char> binaryData;
+  binaryData.reserve((hexDataLength + 1) / 2);
+
+  size_t i = 0;
+  if(hexDataLength % 2 == 1) {
+    std::string oddFirstChar = hexData.substr(i, 1);
+    unsigned char oddFirstByteChar = static_cast<unsigned char>(std::stoi(oddFirstChar, nullptr, 16));
+    binaryData.push_back(oddFirstByteChar);
+    i = 1;
+  }
+  for(; i < hexDataLength; i += 2) {
+    std::string byteHexStr = hexData.substr(i, 2);
+    unsigned char byteChar = static_cast<unsigned char>(std::stoi(byteHexStr, nullptr, 16));
+    binaryData.push_back(byteChar);
+  }
+  return binaryData;
+}

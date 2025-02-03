@@ -6,6 +6,7 @@
 #include <chrono>
 #include <optional>
 #include <string>
+#include <vector>
 
 /**
  * The SerialPort class handles, opens, closes, and
@@ -44,17 +45,26 @@ class SerialPort {
    */
   void send(const std::string& str) const;
 
+  void sendBinary(const std::string& hexData) const;
+
   /**
    * Read a delim delimited line from the serial port. Result ends in delim.
    * Retruns an empty optional if terminateRead() has been called.
    */
   std::optional<std::string> readline() noexcept;
 
+  // NEW
+  std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
+
   /**
    * Read a delim delimited line from the serial port. Result does NOT end in delim
    * @throws ChimeraTK::runtime_error if timeout exceeded.
    */
   std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
+
+  // NEW
+  std::vector<unsigned char> readBytesWithTimeout(
+      const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
 
   /**
    * delim is the line delimiter for the serial port communication.
