@@ -4,8 +4,8 @@
 #include "CommandHandler.h"
 #include "SerialPort.h"
 
-#include <chrono>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -17,56 +17,49 @@
 class SerialCommandHandler : public CommandHandler {
  public:
   /**
-   * Open and setup the serial port, set the readback timeout parameter.
-   *
-   * @param device The address of the serial device, such as /tmp/virtual-tty
-   * @param delim The line delimiter seperating serial communication messages.
+   * @brief Open and setup the serial port, set the readback timeout parameter.
+   * @param[in] device The address of the serial device, such as /tmp/virtual-tty
+   * @param[in] delimiter Sets the default line delimiter seperating serial communication messages.
    * @param[in] timeoutInMilliseconds The timeout duration in ms
    */
-  explicit SerialCommandHandler(
-      const std::string& device, const std::string& delim = "\r\n", ulong timeoutInMilliseconds = 1000);
+  explicit SerialCommandHandler(const std::string& device,
+      const std::string& delimiter = ChimeraTK::SERIAL_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
   ~SerialCommandHandler() override = default;
 
-  /**
-   * Send a command to the serial port and read back a single line responce, which is returned.
-   * @param[in] cmd The command to be sent
-   * @returns The responce text, presumed to be a single line.
-   */
-  std::string sendCommand(std::string cmd) override;
+  std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
+      const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+      const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) override;
+
+  std::string sendCommandAndReadBytes(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) override;
 
   /**
-   * Sends the command cmd to the device and collects the repsonce as a vector of nLinesExpected strings.
+   * @brief Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
-   * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
-   * return vector
-   * @returns A vector of strings containing the responce lines.
-   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
+   * @param[in] writeDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is
+   * used. Setting this to a string overrides that delimiter. Set to "" or (preferably) NoDelimiter{} to send cmd as a
+   * pure binary sequence.
    */
-  std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override;
+  inline void write(
+      std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
+    _serialPort->send(cmd + toString(writeDelimiter));
+  }
 
   /**
-   * Simply sends the command cmd to the serial port with no readback.
-   * @param[in] cmd The command to be sent
-   */
-  void write(std::string& cmd) const { _serialPort->send(cmd); }
-
-  /**
-   * A simple blocking readline with no timeout. This can wait forever.
-   *
+   * @brief A simple blocking readline with no timeout. This can wait forever.
+   * @param[in] delimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this
+   * string setting overrides that delimiter.
+   * If set to "", the default delimiter is used.
    * @returns The line read from the serail port.
    * @throws ChimeraTK::logic_error if interface fails to read a value.
    */
-  [[nodiscard]] std::string waitAndReadline() const;
+  [[nodiscard]] std::string waitAndReadline(
+      const ReadableDelimiter& delimiter = CommandHandlerDefaultDelimiter{}) const;
 
  protected:
   /**
-   * Timeout parameter in milliseconds used to to timeout sendCommand.
-   */
-  std::chrono::milliseconds _timeout;
-
-  /**
    * The SerialPort handle
    */
-  std::unique_ptr<SerialPort> _serialPort;
+  std::unique_ptr<ChimeraTK::SerialPort> _serialPort;
 }; // end SerialCommandHandler

@@ -41,23 +41,33 @@ namespace ChimeraTK {
     void close() override;
 
     /**
-     * Send a single command through and receive response.
-     * Use this when responces are on a single line.
+     * @brief Send a single command through and receive a vector (of length nLinesToRead) responses.
      * @param[in] cmd The command sent to the device.
-     * @returns The first line of responce from the device.
-     * @throws ChimeraTK::runtime_error if the reply doesn't come before a timeout.
-     */
-    std::string sendCommand(std::string cmd);
-
-    /**
-     * Send a single command through and receive a vector (len nLinesExpected) responses.
-     * @param[in] cmd The command sent to the device.
-     * @param[in] nLinesExpected The number of expected lines in reply to sending command cmd
-     * @returns a vector of length nLinesExpected containing the responce to cmd, with one line of responce per entry in
+     * @param[in] nLinesToRead The required number of lines in reply to sending command cmd.  If 0, then no read is attempted.
+     * @param[in] writeDelimiter if set, this overrides the default _delimiter the writing operation in this call.
+     * It can be set to "" or (preferably) to NoDelimiter{} to send a raw binary command.
+     * @param[in] readDelimiter if set, this overrides the default _delimiter for the reading operation in this call.
+     * @returns a vector of length nLinesToRead containing the responce to cmd, with one line of responce per entry in
      * the vector.
      * @throws ChimeraTK::runtime_error if any line of reply doesn't come before a timeout for that line.
      */
-    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected);
+    std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
+        const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+        const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{});
+
+    /**
+     * @brief Send a command to a SCPI device, read back a set number of bytes of responce.
+     * Resulting string will be nBytesToRead long or else throw a ChimeraTK::runtime_error
+     * Since this is binary oriented, no write delimiter is used by default.
+     * @param[in] cmd The command to be sent, which should have no delimiter
+     * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd. If 0, no read is attempted.
+     * @param[in] writeDelimiter if set, the specified write delimiter is added for this call, which can be a string or
+     * CommandHandlerDefaultDelimiter{}.
+     * @returns A string as a container of bytes containing the responce. The return string is not null terminated.
+     * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
+     */
+    std::string sendCommandAndReadBytes(
+        std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{});
 
     template<typename UserType>
     // NOLINTNEXTLINE(readability-identifier-naming)
