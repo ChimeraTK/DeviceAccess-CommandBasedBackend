@@ -49,11 +49,11 @@ std::vector<std::string> tokenise(const std::string& stringToBeParsed) noexcept 
 
 /**********************************************************************************************************************/
 
-bool strEndsInDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept {
+bool strEndsInDelim(const std::string& str, const std::string& delimiter, const size_t delimiterSize) noexcept {
   int s = static_cast<int>(str.size()) - 1;
-  int d = static_cast<int>(delim_size) - 1;
+  int d = static_cast<int>(delimiterSize) - 1;
   while(s >= 0 and d >= 0) {
-    if(str[s--] != delim[d--]) {
+    if(str[s--] != delimiter[d--]) {
       return false;
     }
   }
@@ -62,9 +62,9 @@ bool strEndsInDelim(const std::string& str, const std::string& delim, const size
 
 /**********************************************************************************************************************/
 
-std::string stripDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept {
-  if(strEndsInDelim(str, delim, delim_size)) {
-    return str.substr(0, str.size() - delim_size);
+std::string stripDelim(const std::string& str, const std::string& delimiter, const size_t delimiterSize) noexcept {
+  if(strEndsInDelim(str, delimiter, delimiterSize)) {
+    return str.substr(0, str.size() - delimiterSize);
   }
   return str;
 }
@@ -95,4 +95,42 @@ std::string replaceNewLines(const std::string& input) noexcept {
 
 void toLowerCase(std::string& str) noexcept {
   std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+}
+
+/**********************************************************************************************************************/
+
+std::string binaryStrFromHexStr(const std::string& hexData) noexcept {
+  size_t hexDataLength = hexData.length();
+
+  std::string binaryData;
+  binaryData.reserve((hexDataLength + 1) / 2);
+
+  size_t i = 0;
+  if(hexDataLength % 2 == 1) {
+    std::string oddFirstChar = hexData.substr(i, 1);
+    char oddFirstByteChar = static_cast<char>(std::stoi(oddFirstChar, nullptr, 16));
+    binaryData.push_back(oddFirstByteChar);
+    i = 1;
+  }
+  for(; i < hexDataLength; i += 2) {
+    std::string byteHexStr = hexData.substr(i, 2);
+    char byteChar = static_cast<char>(std::stoi(byteHexStr, nullptr, 16));
+    binaryData.push_back(byteChar);
+  }
+  return binaryData;
+}
+
+/**********************************************************************************************************************/
+
+std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept {
+  constexpr std::array<char, 16> hexLUT = {
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
+  std::string hexString(binaryData.size() * 2, '\0');
+  auto it = hexString.begin();
+  for(unsigned char byte : binaryData) {
+    *it++ = hexLUT[(byte >> 4) & 0xF]; // append the high nibble
+    *it++ = hexLUT[byte & 0xF];        // append the low nibble
+  }
+  return hexString;
 }

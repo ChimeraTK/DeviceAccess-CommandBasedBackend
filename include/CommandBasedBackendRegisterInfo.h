@@ -13,12 +13,24 @@ namespace ChimeraTK {
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
     /** Internal representation type to which we have to convert successfully.*/
-    enum class InternalType { INT64 = 0, UINT64, HEX, DOUBLE, STRING, VOID };
+    enum class TransportLayerType {
+      DEC_INT = 0,
+      HEX_INT,
+      BIN_INT,
+      DEC_FLOAT,
+      STRING,
+      VOID,
+      // Add other keys here.
+      N_TYPES // Keep this at the end so as to automatically be the count of keys.
+    };
+    // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
 
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {},
         std::string writeCommandPattern_ = "", std::string writeResponsePattern_ = "",
         std::string readCommandPattern_ = "", std::string readResponsePattern_ = "", uint nElements_ = 1,
-        size_t nLinesReadResponse_ = 1, InternalType type = InternalType::INT64, std::string delimiter_ = "\r\n");
+        size_t nLinesReadResponse_ = 1,
+        TransportLayerType type = TransportLayerType::DEC_INT, // FIXME remove default Type
+        std::string delimiter_ = "\r\n");
     ~CommandBasedBackendRegisterInfo() override = default;
 
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
@@ -49,7 +61,7 @@ namespace ChimeraTK {
     std::string readResponsePattern;
     size_t nLinesReadResponse;
 
-    InternalType internalType;
+    TransportLayerType transportLayerType;
     DataDescriptor dataDescriptor;
 
     /**

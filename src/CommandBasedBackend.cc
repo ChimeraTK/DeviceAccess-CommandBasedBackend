@@ -72,19 +72,20 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
-  static constexpr size_t N_TYPES = 6;
-  static const std::array<std::string, N_TYPES> registerTypeStrs = {
-      // Indexed by CommandBasedBackendRegisterInfo::InternalType so keep them in the same order:
-      // { INT64=0 , UINT64, HEX, DOUBLE, STRING, VOID };
-      // Must be lower case.
-      "int64",
-      "uint64",
-      "hex",
-      "double",
-      "string",
-      "void",
+  static const std::array<std::string,
+      static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)>
+      registerTypeStrs = {
+          // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
+          // TransportLayerType: { DEC_INT, HEX_INT, BIN_INT, DEC_FLOAT, STRING, VOID}
+          // Must be lower case.
+          "decint",
+          "hexint",
+          "binint",
+          "decfloat",
+          "string",
+          "void",
   };
-  inline std::string toStr(CommandBasedBackendRegisterInfo::InternalType eType) {
+  inline std::string toStr(CommandBasedBackendRegisterInfo::TransportLayerType eType) {
     return registerTypeStrs[static_cast<int>(eType)];
   }
 
@@ -120,7 +121,8 @@ namespace ChimeraTK {
         _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
         break;
       case CommandBasedBackendType::ETHERNET:
-        _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _timeoutInMilliseconds);
+        _commandHandler =
+            std::make_unique<TcpCommandHandler>(_instance, _port, _serialDelimiter, _timeoutInMilliseconds);
         break;
       default:
         // Then this is not part of the proper interface. Throw a std::logic_error as
@@ -172,19 +174,20 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::string CommandBasedBackend::sendCommand(std::string cmd) {
-    assert(_opened);
+  std::vector<std::string> CommandBasedBackend::sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
+    assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
-
-    return _commandHandler->sendCommand(std::move(cmd));
+    return _commandHandler->sendCommandAndReadLines(std::move(cmd), nLinesToRead, writeDelimiter, readDelimiter);
   }
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesExpected) {
+  std::string CommandBasedBackend::sendCommandAndReadBytes(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
-    return _commandHandler->sendCommand(std::move(cmd), nLinesExpected);
+    return _commandHandler->sendCommandAndReadBytes(std::move(cmd), nBytesToRead, writeDelimiter);
   }
 
   /********************************************************************************************************************/
@@ -302,7 +305,7 @@ namespace ChimeraTK {
           "A non-empty " + toStr(WRITE_RESP) + " without a non-empty " + toStr(WRITE_CMD) + " for register " + regKey);
     }
 
-    CommandBasedBackendRegisterInfo::InternalType eType{};
+    CommandBasedBackendRegisterInfo::TransportLayerType eType{};
 
     std::string typeStr = j.value(toStr(TYPE), "invalid");
     if(typeStr == "invalid") {
@@ -310,7 +313,7 @@ namespace ChimeraTK {
     }
     toLowerCase(typeStr);
 
-    if(typeStr == toStr(CommandBasedBackendRegisterInfo::InternalType::VOID)) {
+    if(typeStr == toStr(CommandBasedBackendRegisterInfo::TransportLayerType::VOID)) {
       if(!j.value(toStr(READ_CMD), "").empty()) {
         throw ChimeraTK::logic_error(
             "Void type must be write-only but has a " + toStr(READ_CMD) + " for register " + regKey);
@@ -330,12 +333,12 @@ namespace ChimeraTK {
       }
     }
 
-    for(size_t iType = 0; iType < N_TYPES;) {
+    for(size_t iType = 0; iType < static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES);) {
       if(typeStr == registerTypeStrs[iType]) {
-        eType = static_cast<CommandBasedBackendRegisterInfo::InternalType>(iType);
+        eType = static_cast<CommandBasedBackendRegisterInfo::TransportLayerType>(iType);
         break;
       }
-      if(++iType == N_TYPES) {
+      if(++iType == static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)) {
         throw ChimeraTK::logic_error("Unknown register " + toStr(TYPE) + " " + typeStr + " for regisgter " + regKey);
       }
     }
@@ -350,7 +353,7 @@ namespace ChimeraTK {
             std::string readResponsePattern_ = "",
             uint nElements_ = 1,
             size_t nLinesReadResponse_ = 1,
-            InternalType type = InternalType::INT64,
+            TransportLayerType type = TransportLayerType::INT64,
             std::string delimiter_ = "\r\n");
        */
     return CommandBasedBackendRegisterInfo(RegisterPath(regKey), j.value(toStr(WRITE_CMD), ""),
