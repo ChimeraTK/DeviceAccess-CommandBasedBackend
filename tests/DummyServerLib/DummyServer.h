@@ -64,11 +64,14 @@ class DummyServer {
   std::array<LockingString, 2> sai = {LockingString("AXIS_1"), LockingString("AXIS_2")};
   std::array<std::atomic<uint64_t>, 3> hex = {0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
   std::atomic<uint64_t> voidCounter{0};
+  std::string byteData{""};
 
   std::atomic_bool sendNothing{false};
   std::atomic_bool sendTooFew{false};
   std::atomic_bool responseWithDataAndSyntaxError{false};
   std::atomic_bool sendGarbage{false};
+  std::atomic_bool byteMode{false};
+  size_t bytesToRead{16};
 
   // Pause execution here to wait for the main thread to stop (e.g. because ^C has been pressed).
   void waitForStop();
@@ -82,9 +85,14 @@ class DummyServer {
   // we need a way to read it back.
   std::string deviceNode{"/tmp/virtual-tty"};
 
+  void sendDelimited(std::string s) {
+    s.append(ChimeraTK::SERIAL_DEFAULT_DELIMITER);
+    _serialPort->send(s);
+  }
+
  protected:
   void mainLoop();
-  std::unique_ptr<SerialPort> _serialPort;
+  std::unique_ptr<ChimeraTK::SerialPort> _serialPort;
 
   void setAcc(const std::string& axis, const std::string& value);
   void setHex(size_t i, const std::string& value);
