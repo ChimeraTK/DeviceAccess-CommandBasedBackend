@@ -45,3 +45,14 @@
  * Convert string to lower case in-place. Use this to make inputs case insensitive.
  */
 void toLowerCase(std::string& str) noexcept;
+
+/**
+ * Convert the string of hexidecimal hexData into a vector of unsigned chars representing the corresponding binary data.
+ * If hexData has odd length, then a leading 0 is assumed.
+ */
+[[nodiscard]] std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcept;
+
+/**
+ * Convert the input vector of bytes (unsigned chars) into the string hexidecimal representation of that data.
+ */
+[[nodiscard]] std::string binaryToHexString(const std::vector<unsigned char>& binaryData) noexcept
