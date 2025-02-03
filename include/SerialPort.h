@@ -8,87 +8,90 @@
 #include <string>
 #include <vector>
 
-/**
- * The SerialPort class handles, opens, closes, and
- * gives read/write access to a specified serial port.
- *
- * Usage:
- * SerialPort sp("/dev/pts/8");
- * sp.readline()
- */
-class SerialPort {
- public:
+namespace ChimeraTK {
   /**
-   * Sets-up a bidirectional serial port, and flushes the port.
+   * The SerialPort class handles, opens, closes, and
+   * gives read/write access to a specified serial port.
    *
-   * Port settings:
-   *  Baud rate = B9600
-   *  No parity checking (~PARENB)
-   *  Singe stop bit (~CSTOPB)
-   *  8-bit character size (CS8)
-   *  Ignore ctrl lines
-   *
-   * @param[in] device The serial port address of the device, such as /tmp/virtual-tty
-   * @param[in] delmimiter The line delimiter seperating serial port messages.
-   * @throws ChimeraTK::runtime_error
+   * Usage:
+   * SerialPort sp("/dev/pts/8");
+   * sp.readline()
    */
-  explicit SerialPort(const std::string& device, const std::string& delimiter = "\r\n");
+  class SerialPort {
+   public:
+    /**
+     * Sets-up a bidirectional serial port, and flushes the port.
+     *
+     * Port settings:
+     *  Baud rate = B9600
+     *  No parity checking (~PARENB)
+     *  Singe stop bit (~CSTOPB)
+     *  8-bit character size (CS8)
+     *  Ignore ctrl lines
+     *
+     * @param[in] device The serial port address of the device, such as /tmp/virtual-tty
+     * @param[in] delmimiter The line delimiter seperating serial port messages.
+     * @throws ChimeraTK::runtime_error
+     */
+    explicit SerialPort(const std::string& device, const std::string& delimiter = "\r\n");
 
-  /**
-   * Closes the port.
-   */
-  ~SerialPort();
+    /**
+     * Closes the port.
+     */
+    ~SerialPort();
 
-  /**
-   * Write str into the serial port, with delim delimiter appended.
-   * @throws ChimeraTK::runtime_error if the write fails.
-   */
-  void send(const std::string& str) const;
+    /**
+     * Write str into the serial port, with delim delimiter appended.
+     * @throws ChimeraTK::runtime_error if the write fails.
+     */
+    void send(const std::string& str) const;
 
-  void sendBinary(const std::string& hexData) const;
+    void sendBinary(const std::string& hexData) const;
 
-  /**
-   * Read a delim delimited line from the serial port. Result ends in delim.
-   * Retruns an empty optional if terminateRead() has been called.
-   */
-  std::optional<std::string> readline() noexcept;
+    /**
+     * Read a delim delimited line from the serial port. Result ends in delim.
+     * Retruns an empty optional if terminateRead() has been called.
+     */
+    std::optional<std::string> readline() noexcept;
 
-  // NEW
-  std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
+    // NEW
+    std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
 
-  /**
-   * Read a delim delimited line from the serial port. Result does NOT end in delim
-   * @throws ChimeraTK::runtime_error if timeout exceeded.
-   */
-  std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
+    /**
+     * Read a delim delimited line from the serial port. Result does NOT end in delim
+     * @throws ChimeraTK::runtime_error if timeout exceeded.
+     */
+    std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
 
-  // NEW
-  std::vector<unsigned char> readBytesWithTimeout(
-      const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
+    // NEW
+    std::vector<unsigned char> readBytesWithTimeout(
+        const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
 
-  /**
-   * delim is the line delimiter for the serial port communication.
-   */
-  const std::string delim;
+    /**
+     * delim is the line delimiter for the serial port communication.
+     */
+    const std::string delim;
 
-  /**
-   * Terminate a blocking read call.
-   */
-  void terminateRead();
+    /**
+     * Terminate a blocking read call.
+     */
+    void terminateRead();
 
- protected:
-  /**
-   * The serial port handle.
-   */
-  int _fileDescriptor;
+   protected:
+    /**
+     * The serial port handle.
+     */
+    int _fileDescriptor;
 
-  /**
-   * Carries-over the not returned data from readline() call to the next.
-   */
-  std::string _persistentBufferStr;
+    /**
+     * Carries-over the not returned data from readline() call to the next.
+     */
+    std::string _persistentBufferStr;
 
-  /**
-   * Setting this to true using the terminateRead() function interrupts readline().
-   */
-  std::atomic_bool _terminateRead{false};
-}; // end SerialPort
+    /**
+     * Setting this to true using the terminateRead() function interrupts readline().
+     */
+    std::atomic_bool _terminateRead{false};
+  }; // end SerialPort
+
+} // namespace ChimeraTK

@@ -33,7 +33,7 @@ class SerialCommandHandler : public CommandHandler {
    * @param[in] cmd The command to be sent
    * @returns The responce text, presumed to be a single line.
    */
-  std::string sendCommand(std::string cmd) override;
+  std::string sendCommand(std::string cmd) override; // TODO rename this to sendCommandAndReadString?
 
   /**
    * Sends the command cmd to the device and collects the repsonce as a vector of nLinesExpected strings.
@@ -43,13 +43,32 @@ class SerialCommandHandler : public CommandHandler {
    * @returns A vector of strings containing the responce lines.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override;
+  std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override; // TODO rename?
+
+  // NEW
+  /**
+   * Sends the command cmd to the device and collects the repsonce as a vector of bytes.
+   * @param[in] cmd The command to be sent
+   * @param[in] numBytesToRead The number of bytes expected in reply to the sent command cmd, and the length of the
+   * return vector
+   * @returns A vector of bytes (uchars) containing the responce lines.
+   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
+   */
+  std::vector<unsigned char> sendCommandAndReadBytes(
+      std::string cmd, size_t numBytesToRead); // override; TODO restore override
 
   /**
    * Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
    */
   void write(std::string& cmd) const { _serialPort->send(cmd); }
+
+  // NEW
+  /**
+   * Simply sends the data to the serial port with no readback.
+   * @param[in] data The vector of bytes of data to be sent
+   */
+  void writeBinary(std::string& hexData) const { _serialPort->sendBinary(hexData); }
 
   /**
    * A simple blocking readline with no timeout. This can wait forever.
