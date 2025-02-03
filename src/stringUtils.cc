@@ -119,3 +119,18 @@ std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcep
   }
   return binaryData;
 }
+
+/**********************************************************************************************************************/
+
+std::string binaryToHexString(const std::vector<unsigned char>& binaryData) noexcept {
+  constexpr std::array<char, 16> hexLUT = {
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+  std::string hexString;
+  hexString.reserve(binaryData.size() * 2);
+
+  for(unsigned char byte : binaryData) {
+    hexString.append(1, hexLUT[(byte >> 4) & 0xF]); // append the high nibble
+    hexString.append(1, hexLUT[byte & 0xF]);        // append the low nibble
+  }
+  return hexString;
+}

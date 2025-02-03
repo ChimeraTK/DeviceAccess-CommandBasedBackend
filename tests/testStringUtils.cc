@@ -55,3 +55,16 @@ BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
 }
 
 /**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(testHexConversion) {
+  std::string hexInput = "BEEFE";
+
+  std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
+
+  std::vector<unsigned char> binaryData = hexStringToBinary(hexInput);
+  std::string hexOutput = binaryToHexString(binaryData);
+
+  std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
+
+  BOOST_CHECK_EQUAL(hexInput, hexOutput);
+}
