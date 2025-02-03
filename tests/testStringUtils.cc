@@ -55,3 +55,36 @@ BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
 }
 
 /**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(testHexConversion) {
+  std::string hexInput = "BEEF";
+
+  std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
+
+  std::string binaryData = binaryStrFromHexStr(hexInput);
+  std::string hexOutput = hexStrFromBinaryStr(binaryData);
+
+  std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
+
+  BOOST_CHECK_EQUAL(hexInput, hexOutput);
+}
+
+/**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(testHexConversionOdd) {
+  std::string hexInput = "BEEFE";
+
+  std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
+
+  std::string binaryData = binaryStrFromHexStr(hexInput);
+  std::string hexOutput = hexStrFromBinaryStr(binaryData);
+
+  std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
+  // Expect hexOutput to be "0BEEFE"
+
+  std::string hexOutputMatchingPart =
+      (hexOutput.size() >= hexInput.size()) ? hexOutput.substr(hexOutput.size() - hexInput.size()) : hexOutput;
+
+  BOOST_CHECK_EQUAL(hexOutput[0], '0');
+  BOOST_CHECK_EQUAL(hexInput, hexOutputMatchingPart);
+}

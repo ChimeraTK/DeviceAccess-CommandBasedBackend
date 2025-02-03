@@ -5,6 +5,7 @@
 #include "TcpSocket.h"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -20,38 +21,29 @@ namespace ChimeraTK {
      * Open and setup the tcp port, set the readback timeout parameter.
      * @param[in] host
      * @param[in] port
+     * @param[in] delimiter Sets the line default line delimiter. This can be overridden on a per-command basis.
      * @param[in] timeoutInMilliseconds The timeout duration in ms.
      */
-    TcpCommandHandler(const std::string& host, const std::string& port, ulong timeoutInMilliseconds = 1000);
+    TcpCommandHandler(const std::string& host, const std::string& port,
+        const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, const ulong timeoutInMilliseconds = 1000);
 
-    /**
-     * Send a command to the tcp port and read backs a single line responce.
-     * @param[in] cmd The command to be sent
-     * @returns The responce text, presumed to be a single line.
-     */
-    std::string sendCommand(std::string cmd) override;
+    std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
+        const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+        const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) override;
 
-    /**
-     * Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings.
-     * @param[in] cmd The command to be sent
-     * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
-     * return vector
-     * @returns A vector of strings containing the responce lines.
-     */
-    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override;
+    std::string sendCommandAndReadBytes(
+        std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) override;
 
     /**
      * Writes a string cmd to the device.
      * Typically cmd is a command.
      * @param[in] cmd The string to be written to the device.
+     * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is used.
      */
-    inline void write(std::string& cmd) const { _tcpDevice->send(cmd); }
-
-    /**
-     * Reads from the Tcp network device.
-     * @returns One line of text read from the device.
-     */
-    inline std::string read() { return _tcpDevice->readResponse(); }
+    inline void write(
+        const std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
+      _tcpDevice->send(cmd + toString(writeDelimiter));
+    }
 
    protected:
     std::unique_ptr<TcpSocket> _tcpDevice;

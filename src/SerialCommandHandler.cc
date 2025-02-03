@@ -16,30 +16,29 @@
 /**********************************************************************************************************************/
 
 SerialCommandHandler::SerialCommandHandler(
-    const std::string& device, const std::string& delim, ulong timeoutInMilliseconds)
-: _timeout(timeoutInMilliseconds) {
-  _serialPort = std::make_unique<SerialPort>(device, delim);
+    const std::string& device, const std::string& delimiter, ulong timeoutInMilliseconds)
+: CommandHandler(delimiter, timeoutInMilliseconds) {
+  _serialPort = std::make_unique<ChimeraTK::SerialPort>(device);
 }
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::sendCommand(std::string cmd) {
-  _serialPort->send(cmd);
-  return _serialPort->readlineWithTimeout(_timeout);
-}
-
-/**********************************************************************************************************************/
-
-std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, const size_t nLinesExpected) {
+std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+    const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
   std::vector<std::string> outputStrVec;
-  outputStrVec.reserve(nLinesExpected);
+  outputStrVec.reserve(nLinesToRead);
 
-  _serialPort->send(cmd);
+  write(cmd, writeDelimiter);
 
+  if(nLinesToRead == 0) {
+    return outputStrVec;
+  }
+
+  std::string delimiter = toString(readDelimiter);
   std::string readStr;
-  for(size_t nLinesFound = 0; nLinesFound < nLinesExpected; ++nLinesFound) {
+  for(size_t nLinesFound = 0; nLinesFound < nLinesToRead; ++nLinesFound) {
     try {
-      readStr = _serialPort->readlineWithTimeout(_timeout);
+      readStr = _serialPort->readlineWithTimeout(_timeout, delimiter);
     }
     catch(const ChimeraTK::runtime_error& e) {
       std::string err = std::string(e.what()) + " Retrieved:";
@@ -56,8 +55,17 @@ std::vector<std::string> SerialCommandHandler::sendCommand(std::string cmd, cons
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::waitAndReadline() const {
-  auto readData = _serialPort->readline();
+std::string SerialCommandHandler::sendCommandAndReadBytes(
+    std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
+  write(cmd, writeDelimiter);
+  return _serialPort->readBytesWithTimeout(nBytesToRead, _timeout);
+}
+
+/**********************************************************************************************************************/
+
+std::string SerialCommandHandler::waitAndReadline(const ReadableDelimiter& readDelimiter) const {
+  std::string delimiter = toString(readDelimiter);
+  auto readData = _serialPort->readline(delimiter);
   if(not readData.has_value()) {
     throw std::logic_error("FIXME: BAD INTERFACE");
     // Needs to actually be std::logic_error
