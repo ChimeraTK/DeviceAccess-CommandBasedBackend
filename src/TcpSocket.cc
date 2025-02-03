@@ -5,12 +5,12 @@
 
 #include <ChimeraTK/Exception.h>
 
+#include <optional>
 #include <utility>
 
 namespace ChimeraTK {
-  TcpSocket::TcpSocket(std::string host, std::string port, ulong timeoutInMilliseconds)
-  : _socket(_io_context), _resolver(_io_context), _host(std::move(host)), _port(std::move(port)),
-    _timeout(std::chrono::milliseconds(timeoutInMilliseconds)) {}
+  TcpSocket::TcpSocket(std::string host, std::string port)
+  : _socket(_io_context), _resolver(_io_context), _host(std::move(host)), _port(std::move(port)) {}
 
   /********************************************************************************************************************/
 
@@ -66,7 +66,7 @@ namespace ChimeraTK {
 
     boost::system::error_code ec;
     try {
-      boost::asio::write(_socket, boost::asio::buffer(command + _delimiter));
+      boost::asio::write(_socket, boost::asio::buffer(command));
     }
     catch(std::exception& e) {
       throw ChimeraTK::runtime_error(e.what());
@@ -78,52 +78,76 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::string TcpSocket::readResponse() {
-    assert(_opened);
-
-    try {
-      return readWithTimeout(_timeout);
-    }
-    catch(std::exception& ex) {
-      throw ChimeraTK::runtime_error(ex.what());
-    }
+  std::string TcpSocket::readlineWithTimeout(const std::chrono::milliseconds& timeout, const std::string& delimiter) {
+    AsyncReadFn asyncReadFn = [this, delimiter](auto& stream, auto& buffer, auto doOnReadFinish) {
+      boost::asio::async_read_until(stream, buffer, delimiter, doOnReadFinish);
+    };
+    return readWithTimeout(timeout, asyncReadFn);
   }
 
   /********************************************************************************************************************/
 
-  std::string TcpSocket::readWithTimeout(std::chrono::milliseconds timeout) {
+  std::string TcpSocket::readBytesWithTimeout(size_t nBytesToRead, const std::chrono::milliseconds& timeout) {
+    if(nBytesToRead == 0) {
+      return "";
+    }
+    AsyncReadFn asyncReadFn = [this, nBytesToRead](auto& stream, auto& buffer, auto doOnReadFinish) {
+      boost::asio::async_read(stream, buffer, boost::asio::transfer_exactly(nBytesToRead), doOnReadFinish);
+    };
+    return readWithTimeout(timeout, asyncReadFn);
+  }
+
+  /********************************************************************************************************************/
+
+  constexpr boost::system::error_code timeoutError() noexcept {
+    // Rename 'operation_aborted' to 'timeoutError' for readability.
+    return boost::asio::error::operation_aborted;
+  }
+
+  /********************************************************************************************************************/
+
+  std::string TcpSocket::readWithTimeout(const std::chrono::milliseconds& timeout, AsyncReadFn asyncReadFn) {
+    assert(_opened);
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Set a timer, with doOnTimeout executing when it expires.
     boost::asio::steady_timer timer(_io_context);
-    boost::system::error_code ec;
-    std::string response;
-
     timer.expires_after(timeout);
-    timer.async_wait([&](const boost::system::error_code& error) {
-      // As boost::asio::error::operation_aborted is not set for timer, it
-      // means it has expired.
-      if(!error) {
-        _socket.cancel(); // Cancel the socket operation on timeout.
+    bool readCompleted = false;
+    auto doOnTimeout = [&](const boost::system::error_code& error) {
+      if(not(readCompleted or error)) {
+        _socket.cancel(); // Causes error = errorCode = timeoutError()
       }
-    });
+    };
+    timer.async_wait(doOnTimeout);
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Do read
+    boost::asio::streambuf buffer;
+    boost::system::error_code errorCode;
 
-    boost::asio::async_read_until(_socket, boost::asio::dynamic_buffer(response), _delimiter,
-        [&](const boost::system::error_code& error, std::size_t /*bytes_transferred*/) {
-          ec = error;
-          timer.cancel(); // Stop the timer if read completes.
-                          // If the timer is canceled: error is boost::asio::error::operation_aborted.
-        });
+    /* doOnReadFinish is the callback handler, executing when the read operation ends, successfully or not.
+     * If there's a timeout, doOnTimeout is called before this, with _socket.cancel() causing error = timeoutError()
+     */
+    auto doOnReadFinish = [&](const boost::system::error_code& error, std::size_t /*bytesTransferred*/) {
+      readCompleted = true;
+      timer.cancel();
+      errorCode = error;
+    };
 
+    asyncReadFn(_socket, buffer, doOnReadFinish);
     _io_context.run();
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Clean-up
     _io_context.reset();
-
-    if(ec == boost::asio::error::operation_aborted) {
-      throw ChimeraTK::runtime_error("Read operation timed out");
+    /*----------------------------------------------------------------------------------------------------------------*/
+    if(errorCode) {
+      if(errorCode == timeoutError()) {
+        throw ChimeraTK::runtime_error("Readline operation timed out");
+      }
+      throw ChimeraTK::runtime_error(errorCode.message());
     }
-    if(ec) {
-      throw ChimeraTK::runtime_error(ec.message());
-    }
-
-    // Return the response without the delimiter.
-    return response.substr(0, response.size() - _delimiter.size());
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Extract the data from the streambuf
+    return std::string(std::istreambuf_iterator<char>(&buffer), {});
   }
 
   /********************************************************************************************************************/

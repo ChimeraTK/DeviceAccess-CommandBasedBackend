@@ -1,8 +1,19 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+
+#include <chrono>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
+
+class CommandHandlerDefaultDelimiter {};
+class NoDelimiter {};
+using ReadableDelimiter = std::variant<CommandHandlerDefaultDelimiter, std::string>;
+using WritableDelimiter = std::variant<CommandHandlerDefaultDelimiter, NoDelimiter, std::string>;
+
+/**********************************************************************************************************************/
 
 /**
  * This interface gives control over SCPI devics over
@@ -11,15 +22,62 @@
 class CommandHandler {
  public:
   /**
-   * Send a command to a SCPI device, read back one line of responce.
+   * @brief Constructor for the CommandHandler class.
+   * @param[in] delimiter The delimiter string used for communication.
+   * @param[in] timeoutInMilliseconds The timeout duration in milliseconds.
    */
-  virtual std::string sendCommand(std::string cmd) = 0;
+  CommandHandler(const std::string& delimiter = "\r\n", ulong timeoutInMilliseconds = 1000)
+  : _delimiter(delimiter), _timeout(timeoutInMilliseconds) {}
 
   /**
-   * Send a command to a SCPI device, read back nLinesExpected line of responce.
-   * Resulting vector will be nLinesExpected long or else throw a ChimeraTK::runtime_error
+   * @brief Send a command to a SCPI device, read back nLinesToRead line of responce.
+   * Resulting vector will be nLinesToRead long or else throw a ChimeraTK::runtime_error
+   * @param[in] cmd The command to be sent, which should have no delimiter
+   * @param[in] nLinesToRead The number of lines required in the reply to the sent command cmd, and the length of the
+   * return vector. If 0, then no read is attempted.
+   * @param[in] writeDelimiter if set, this overrides the default _delimiter the writing operation in this call.
+   * It can be set to "" or (preferably) to NoDelimiter{} to send a raw binary command.
+   * @param[in] readDelimiter if set, this overrides the default _delimiter for the reading operation in this call.
+   * Since empty string cannot be a line delimitier, if overrideReadDelimiter is "", the default delimiter will be used.
+   * @returns A vector, of length nLinesToRead, of strings containing the responce lines.
+   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  virtual std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) = 0;
+  virtual std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
+      const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+      const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) = 0;
+
+  /**
+   * @brief Send a command to a SCPI device, read back a set number of bytes of responce.
+   * Resulting string will be nBytesToRead long or else throw a ChimeraTK::runtime_error
+   * Since this is binary oriented, no write delimiter is used by default.
+   * @param[in] cmd The command to be sent, which should have no delimiter
+   * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd. If 0, no read is attempted.
+   * @param[in] writeDelimiter if set, the specified write delimiter is added for this call, which can be a string or
+   * CommandHandlerDefaultDelimiter{}.
+   * @returns A string as a container of bytes containing the responce. The return string is not null terminated.
+   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
+   */
+  virtual std::string sendCommandAndReadBytes(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) = 0;
 
   virtual ~CommandHandler() = default;
+
+  /**
+   * The default line delimiter appended ot the end of writes, and delimiting line reads.
+   */
+  const std::string _delimiter;
+
+  /**
+   * Timeout parameter in milliseconds used to to timeout the sendComman functions.
+   */
+  std::chrono::milliseconds _timeout;
+
+  [[nodiscard]] std::string toString(
+      const WritableDelimiter& delimOption) const noexcept; //!< Converts a writeable delimiter option to string
+
+  /**
+   * @brief Converts a readable delimiter option to string
+   * @param[in] delimOption must never be "", and this case must be externally protected against.
+   */
+  [[nodiscard]] std::string toString(const ReadableDelimiter& delimOption) const noexcept;
 };

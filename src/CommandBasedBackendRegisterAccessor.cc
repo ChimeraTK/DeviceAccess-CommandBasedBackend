@@ -51,23 +51,23 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     std::string valueRegex;
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::INT64) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::UINT64) {
-      valueRegex = "([+]?[0-9]+)";
-    }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
       valueRegex = "([0-9A-Fa-f]+)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::DOUBLE) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::BIN_INT) {
+      valueRegex = "(.*)";
+    }
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_FLOAT) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
     }
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::STRING) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
       valueRegex = "(.*)";
     }
 
-    if(_registerInfo.internalType != CommandBasedBackendRegisterInfo::InternalType::VOID) {
+    if(_registerInfo.transportLayerType != CommandBasedBackendRegisterInfo::TransportLayerType::VOID) {
       assert(!valueRegex.empty());
     }
 
@@ -99,7 +99,7 @@ namespace ChimeraTK {
     if(_readResponseRegex.mark_count() != _registerInfo.nElements) {
       throw ChimeraTK::logic_error("Wrong number of capture groups (" +
           std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
-          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", expected " +
+          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
           std::to_string(_registerInfo.nElements));
     }
 
@@ -129,7 +129,8 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readCommandPattern;
 
-    _readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
+    _readTransferBuffer =
+        _backend->sendCommandAndReadLines(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
   }
 
   /********************************************************************************************************************/
@@ -153,7 +154,8 @@ namespace ChimeraTK {
       }
 
       std::string hexIndicator =
-          (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
+          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT ? "0x" :
+                                                                                                              "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
         buffer_2D[0][i] =
             userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
@@ -181,7 +183,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
+    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
       for(size_t i = 0; i < _numberOfElements; ++i) {
         std::ostringstream oss;
         oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
@@ -223,7 +225,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommand(_writeTransferBuffer, 0);
+    _backend->sendCommandAndReadLines(_writeTransferBuffer, 0);
     return false; // no data was lost
   }
 
