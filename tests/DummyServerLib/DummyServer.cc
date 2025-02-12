@@ -161,7 +161,7 @@ void DummyServer::mainLoop() {
         std::cout << "Received debug clear command" << std::endl;
       }
     }
-    else if(data == u8"\u0018") {
+    else if((data.size() == 1) && (data[0] == 0x18)) {
       voidCounter++;
       if(_debug) {
         std::cout << "Received Emergency Stop Movement command." << std::endl;
