@@ -23,11 +23,14 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> TcpCommandHandler::sendCommand(std::string cmd, size_t nLinesExpected) {
+  std::vector<std::string> TcpCommandHandler::sendCommandAndReadLines(const std::string cmd,
+      const size_t nLinesExpected, const std::optional<std::string>& overrideWriteDelimiter,
+      const std::string& overrideReadDelimiter) {
     std::vector<std::string> ret;
-    _tcpDevice->send(cmd);
+    std::string readDelimiter = overrideReadDelimiter == "" ? _delimiter : overrideReadDelimiter;
+    write(cmd, overrideWriteDelimiter);
     for(size_t line = 0; line < nLinesExpected; ++line) {
-      ret.push_back(_tcpDevice->readResponse());
+      ret.push_back(_tcpDevice->readlineWithTimeout(_timeout, readDelimiter));
     }
 
     return ret;

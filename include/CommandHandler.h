@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 #include <chrono>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,10 +21,21 @@ class CommandHandler {
   : _delimiter(delimiter), _timeout(timeoutInMilliseconds) {}
 
   /**
-   * Send a command to a SCPI device, read back nLinesExpected line of responce.
+   * @brief Send a command to a SCPI device, read back nLinesExpected line of responce.
    * Resulting vector will be nLinesExpected long or else throw a ChimeraTK::runtime_error
+   * @param[in] cmd The command to be sent
+   * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
+   * @param[in] overrideWriteDelimiter if set, this overrides the default _delimiter the writing operation in this call.
+   * It can be set to "" to send a raw binary command.
+   * @param[in] overrideReadDelimiter if set, this overrides the default _delimiter for the reading operation in this call.
+   * Since empty string cannot be a line delimitier, if overrideReadDelimiter is "", the default delimiter will be used.
+   * @returns A vector, of length nLinesExpected, of strings containing the responce lines.
+   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  virtual std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) = 0;
+  virtual std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesExpected = 1,
+      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
+      const std::string& overrideReadDelimiter = "") = 0;
+
 
   virtual ~CommandHandler() = default;
 

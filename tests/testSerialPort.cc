@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(testSimpleReply) {
 
 BOOST_AUTO_TEST_CASE(testBasicCommand) {
   std::string cmd = "test1";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
@@ -43,14 +43,14 @@ BOOST_AUTO_TEST_CASE(testLongCommandBuffer) {
       "test2aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
       "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
       "ccccccccccccccccccccccccccccc012345";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
 BOOST_AUTO_TEST_CASE(testLongCommandBufferFollowup) {
   // Intermediate basic tests to see if the responce from the previous test overflows into the next reply.
   std::string cmd = "test3";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
@@ -62,13 +62,13 @@ BOOST_AUTO_TEST_CASE(testDelimiterStraddleBuffer) {
       "test4aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
       "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
       "ccccccccccccccccccccccccccccc01234";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
 BOOST_AUTO_TEST_CASE(testDelimiterStraddleBufferFollowup) {
   std::string cmd = "test5";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
@@ -79,19 +79,19 @@ BOOST_AUTO_TEST_CASE(testCommandExactBufferSize) {
       "test6aaafirst100aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbb2ndHund"
       "redbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccc201thru249cccccc"
       "ccccccccccccccccccccccccccccc0123";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
 BOOST_AUTO_TEST_CASE(testExactBufferSizeFollowup) {
   std::string cmd = "test7";
-  std::string res = s.sendCommand(cmd);
+  std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
 BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
   std::string cmd = "qwer;asdf";
-  auto ret = s.sendCommand(cmd, 2);
+  auto ret = s.sendCommandAndReadLines(cmd, 2);
   BOOST_TEST(ret.size() == 2);
 
   if(ret.size() == 2) {

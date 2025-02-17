@@ -28,14 +28,20 @@ class SerialCommandHandler : public CommandHandler {
   ~SerialCommandHandler() override = default;
 
   /**
-   * Sends the command cmd to the device and collects the repsonce as a vector of nLinesExpected strings.
+   * @brief Sends the command cmd to the device and collects the repsonce as a vector of nLinesExpected strings.
    * @param[in] cmd The command to be sent
    * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
+   * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
+sending cmd. Can be set to "" to send a raw binary command
+   * @param[in] overrideReadDelimiter if set, overrides the default _delimiter that is set in the constructor for
+reading back lines.
    * return vector
    * @returns A vector of strings containing the responce lines.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override; // TODO rename?
+  std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesExpected = 1,
+      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
+      const std::string& overrideReadDelimiter = "") override;
 
   // NEW
   /**

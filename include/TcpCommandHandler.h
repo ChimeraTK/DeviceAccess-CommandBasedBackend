@@ -5,6 +5,7 @@
 #include "TcpSocket.h"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -27,17 +28,22 @@ namespace ChimeraTK {
         const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, const ulong timeoutInMilliseconds = 1000);
 
     /**
-     * @param[in] cmd The command to be sent
-     */
-
-    /**
      * Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings.
      * @param[in] cmd The command to be sent
      * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
-     * return vector
+     * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
+sending cmd. Can be set to "" to send a raw binary command
+   * @param[in] overrideReadDelimiter if set, overrides the default _delimiter that is set in the constructor for
+reading back lines.
      * @returns A vector of strings containing the responce lines.
      */
-    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected) override;
+    std::vector<std::string> sendCommandAndReadLines(const std::string cmd, const size_t nLinesExpected = 1,
+        const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
+        const std::string& overrideReadDelimiter = "") override;
+
+    /**
+     * @param[in] cmd The command to be sent
+     */
 
     /**
      * Writes a string cmd to the device.
