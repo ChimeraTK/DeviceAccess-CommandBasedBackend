@@ -20,9 +20,11 @@ namespace ChimeraTK {
      * Open and setup the tcp port, set the readback timeout parameter.
      * @param[in] host
      * @param[in] port
+     * @param[in] delimiter Sets the line default line delimiter. This can be overridden on a per-command basis.
      * @param[in] timeoutInMilliseconds The timeout duration in ms.
      */
-    TcpCommandHandler(const std::string& host, const std::string& port, ulong timeoutInMilliseconds = 1000);
+    TcpCommandHandler(const std::string& host, const std::string& port,
+        const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, const ulong timeoutInMilliseconds = 1000);
 
     /**
      * @param[in] cmd The command to be sent

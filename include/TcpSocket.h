@@ -7,6 +7,8 @@
 #include <string>
 
 namespace ChimeraTK {
+
+  constexpr const char TCP_DEFAULT_DELIMITER[] = "\r\n";
   /**
    * @class TcpSocket
    * @brief A TCP socket wrapper for communication with a specified host and port.
@@ -23,15 +25,15 @@ namespace ChimeraTK {
      * @param[in] port The remote port to connect to.
      * @param[in] timeoutInMilliseconds Timeout duration for read/write operations, in milliseconds.
      */
-    TcpSocket(std::string host, std::string port, ulong timeoutInMilliseconds);
+    TcpSocket(std::string host, std::string port);
 
     /**
      * @brief Sends a command to the connected remote host.
-     *
+     * No delimiter is added internally, and must part of the provided command
      * @param[in] command The string command to send.
      * @throws ChimeraTK::runtime_error If the socket is not connected or the send operation fails.
      */
-    void send(const std::string& command);
+    void send(const std::string& command) const;
 
     /**
      * @brief Reads a response from the remote host.
@@ -81,10 +83,7 @@ namespace ChimeraTK {
     boost::asio::ip::tcp::resolver _resolver; //!< Resolver for hostname and port resolution.
     std::string _host;                        //!< Hostname or IP address of the remote host.
     std::string _port;                        //!< Port number of the remote host.
-    std::chrono::milliseconds _timeout;       //!< Timeout duration for read/write operations.
     bool _opened = false;                     //!< Indicates whether the socket is currently open.
-    std::string _delimiter{"\n"}; //!< Delimiter used for reading responses (FIXME: make configurable): set from
-                                  //!< constructor parameter. Ticket 13532
   };
 
 } // namespace ChimeraTK

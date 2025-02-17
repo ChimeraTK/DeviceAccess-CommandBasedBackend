@@ -16,9 +16,9 @@
 /**********************************************************************************************************************/
 
 SerialCommandHandler::SerialCommandHandler(
-    const std::string& device, const std::string& delim, ulong timeoutInMilliseconds)
-: _timeout(timeoutInMilliseconds) {
-  _serialPort = std::make_unique<SerialPort>(device, delim);
+    const std::string& device, const std::string& delimiter, ulong timeoutInMilliseconds)
+: CommandHandler(delimiter, timeoutInMilliseconds) {
+  _serialPort = std::make_unique<ChimeraTK::SerialPort>(device);
 }
 
 /**********************************************************************************************************************/

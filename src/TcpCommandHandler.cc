@@ -14,8 +14,10 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  TcpCommandHandler::TcpCommandHandler(const std::string& host, const std::string& port, ulong timeoutInMilliseconds) {
-    _tcpDevice = std::make_unique<TcpSocket>(host, port, timeoutInMilliseconds);
+  TcpCommandHandler::TcpCommandHandler(
+      const std::string& host, const std::string& port, const std::string& delimiter, const ulong timeoutInMilliseconds)
+  : CommandHandler(delimiter, timeoutInMilliseconds) {
+    _tcpDevice = std::make_unique<TcpSocket>(host, port);
     _tcpDevice->connect();
   }
 

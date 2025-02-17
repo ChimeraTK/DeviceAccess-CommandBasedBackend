@@ -121,7 +121,8 @@ namespace ChimeraTK {
         _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
         break;
       case CommandBasedBackendType::ETHERNET:
-        _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _timeoutInMilliseconds);
+        _commandHandler =
+            std::make_unique<TcpCommandHandler>(_instance, _port, _serialDelimiter, _timeoutInMilliseconds);
         break;
       default:
         // Then this is not part of the proper interface. Throw a std::logic_error as

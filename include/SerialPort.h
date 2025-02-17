@@ -9,6 +9,8 @@
 #include <vector>
 
 namespace ChimeraTK {
+
+  constexpr const char SERIAL_DEFAULT_DELIMITER[] = "\r\n";
   /**
    * The SerialPort class handles, opens, closes, and
    * gives read/write access to a specified serial port.
@@ -33,7 +35,7 @@ namespace ChimeraTK {
      * @param[in] delmimiter The line delimiter seperating serial port messages.
      * @throws ChimeraTK::runtime_error
      */
-    explicit SerialPort(const std::string& device, const std::string& delimiter = "\r\n");
+    explicit SerialPort(const std::string& device);
 
     /**
      * Closes the port.
@@ -41,7 +43,7 @@ namespace ChimeraTK {
     ~SerialPort();
 
     /**
-     * Write str into the serial port, with delimiter appended.
+     * Write str into the serial port, with no delimiter appended.
      * @throws ChimeraTK::runtime_error if the write fails.
      */
     void send(const std::string& str) const;
@@ -54,7 +56,7 @@ namespace ChimeraTK {
      * @returns an optional string line read from the device, ending with the specified delimiter.
      * An empty optional is retuned if terminateRead() has been called.
      */
-    std::optional<std::string> readline() noexcept;
+    std::optional<std::string> readline(const std::string& delimiter = SERIAL_DEFAULT_DELIMITER) noexcept;
 
     // NEW
     std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
@@ -62,19 +64,19 @@ namespace ChimeraTK {
     /**
      * @brief Read a delimiter delimited line from the serial port. Result does NOT end in delimiter
      * @param[in] timeout the timeout in milliseconds
+     * @param[in] delimiter The line delimiter
      * @return The responce as a sting
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
-    std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
+    std::string readlineWithTimeout(
+        const std::chrono::milliseconds& timeout, const std::string& delimiter = SERIAL_DEFAULT_DELIMITER);
 
     // NEW
     std::vector<unsigned char> readBytesWithTimeout(
         const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
-     * _delimiter is the line delimiter for the serial port communication.
      */
-    const std::string _delimiter;
 
     /**
      * Terminate a blocking read call.

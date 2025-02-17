@@ -4,7 +4,6 @@
 #include "CommandHandler.h"
 #include "SerialPort.h"
 
-#include <chrono>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -17,14 +16,13 @@
 class SerialCommandHandler : public CommandHandler {
  public:
   /**
-   * Open and setup the serial port, set the readback timeout parameter.
-   *
-   * @param device The address of the serial device, such as /tmp/virtual-tty
-   * @param delim The line delimiter seperating serial communication messages.
+   * @brief Open and setup the serial port, set the readback timeout parameter.
+   * @param[in] device The address of the serial device, such as /tmp/virtual-tty
+   * @param[in] delimiter Sets the default line delimiter seperating serial communication messages.
    * @param[in] timeoutInMilliseconds The timeout duration in ms
    */
-  explicit SerialCommandHandler(
-      const std::string& device, const std::string& delim = "\r\n", ulong timeoutInMilliseconds = 1000);
+  explicit SerialCommandHandler(const std::string& device,
+      const std::string& delimiter = ChimeraTK::SERIAL_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
   ~SerialCommandHandler() override = default;
 
@@ -72,11 +70,6 @@ class SerialCommandHandler : public CommandHandler {
   [[nodiscard]] std::string waitAndReadline() const;
 
  protected:
-  /**
-   * Timeout parameter in milliseconds used to to timeout sendCommand.
-   */
-  std::chrono::milliseconds _timeout;
-
   /**
    * The SerialPort handle
    */

@@ -21,8 +21,7 @@
 namespace ChimeraTK {
   /**********************************************************************************************************************/
 
-  SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
-  : _delimiter(delimiter.empty() ? "\n" : delimiter) {
+  SerialPort::SerialPort(const std::string& device) {
     _fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
                                                                             // O_RDWR = open for read + write
                                                                             // O_RDONLY = open read only
@@ -79,17 +78,16 @@ namespace ChimeraTK {
   /**********************************************************************************************************************/
 
   void SerialPort::send(const std::string& str) const {
-    std::string strToWrite = str + _delimiter;
-    ssize_t bytesWritten = write(_fileDescriptor, strToWrite.c_str(), strToWrite.size()); // unistd::write
+    ssize_t bytesWritten = write(_fileDescriptor, str.c_str(), str.size()); // unistd::write
 
-    if(bytesWritten != static_cast<ssize_t>(strToWrite.size())) {
+    if(bytesWritten != static_cast<ssize_t>(str.size())) {
       std::string err = "Incomplete write";
       throw ChimeraTK::runtime_error(err);
     }
   }
 
   /**********************************************************************************************************************/
-
+  
   // NEW, implementation complete
   void SerialPort::sendBinary(const std::string& hexData) const {
     std::vector<unsigned char> binaryData = hexStringToBinary(hexData);
@@ -103,15 +101,15 @@ namespace ChimeraTK {
 
   /**********************************************************************************************************************/
 
-  std::optional<std::string> SerialPort::readline() noexcept {
+  std::optional<std::string> SerialPort::readline(const std::string& delimiter) noexcept {
     size_t delimPos;
     static constexpr int readBufferLen = 256;
     std::vector<char> readBuffer(readBufferLen, '\0'); // Initialize with zeros
 
     _terminateRead = false;
     // Search for delimiter in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
-    for(delimPos = _persistentBufferStr.find(_delimiter); delimPos == std::string::npos;
-        delimPos = _persistentBufferStr.find(_delimiter)) {
+    for(delimPos = _persistentBufferStr.find(delimiter); delimPos == std::string::npos;
+        delimPos = _persistentBufferStr.find(delimiter)) {
       std::fill(readBuffer.begin(), readBuffer.end(), '\0');
       ssize_t __attribute__((unused)) bytesRead =
           read(_fileDescriptor, readBuffer.data(), readBuffer.size() - 1); // unistd::read
@@ -129,7 +127,7 @@ namespace ChimeraTK {
 
     // Now the delimiter has been found at position delimPos.
     std::string outputStr = _persistentBufferStr.substr(0, delimPos);
-    _persistentBufferStr = _persistentBufferStr.substr(delimPos + _delimiter.size());
+    _persistentBufferStr = _persistentBufferStr.substr(delimPos + delimiter.size());
     return std::make_optional(outputStr);
   } // end readline
 
@@ -177,22 +175,25 @@ namespace ChimeraTK {
 
   /**********************************************************************************************************************/
 
-  std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout) {
-    auto future = std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readline(); });
-    if(future.wait_for(timeout) != std::future_status::timeout) {
-      // No timeout occured, so check if the optional has data.
-      auto readData = future.get();
-      if(readData.has_value()) {
-        return readData.value();
-      }
-    }
-    // If the code has not returned, then there has been a timeout or read has been abandoned.
+  std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout, const std::string& delimiter) {
+    auto future =
+        std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readline(delimiter); });
 
-    // In case of a timeout we have to tell the read to stop so the
-    // async thread can complete.
-    terminateRead();
-    std::string err = "readline operation timed out.";
-    throw ChimeraTK::runtime_error(err);
+    if(future.wait_for(timeout) == std::future_status::timeout) {
+      // In case of a timeout we have to tell the read to stop so the
+      // async thread can complete.
+      terminateRead();
+      std::string err = "readline operation timed out.";
+      throw ChimeraTK::runtime_error(err);
+    }
+
+    // No timeout occured, the readData optional should have data.
+    auto readData = future.get();
+    if(not readData.has_value()) {
+      // read was abandoned or failed
+      throw ChimeraTK::runtime_error("readline failed to return a value.");
+    }
+    return readData.value();
   } // end readlineWithTimeout
 
   /**********************************************************************************************************************/

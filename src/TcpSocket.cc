@@ -8,9 +8,8 @@
 #include <utility>
 
 namespace ChimeraTK {
-  TcpSocket::TcpSocket(std::string host, std::string port, ulong timeoutInMilliseconds)
-  : _socket(_io_context), _resolver(_io_context), _host(std::move(host)), _port(std::move(port)),
-    _timeout(std::chrono::milliseconds(timeoutInMilliseconds)) {}
+  TcpSocket::TcpSocket(std::string host, std::string port)
+  : _socket(_io_context), _resolver(_io_context), _host(std::move(host)), _port(std::move(port)) {}
 
   /********************************************************************************************************************/
 
@@ -61,12 +60,12 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  void TcpSocket::send(const std::string& command) {
+  void TcpSocket::send(const std::string& command) const {
     assert(_opened);
 
     boost::system::error_code ec;
     try {
-      boost::asio::write(_socket, boost::asio::buffer(command + _delimiter));
+      boost::asio::write(_socket, boost::asio::buffer(command));
     }
     catch(std::exception& e) {
       throw ChimeraTK::runtime_error(e.what());
