@@ -1,9 +1,12 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+#include <condition_variable>
+
 #include <boost/asio.hpp>
 
 #include <iostream>
+#include <mutex>
 #include <string>
 
 namespace ChimeraTK {
@@ -39,10 +42,22 @@ namespace ChimeraTK {
      * @brief Reads a response from the remote host.
      *
      * Reads data from the socket until the configured delimiter is encountered.
+     * @param[in] timeout the timeout in milliseconds
+     * @param[in] delimiter The line delimiter string.
      * @return The response as a string.
      * @throws ChimeraTK::runtime_error If the socket is not connected or the read operation fails.
      */
-    std::string readResponse();
+    std::string readlineWithTimeout(
+        const std::chrono::milliseconds& timeout, const std::string& delimiter = TCP_DEFAULT_DELIMITER);
+
+    /**
+     * @brief Read a the specified number of bytes from the remote host, return-formatted as a string that will not be
+     * null-terminated.
+     * @param[in] nBytesToRead The number of bytes that it will attempt to read.
+     * @param[in] timeout the timeout in milliseconds
+     * @return The response as a string.
+     * @throws ChimeraTK::runtime_error if timeout exceeded.     */
+    std::string readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
      * @brief Establishes a connection to the specified host and port.
@@ -69,21 +84,26 @@ namespace ChimeraTK {
 
    private:
     /**
-     * @brief Reads data from the socket with a timeout.
-     *
-     * Attempts to read data until the configured delimiter is encountered,
-     * or the operation times out.
-     * @param[in] timeout The timeout duration for the read operation.
-     * @return The data read as a string.
-     * @throws ChimeraTK::runtime_error If the read operation fails or times out.
+     * @brief Runs the _io_context.run() and resets the _io_context in a thread-safe manner.
      */
-    std::string readWithTimeout(std::chrono::milliseconds timeout);
-    boost::asio::io_context _io_context;      //!< Boost.Asio I/O context for asynchronous operations.
-    boost::asio::ip::tcp::socket _socket;     //!< TCP socket used for communication.
+    void runAndResetIoContext();
+
+    /**
+     * @brief Waits for the io_context to stop in a thread-safe manner.
+     */
+    void waitForIoContextToStop();
+
+    boost::asio::io_context _io_context;               //!< Boost.Asio I/O context for asynchronous operations.
+    std::mutex ioContextMutex;                         //!< For synchronization management of io_context state
+    std::condition_variable ioContextStoppedCondition; //!< For synchronization management of io_context state
+
+    boost::asio::ip::tcp::socket _socket; //!< TCP socket used for communication.
+    std::mutex _socketMutex;              //!< For synchronization management of socket state
+
     boost::asio::ip::tcp::resolver _resolver; //!< Resolver for hostname and port resolution.
     std::string _host;                        //!< Hostname or IP address of the remote host.
     std::string _port;                        //!< Port number of the remote host.
-    bool _opened = false;                     //!< Indicates whether the socket is currently open.
+    std::atomic<bool> _opened{false};         //!< Indicates whether the socket is currently open.
   };
 
 } // namespace ChimeraTK
