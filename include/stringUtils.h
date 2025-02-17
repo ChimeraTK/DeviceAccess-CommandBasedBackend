@@ -21,19 +21,20 @@
 
 /**
  * Returns true if and only if the provided string ends in the delimiter delim.
- * @param[in] delim The delimiter
- # @param[in] delim_size Must equal delim.size()
+ * @param[in] delimiter The line delimiter
+ # @param[in] delimiterSize Must equal delimiter.size()
  */
-[[nodiscard]] bool strEndsInDelim(const std::string& str, const std::string& delim, size_t delim_size) noexcept;
+[[nodiscard]] bool strEndsInDelim(const std::string& str, const std::string& delimiter, size_t delimiterSize) noexcept;
 
 /**
- * Removes the delimiter delim from str if it's present and returns the result.
+ * Removes the line delimiter from str if it's present and returns the result.
  * If no delimiter is found, then returns the input.
  * Use this to ensure that the resulting string doesn't end in the delimiter.
- * @param[in] delim The delimiter
- # @param[in] delim_size Must equal delim.size()
+ * @param[in] delimiter The line delimiter
+ # @param[in] delimiterSize Must equal delim.size()
  */
-[[nodiscard]] std::string stripDelim(const std::string& str, const std::string& delim, size_t delim_size) noexcept;
+[[nodiscard]] std::string stripDelim(
+    const std::string& str, const std::string& delimiter, size_t delimiterSize) noexcept;
 
 /**
  * This replaces '\n' with 'N' and '\r' with 'R' and returns the modified string.

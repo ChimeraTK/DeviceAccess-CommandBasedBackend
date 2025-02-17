@@ -41,7 +41,7 @@ namespace ChimeraTK {
     ~SerialPort();
 
     /**
-     * Write str into the serial port, with delim delimiter appended.
+     * Write str into the serial port, with delimiter appended.
      * @throws ChimeraTK::runtime_error if the write fails.
      */
     void send(const std::string& str) const;
@@ -49,8 +49,10 @@ namespace ChimeraTK {
     void sendBinary(const std::string& hexData) const;
 
     /**
-     * Read a delim delimited line from the serial port. Result ends in delim.
-     * Retruns an empty optional if terminateRead() has been called.
+     * @brief Read a delimited line from the serial port.
+     * @param[in] delimiter Line delimiter used to identify the end of the line.
+     * @returns an optional string line read from the device, ending with the specified delimiter.
+     * An empty optional is retuned if terminateRead() has been called.
      */
     std::optional<std::string> readline() noexcept;
 
@@ -58,7 +60,9 @@ namespace ChimeraTK {
     std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
 
     /**
-     * Read a delim delimited line from the serial port. Result does NOT end in delim
+     * @brief Read a delimiter delimited line from the serial port. Result does NOT end in delimiter
+     * @param[in] timeout the timeout in milliseconds
+     * @return The responce as a sting
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
     std::string readlineWithTimeout(const std::chrono::milliseconds& timeout);
@@ -68,9 +72,9 @@ namespace ChimeraTK {
         const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
-     * delim is the line delimiter for the serial port communication.
+     * _delimiter is the line delimiter for the serial port communication.
      */
-    const std::string delim;
+    const std::string _delimiter;
 
     /**
      * Terminate a blocking read call.

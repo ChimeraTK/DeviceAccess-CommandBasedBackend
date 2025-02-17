@@ -49,11 +49,11 @@ std::vector<std::string> tokenise(const std::string& stringToBeParsed) noexcept 
 
 /**********************************************************************************************************************/
 
-bool strEndsInDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept {
+bool strEndsInDelim(const std::string& str, const std::string& delimiter, const size_t delimiterSize) noexcept {
   int s = static_cast<int>(str.size()) - 1;
-  int d = static_cast<int>(delim_size) - 1;
+  int d = static_cast<int>(delimiterSize) - 1;
   while(s >= 0 and d >= 0) {
-    if(str[s--] != delim[d--]) {
+    if(str[s--] != delimiter[d--]) {
       return false;
     }
   }
@@ -62,9 +62,9 @@ bool strEndsInDelim(const std::string& str, const std::string& delim, const size
 
 /**********************************************************************************************************************/
 
-std::string stripDelim(const std::string& str, const std::string& delim, const size_t delim_size) noexcept {
-  if(strEndsInDelim(str, delim, delim_size)) {
-    return str.substr(0, str.size() - delim_size);
+std::string stripDelim(const std::string& str, const std::string& delimiter, const size_t delimiterSize) noexcept {
+  if(strEndsInDelim(str, delimiter, delimiterSize)) {
+    return str.substr(0, str.size() - delimiterSize);
   }
   return str;
 }

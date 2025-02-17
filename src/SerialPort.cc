@@ -22,7 +22,7 @@ namespace ChimeraTK {
   /**********************************************************************************************************************/
 
   SerialPort::SerialPort(const std::string& device, const std::string& delimiter)
-  : delim(delimiter.empty() ? "\n" : delimiter) {
+  : _delimiter(delimiter.empty() ? "\n" : delimiter) {
     _fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
                                                                             // O_RDWR = open for read + write
                                                                             // O_RDONLY = open read only
@@ -79,7 +79,7 @@ namespace ChimeraTK {
   /**********************************************************************************************************************/
 
   void SerialPort::send(const std::string& str) const {
-    std::string strToWrite = str + delim;
+    std::string strToWrite = str + _delimiter;
     ssize_t bytesWritten = write(_fileDescriptor, strToWrite.c_str(), strToWrite.size()); // unistd::write
 
     if(bytesWritten != static_cast<ssize_t>(strToWrite.size())) {
@@ -109,9 +109,9 @@ namespace ChimeraTK {
     std::vector<char> readBuffer(readBufferLen, '\0'); // Initialize with zeros
 
     _terminateRead = false;
-    // Search for delim in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
-    for(delimPos = _persistentBufferStr.find(delim); delimPos == std::string::npos;
-        delimPos = _persistentBufferStr.find(delim)) {
+    // Search for delimiter in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
+    for(delimPos = _persistentBufferStr.find(_delimiter); delimPos == std::string::npos;
+        delimPos = _persistentBufferStr.find(_delimiter)) {
       std::fill(readBuffer.begin(), readBuffer.end(), '\0');
       ssize_t __attribute__((unused)) bytesRead =
           read(_fileDescriptor, readBuffer.data(), readBuffer.size() - 1); // unistd::read
@@ -129,7 +129,7 @@ namespace ChimeraTK {
 
     // Now the delimiter has been found at position delimPos.
     std::string outputStr = _persistentBufferStr.substr(0, delimPos);
-    _persistentBufferStr = _persistentBufferStr.substr(delimPos + delim.size());
+    _persistentBufferStr = _persistentBufferStr.substr(delimPos + _delimiter.size());
     return std::make_optional(outputStr);
   } // end readline
 
