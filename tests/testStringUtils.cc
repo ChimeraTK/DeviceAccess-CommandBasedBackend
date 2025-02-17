@@ -61,8 +61,8 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
 
   std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
 
-  std::vector<unsigned char> binaryData = hexStringToBinary(hexInput);
-  std::string hexOutput = binaryToHexString(binaryData);
+  std::string binaryData = binaryStrFromHexStr(hexInput);
+  std::string hexOutput = hexStrFromBinaryStr(binaryData);
 
   std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
 

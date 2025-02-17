@@ -99,22 +99,22 @@ void toLowerCase(std::string& str) noexcept {
 
 /**********************************************************************************************************************/
 
-std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcept {
+std::string binaryStrFromHexStr(const std::string& hexData) noexcept {
   size_t hexDataLength = hexData.length();
 
-  std::vector<unsigned char> binaryData;
+  std::string binaryData;
   binaryData.reserve((hexDataLength + 1) / 2);
 
   size_t i = 0;
   if(hexDataLength % 2 == 1) {
     std::string oddFirstChar = hexData.substr(i, 1);
-    unsigned char oddFirstByteChar = static_cast<unsigned char>(std::stoi(oddFirstChar, nullptr, 16));
+    char oddFirstByteChar = static_cast<char>(std::stoi(oddFirstChar, nullptr, 16));
     binaryData.push_back(oddFirstByteChar);
     i = 1;
   }
   for(; i < hexDataLength; i += 2) {
     std::string byteHexStr = hexData.substr(i, 2);
-    unsigned char byteChar = static_cast<unsigned char>(std::stoi(byteHexStr, nullptr, 16));
+    char byteChar = static_cast<char>(std::stoi(byteHexStr, nullptr, 16));
     binaryData.push_back(byteChar);
   }
   return binaryData;
@@ -122,15 +122,15 @@ std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcep
 
 /**********************************************************************************************************************/
 
-std::string binaryToHexString(const std::vector<unsigned char>& binaryData) noexcept {
+std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept {
   constexpr std::array<char, 16> hexLUT = {
       '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-  std::string hexString;
-  hexString.reserve(binaryData.size() * 2);
 
+  std::string hexString(binaryData.size() * 2, '\0');
+  auto it = hexString.begin();
   for(unsigned char byte : binaryData) {
-    hexString.append(1, hexLUT[(byte >> 4) & 0xF]); // append the high nibble
-    hexString.append(1, hexLUT[byte & 0xF]);        // append the low nibble
+    *it++ = hexLUT[(byte >> 4) & 0xF]; // append the high nibble
+    *it++ = hexLUT[byte & 0xF];        // append the low nibble
   }
   return hexString;
 }

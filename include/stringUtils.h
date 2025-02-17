@@ -47,12 +47,17 @@
 void toLowerCase(std::string& str) noexcept;
 
 /**
- * Convert the string of hexidecimal hexData into a vector of unsigned chars representing the corresponding binary data.
+ * @brief Convert the string of hexidecimal into a string containing the corresponding binary data.
+ * @param[in] hexData A string of hexidecimal such as "B0B", case insensitive.
  * If hexData has odd length, then a leading 0 is assumed.
+ * @returns A string containing the corresponding binary data, with characters like \xFF, of length ceil(input.ceil / 2).
  */
-[[nodiscard]] std::vector<unsigned char> hexStringToBinary(const std::string& hexData) noexcept;
+[[nodiscard]] std::string binaryStrFromHexStr(const std::string& hexData) noexcept;
 
 /**
- * Convert the input vector of bytes (unsigned chars) into the string hexidecimal representation of that data.
+ * @brief Convert a string container of bytes into the string hexidecimal representation of that data.
+ * @param[in] binaryData A string container of bytes (like "\xFF").
+ * @returns the hexidecimal representation string of the input, like "FF". Capitals are used for A-F. The returned
+ * string is guarenteed to be exactly twice as long as the input string.
  */
-[[nodiscard]] std::string binaryToHexString(const std::vector<unsigned char>& binaryData) noexcept
+[[nodiscard]] std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept;
