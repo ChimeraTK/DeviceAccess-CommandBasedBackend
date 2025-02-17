@@ -17,6 +17,7 @@ namespace ChimeraTK {
   void TcpSocket::connect() {
     // Resolve the host and port, and connect to the server.
     boost::system::error_code ec;
+    std::lock_guard<std::mutex> socketLock(_socketMutex);
     try {
       auto endpoints = _resolver.resolve(_host, _port);
       boost::asio::connect(_socket, endpoints);
@@ -67,6 +68,7 @@ namespace ChimeraTK {
     }
 
     boost::system::error_code ec;
+    std::lock_guard<std::mutex> socketLock(_socketMutex);
     try {
       boost::asio::write(_socket, boost::asio::buffer(command));
     }
