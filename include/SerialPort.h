@@ -48,8 +48,6 @@ namespace ChimeraTK {
      */
     void send(const std::string& str) const;
 
-    void sendBinary(const std::string& hexData) const;
-
     /**
      * @brief Read a delimited line from the serial port.
      * @param[in] delimiter Line delimiter used to identify the end of the line.

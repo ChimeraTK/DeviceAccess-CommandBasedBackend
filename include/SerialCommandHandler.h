@@ -5,6 +5,7 @@
 #include "SerialPort.h"
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -49,17 +50,12 @@ class SerialCommandHandler : public CommandHandler {
       std::string cmd, size_t numBytesToRead); // override; TODO restore override
 
   /**
-   * Simply sends the command cmd to the serial port with no readback.
+   * @brief Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
+   * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is
+   * used. string setting overrides that delimiter. Set to "" to send cmd as a pure binary sequence.
    */
-  void write(std::string& cmd) const { _serialPort->send(cmd); }
-
-  // NEW
-  /**
-   * Simply sends the data to the serial port with no readback.
-   * @param[in] data The vector of bytes of data to be sent
-   */
-  void writeBinary(std::string& hexData) const { _serialPort->sendBinary(hexData); }
+  void write(std::string& cmd, const std::optional<std::string>& overrideDelimiter = std::nullopt) const;
 
   /**
    * A simple blocking readline with no timeout. This can wait forever.

@@ -34,4 +34,16 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+
+  inline void TcpCommandHandler::write(
+      const std::string& cmd, const std::optional<std::string>& overrideDelimiter) const {
+    if(not overrideDelimiter.has_value()) {
+      _tcpDevice->send(cmd + _delimiter);
+    }
+    else {
+      _tcpDevice->send(cmd + overrideDelimiter.value());
+    }
+  }
+
+  /********************************************************************************************************************/
 } // namespace ChimeraTK

@@ -88,19 +88,6 @@ namespace ChimeraTK {
 
   /**********************************************************************************************************************/
   
-  // NEW, implementation complete
-  void SerialPort::sendBinary(const std::string& hexData) const {
-    std::vector<unsigned char> binaryData = hexStringToBinary(hexData);
-    ssize_t bytesWritten = write(_fileDescriptor, binaryData.data(), binaryData.size()); // unistd::write
-
-    if(bytesWritten != static_cast<ssize_t>(binaryData.size())) {
-      std::string err = "Incomplete write";
-      throw ChimeraTK::runtime_error(err);
-    }
-  }
-
-  /**********************************************************************************************************************/
-
   std::optional<std::string> SerialPort::readline(const std::string& delimiter) noexcept {
     size_t delimPos;
     static constexpr int readBufferLen = 256;

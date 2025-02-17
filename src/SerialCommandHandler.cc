@@ -23,6 +23,14 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
+void SerialCommandHandler::write(std::string& cmd, const std::optional<std::string>& overrideDelimiter) const {
+  if(not overrideDelimiter.has_value()) {
+    _serialPort->send(cmd + _delimiter);
+  }
+  else {
+    _serialPort->send(cmd + overrideDelimiter.value());
+  }
+} // end write
 
 /**********************************************************************************************************************/
 
