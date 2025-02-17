@@ -64,12 +64,13 @@ reading back lines.
   void write(std::string& cmd, const std::optional<std::string>& overrideDelimiter = std::nullopt) const;
 
   /**
-   * A simple blocking readline with no timeout. This can wait forever.
-   *
+   * @brief A simple blocking readline with no timeout. This can wait forever.
+   * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this
+   * string setting overrides that delimiter.
    * @returns The line read from the serail port.
    * @throws ChimeraTK::logic_error if interface fails to read a value.
    */
-  [[nodiscard]] std::string waitAndReadline() const;
+  [[nodiscard]] std::string waitAndReadline(const std::string& overrideDelimiter = "") const;
 
  protected:
   /**

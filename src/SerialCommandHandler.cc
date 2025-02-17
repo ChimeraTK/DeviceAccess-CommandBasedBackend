@@ -74,8 +74,9 @@ std::string SerialCommandHandler::sendCommandAndReadBytes(
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::waitAndReadline() const {
-  auto readData = _serialPort->readline();
+std::string SerialCommandHandler::waitAndReadline(const std::string& overrideDelimiter) const {
+  std::string delimiter = overrideDelimiter == "" ? _delimiter : overrideDelimiter;
+  auto readData = _serialPort->readline(delimiter);
   if(not readData.has_value()) {
     throw std::logic_error("FIXME: BAD INTERFACE");
     // Needs to actually be std::logic_error
