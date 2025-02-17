@@ -38,6 +38,14 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  std::string TcpCommandHandler::sendCommandAndReadBytes(
+      const std::string cmd, const size_t nBytesToRead, const std::optional<std::string>& overrideWriteDelimiter) {
+    write(cmd, overrideWriteDelimiter);
+    return _tcpDevice->readBytesWithTimeout(nBytesToRead, _timeout);
+  }
+
+  /********************************************************************************************************************/
+
   inline void TcpCommandHandler::write(
       const std::string& cmd, const std::optional<std::string>& overrideDelimiter) const {
     if(not overrideDelimiter.has_value()) {

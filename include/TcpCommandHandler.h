@@ -42,8 +42,17 @@ reading back lines.
         const std::string& overrideReadDelimiter = "") override;
 
     /**
+     * Sends the command cmd to the device and collects the repsonce as a vector of bytes.
      * @param[in] cmd The command to be sent
+     * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd, and the length of the
+     * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
+     * sending cmd. Can be set to "" to send a raw binary command return vector
+     * return string
+     * @returns A string as a container of bytes containing the responce.
+     * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
      */
+    std::string sendCommandAndReadBytes(const std::string cmd, const size_t nBytesToRead,
+        const std::optional<std::string>& overrideWriteDelimiter = std::nullopt) override;
 
     /**
      * Writes a string cmd to the device.

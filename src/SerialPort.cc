@@ -120,32 +120,30 @@ namespace ChimeraTK {
 
   /**********************************************************************************************************************/
 
-  // NEW, implementation complete
-  std::optional<std::vector<unsigned char>> SerialPort::readBytes(const size_t numBytesToRead) {
-    // Each item in the vector<unsigned char> is one byte read.
-    // Read until we've read numBytesToRead, with possible interrupts through _terminateRead
+  std::optional<std::string> SerialPort::readBytes(const size_t nBytesToRead) {
+    // Read until we've read nBytesToRead, with possible interrupts through _terminateRead
+    if(nBytesToRead == 0) {
+      return "";
+    }
 
-    std::vector<unsigned char> outputBuffer;
-    outputBuffer.reserve(numBytesToRead);
-    std::vector<unsigned char> readBuffer(numBytesToRead);
-
+    std::string outputBuffer;
+    outputBuffer.reserve(nBytesToRead);
+    std::string readBuffer(nBytesToRead, '\0');
     size_t bytesRead;
-    for(size_t totalBytesRead = 0; totalBytesRead < numBytesToRead; totalBytesRead += bytesRead) {
-      bytesRead = read(_fileDescriptor, readBuffer.data(), numBytesToRead - totalBytesRead); // unistd::read
+
+    for(size_t totalBytesRead = 0; totalBytesRead < nBytesToRead; totalBytesRead += bytesRead) {
+      bytesRead = read(_fileDescriptor, &readBuffer[0], nBytesToRead - totalBytesRead); // unistd::read
 
       if(_terminateRead) {
         return std::nullopt;
       }
 
       if(bytesRead > 0) {
-        auto readBufferEnd = std::next(readBuffer.begin(), bytesRead);
+        // Append the read bytes to outputBuffer
+        outputBuffer.append(readBuffer.data(), bytesRead);
 
-        // Move bytesRead bytes from readBuffer to outputBuffer.
-        outputBuffer.insert(
-            outputBuffer.end(), std::make_move_iterator(readBuffer.begin()), std::make_move_iterator(readBufferEnd));
-
-        // readBuffer is now in an indeterminate state, so clean it up
-        readBuffer.erase(readBuffer.begin(), readBufferEnd);
+        // Reset readBuffer for next iteration
+        std::fill(readBuffer.begin(), readBuffer.begin() + bytesRead, '\0');
       }
       else if(bytesRead == 0) { // read EOF, wait for reconnection.
         usleep(1000);
@@ -184,25 +182,27 @@ namespace ChimeraTK {
   } // end readlineWithTimeout
 
   /**********************************************************************************************************************/
-  // NEW implementation complete
-  std::vector<unsigned char> SerialPort::readBytesWithTimeout(
-      const size_t numBytesToRead, const std::chrono::milliseconds& timeout) {
-    auto future = std::async(std::launch::async,
-        [&]() -> std::optional<std::vector<unsigned char>> { return this->readBytes(numBytesToRead); });
-    if(future.wait_for(timeout) != std::future_status::timeout) {
-      // No timeout occured, so check if the optional has data.
-      auto readData = future.get();
-      if(readData.has_value()) {
-        return readData.value();
-      }
-    }
-    // If the code has not returned, then there has been a timeout or read has been abandoned.
+  std::string SerialPort::readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout) {
+    auto future =
+        std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readBytes(nBytesToRead); });
 
-    // In case of a timeout we have to tell the read to stop so the
-    // async thread can complete.
-    terminateRead();
-    std::string err = "readline operation timed out.";
-    throw ChimeraTK::runtime_error(err);
+    if(future.wait_for(timeout) == std::future_status::timeout) {
+      // If the code has not returned, then there has been a timeout or read has been abandoned.
+
+      // In case of a timeout we have to tell the read to stop so the
+      // async thread can complete.
+      terminateRead();
+      std::string err = "readBytes operation timed out.";
+      throw ChimeraTK::runtime_error(err);
+    }
+
+    // No timeout occured, the readData optional should have data.
+    auto readData = future.get();
+    if(not readData.has_value()) {
+      // read was abandoned or failed
+      throw ChimeraTK::runtime_error("readBytes failed to return a value.");
+    }
+    return readData.value();
   }
 
   /**********************************************************************************************************************/

@@ -36,6 +36,18 @@ class CommandHandler {
       const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
       const std::string& overrideReadDelimiter = "") = 0;
 
+  /**
+   * @brief Send a command to a SCPI device, read back a set number of bytes of responce.
+   * Resulting string will be nBytesExpected long or else throw a ChimeraTK::runtime_error
+   * @param[in] cmd The command to be sent
+   * @param[in] nBytesToRead The number of bytes expected in reply to the sent command cmd, and the length of the
+   * @param[in] overrideWriteDelimiter if set, this overrides the default _delimiter the writing operation in this call.
+   * It can be set to "" to send a raw binary command.
+   * @returns A string as a container of bytes containing the responce. The return string is not null terminated.
+   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
+   */
+  virtual std::string sendCommandAndReadBytes(std::string cmd, size_t nBytesToRead,
+      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt) = 0;
 
   virtual ~CommandHandler() = default;
 

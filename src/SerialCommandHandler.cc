@@ -66,6 +66,14 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::stri
 
 /**********************************************************************************************************************/
 
+std::string SerialCommandHandler::sendCommandAndReadBytes(
+    std::string cmd, size_t nBytesToRead, const std::optional<std::string>& overrideWriteDelimiter) {
+  write(cmd, overrideWriteDelimiter);
+  return _serialPort->readBytesWithTimeout(nBytesToRead, _timeout);
+}
+
+/**********************************************************************************************************************/
+
 std::string SerialCommandHandler::waitAndReadline() const {
   auto readData = _serialPort->readline();
   if(not readData.has_value()) {

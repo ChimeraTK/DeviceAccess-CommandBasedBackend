@@ -161,9 +161,73 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  std::string TcpSocket::readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout) {
+    if(nBytesToRead == 0) {
+      return "";
+    }
 
+    if(not _opened.load()) {
+      throw ChimeraTK::runtime_error("Attempting to read a closed socket");
+    }
 
+    try {
+      boost::asio::steady_timer timer(_io_context);
 
+      // Use shared_ptr's to avoid problems if lambdas outlive the this reader.
+      std::shared_ptr<std::optional<boost::system::error_code>> spErrorCode =
+          std::make_shared<std::optional<boost::system::error_code>>(std::nullopt);
+      std::shared_ptr<std::string> spResponse = std::make_shared<std::string>(nBytesToRead, '\0');
+      std::shared_ptr<size_t> spTotalBytesRead = std::make_shared<size_t>(0);
 
+      timer.expires_after(timeout);
+      timer.async_wait([spErrorCode, this](const boost::system::error_code& error) {
+        // This gets called when the timer expires.
+        // We then make sure we don't call cancel twice or prematurely.
+        // "not spErrorCode.has_value()" avoids a race condition between the timer and read operation.
+        std::lock_guard<std::mutex> socketLock(_socketMutex);
+        if((not error) and (not spErrorCode->has_value()) and (_socket.is_open())) {
+          _socket.cancel();
+        }
+      });
+
+      while(*spTotalBytesRead < nBytesToRead) {
+        size_t nBytesRemainnigToRead = nBytesToRead - *spTotalBytesRead;
+
+        std::unique_lock<std::mutex> socketLock(_socketMutex);
+        if(not _socket.is_open()) {
+          throw ChimeraTK::runtime_error("Socket is closed during read operation");
+        }
+
+        boost::asio::async_read(_socket, boost::asio::buffer(&(*spResponse)[*spTotalBytesRead], nBytesRemainnigToRead),
+            [spErrorCode, spTotalBytesRead](const boost::system::error_code& error, std::size_t bytesTransferred) {
+              if(not error) {
+                *spTotalBytesRead += bytesTransferred;
+              }
+              *spErrorCode = error;
+            });
+        socketLock.unlock();
+
+        runAndResetIoContext();
+
+        if(spErrorCode->has_value()) {
+          if(spErrorCode->value() == boost::asio::error::operation_aborted) {
+            throw ChimeraTK::runtime_error("readBytesWithTimeout operation timed out");
+          }
+          throw ChimeraTK::runtime_error(spErrorCode->value().message());
+        }
+      }
+
+      timer.cancel(); // Stop the timer if read completes.
+      // If the timer is canceled: error is boost::asio::error::operation_aborted.
+
+      return *spResponse;
+    } //
+    catch(const boost::system::system_error& ex) {
+      throw ChimeraTK::runtime_error(static_cast<std::string>("Boost.Asio error: ") + ex.what());
+    } //
+    catch(std::exception& ex) {
+      throw ChimeraTK::runtime_error(ex.what());
+    } //
+  } // end readBytesWithTimeout
   /********************************************************************************************************************/
 } // namespace ChimeraTK

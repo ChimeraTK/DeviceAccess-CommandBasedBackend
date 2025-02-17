@@ -56,8 +56,13 @@ namespace ChimeraTK {
      */
     std::optional<std::string> readline(const std::string& delimiter = SERIAL_DEFAULT_DELIMITER) noexcept;
 
-    // NEW
-    std::optional<std::vector<unsigned char>> readBytes(const size_t numBytesToRead);
+    /**
+     * @brief Read a the specified number of bytes from the serial port, formatted as a string.
+     * The return string will not be null-terminated.
+     * @param[in] nBytesToRead The number of bytes that it will attempt to read.
+     * @returns an empty optional if terminateRead() has been called.
+     */
+    std::optional<std::string> readBytes(const size_t nBytesToRead);
 
     /**
      * @brief Read a delimiter delimited line from the serial port. Result does NOT end in delimiter
@@ -69,12 +74,15 @@ namespace ChimeraTK {
     std::string readlineWithTimeout(
         const std::chrono::milliseconds& timeout, const std::string& delimiter = SERIAL_DEFAULT_DELIMITER);
 
-    // NEW
-    std::vector<unsigned char> readBytesWithTimeout(
-        const size_t numBytesToRead, const std::chrono::milliseconds& timeout);
-
     /**
+     * @brief Read a the specified number of bytes from the serial port, formatted as a string that will not be
+     * null-terminated.
+     * @param[in] nBytesToRead The number of bytes that it will attempt to read.
+     * @param[in] timeout the timeout in milliseconds
+     * @return The responce as a sting
+     * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
+    std::string readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
      * Terminate a blocking read call.

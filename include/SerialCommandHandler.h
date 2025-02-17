@@ -43,17 +43,17 @@ reading back lines.
       const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
       const std::string& overrideReadDelimiter = "") override;
 
-  // NEW
   /**
-   * Sends the command cmd to the device and collects the repsonce as a vector of bytes.
+   * @brief Sends the command cmd to the device and collects the repsonce as a string container for bytes.
    * @param[in] cmd The command to be sent
-   * @param[in] numBytesToRead The number of bytes expected in reply to the sent command cmd, and the length of the
-   * return vector
-   * @returns A vector of bytes (uchars) containing the responce lines.
+   * @param[in] nBytesToRead The number of bytes expected in reply to the sent command cmd, and the length of the
+   * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
+   * sending cmd. Can be set to "" to send a raw binary command return vector
+   * @returns A string as a container of bytes containing the responce.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  std::vector<unsigned char> sendCommandAndReadBytes(
-      std::string cmd, size_t numBytesToRead); // override; TODO restore override
+  std::string sendCommandAndReadBytes(std::string cmd, size_t nBytesToRead,
+      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt) override;
 
   /**
    * @brief Simply sends the command cmd to the serial port with no readback.
