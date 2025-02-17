@@ -23,10 +23,6 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::sendCommand(std::string cmd) {
-  _serialPort->send(cmd);
-  return _serialPort->readlineWithTimeout(_timeout);
-}
 
 /**********************************************************************************************************************/
 

@@ -25,11 +25,8 @@ namespace ChimeraTK {
     TcpCommandHandler(const std::string& host, const std::string& port, ulong timeoutInMilliseconds = 1000);
 
     /**
-     * Send a command to the tcp port and read backs a single line responce.
      * @param[in] cmd The command to be sent
-     * @returns The responce text, presumed to be a single line.
      */
-    std::string sendCommand(std::string cmd) override;
 
     /**
      * Sends the cmd command to the device and collects the repsonce as a vector of nLinesExpected strings.
@@ -46,12 +43,6 @@ namespace ChimeraTK {
      * @param[in] cmd The string to be written to the device.
      */
     inline void write(std::string& cmd) const { _tcpDevice->send(cmd); }
-
-    /**
-     * Reads from the Tcp network device.
-     * @returns One line of text read from the device.
-     */
-    inline std::string read() { return _tcpDevice->readResponse(); }
 
    protected:
     std::unique_ptr<TcpSocket> _tcpDevice;

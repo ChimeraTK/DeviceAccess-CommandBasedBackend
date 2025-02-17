@@ -11,9 +11,7 @@
 class CommandHandler {
  public:
   /**
-   * Send a command to a SCPI device, read back one line of responce.
    */
-  virtual std::string sendCommand(std::string cmd) = 0;
 
   /**
    * Send a command to a SCPI device, read back nLinesExpected line of responce.

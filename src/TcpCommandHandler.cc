@@ -21,13 +21,6 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::string TcpCommandHandler::sendCommand(std::string cmd) {
-    _tcpDevice->send(cmd);
-    return _tcpDevice->readResponse();
-  }
-
-  /********************************************************************************************************************/
-
   std::vector<std::string> TcpCommandHandler::sendCommand(std::string cmd, size_t nLinesExpected) {
     std::vector<std::string> ret;
     _tcpDevice->send(cmd);

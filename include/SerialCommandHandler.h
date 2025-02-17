@@ -29,13 +29,6 @@ class SerialCommandHandler : public CommandHandler {
   ~SerialCommandHandler() override = default;
 
   /**
-   * Send a command to the serial port and read back a single line responce, which is returned.
-   * @param[in] cmd The command to be sent
-   * @returns The responce text, presumed to be a single line.
-   */
-  std::string sendCommand(std::string cmd) override; // TODO rename this to sendCommandAndReadString?
-
-  /**
    * Sends the command cmd to the device and collects the repsonce as a vector of nLinesExpected strings.
    * @param[in] cmd The command to be sent
    * @param[in] nLinesExpected The number of lines expected in reply to the sent command cmd, and the length of hte
