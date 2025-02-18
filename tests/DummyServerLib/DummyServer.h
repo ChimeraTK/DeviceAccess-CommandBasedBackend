@@ -83,6 +83,11 @@ class DummyServer {
   // we need a way to read it back.
   std::string deviceNode{"/tmp/virtual-tty"};
 
+  void sendDelimited(std::string s) {
+    s.append(SERIAL_DEFAULT_DELIMITER);
+    _serialPort->send(s);
+  }
+
  protected:
   void mainLoop();
   std::unique_ptr<SerialPort> _serialPort;

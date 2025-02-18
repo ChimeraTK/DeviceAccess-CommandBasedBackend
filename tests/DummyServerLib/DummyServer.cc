@@ -133,6 +133,7 @@ void DummyServer::waitForStop() {
 }
 
 void DummyServer::mainLoop() {
+  std::string delim = ChimeraTK::SERIAL_DEFAULT_DELIMITER;
   uint64_t nIter = 0;
   while(true) {
     if(_debug) {
@@ -153,7 +154,7 @@ void DummyServer::mainLoop() {
     }
 
     if(sendGarbage) {
-      _serialPort->send("gnrbBlrpnBrtz");
+      sendDelimited("gnrbBlrpnBrtz");
       continue;
     }
     if(data == "*CLS") {
@@ -168,18 +169,18 @@ void DummyServer::mainLoop() {
       }
     }
     else if(data == "*IDN?") {
-      _serialPort->send("Dummy server for command based serial backend.");
+      sendDelimited("Dummy server for command based serial backend.");
     }
     else if(data == "SAI?") {
-      _serialPort->send(sai[0]);
+      sendDelimited(sai[0]);
       if(!sendTooFew) {
-        _serialPort->send(sai[1]);
+        sendDelimited(sai[1]);
       }
     }
     else if(data.find("ACC ") == 0) {
       auto tokens = tokenise(data);
       if(tokens.size() <= 3) {
-        _serialPort->send("12345 Syntax error: ACC needs axis and value");
+        sendDelimited("12345 Syntax error: ACC needs axis and value");
       }
 
       setAcc(tokens[1], tokens[2]);
@@ -187,25 +188,25 @@ void DummyServer::mainLoop() {
         setAcc(tokens[3], tokens[4]);
       }
       if(tokens.size() != 5 && tokens.size() != 3) {
-        _serialPort->send("12345 Syntax error: ACC has wrong number of arguments");
+        sendDelimited("12345 Syntax error: ACC has wrong number of arguments");
       }
     }
     else if(data == "ACC?") {
       if(responseWithDataAndSyntaxError) {
-        _serialPort->send("AXXIS_1=" + std::to_string(acc[0]));
+        sendDelimited("AXXIS_1=" + std::to_string(acc[0]));
       }
       else {
-        _serialPort->send("AXIS_1=" + std::to_string(acc[0]));
+        sendDelimited("AXIS_1=" + std::to_string(acc[0]));
       }
       if(!sendTooFew) {
-        _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
+        sendDelimited("AXIS_2=" + std::to_string(acc[1]));
       }
     }
     else if(data == "ACC? AXIS1") {
-      _serialPort->send("AXIS_1=" + std::to_string(acc[0]));
+      sendDelimited("AXIS_1=" + std::to_string(acc[0]));
     }
     else if(data == "ACC? AXIS2") {
-      _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
+      sendDelimited("AXIS_2=" + std::to_string(acc[1]));
     }
 
     else if(data.find("HEX ") == 0) {
@@ -216,24 +217,24 @@ void DummyServer::mainLoop() {
         }
       }
       else {
-        _serialPort->send("12345 Syntax error: HEX has wrong number of arguments");
+        sendDelimited("12345 Syntax error: HEX has wrong number of arguments");
       }
     }
     else if(data == "HEX?") {
       if(responseWithDataAndSyntaxError) {
-        _serialPort->send("_0x" + getHexStr(hex[0]));
+        sendDelimited("_0x" + getHexStr(hex[0]));
       }
       else {
-        _serialPort->send("0x" + getHexStr(hex[0]));
+        sendDelimited("0x" + getHexStr(hex[0]));
       }
       if(!sendTooFew) {
-        _serialPort->send("0x" + getHexStr(hex[1]));
-        _serialPort->send(getHexStr(hex[2]));
+        sendDelimited("0x" + getHexStr(hex[1]));
+        sendDelimited(getHexStr(hex[2]));
       }
     }
     else if(data.find("SOUR:FREQ:CW ") == 0) {
       if(data.size() < 14) {
-        _serialPort->send("12345 Syntax error: SOUR:FREQ:CW needs an argument");
+        sendDelimited("12345 Syntax error: SOUR:FREQ:CW needs an argument");
         continue;
       }
       try {
@@ -243,7 +244,7 @@ void DummyServer::mainLoop() {
         }
       }
       catch(...) {
-        _serialPort->send("12345 Syntax error in argument: " + data.substr(13));
+        sendDelimited("12345 Syntax error in argument: " + data.substr(13));
       }
     }
     else if(data == "SOUR:FREQ:CW?") {
@@ -251,10 +252,10 @@ void DummyServer::mainLoop() {
         continue;
       }
       if(responseWithDataAndSyntaxError) {
-        _serialPort->send("BL" + std::to_string(cwFrequency));
+        sendDelimited("BL" + std::to_string(cwFrequency));
         continue;
       }
-      _serialPort->send(std::to_string(cwFrequency));
+      sendDelimited(std::to_string(cwFrequency));
     }
     else if(data.find("CALC1:DATA:TRAC? ") == 0) {
       // Seek the only one particular trace for this simple dummy server.
@@ -278,19 +279,20 @@ void DummyServer::mainLoop() {
               std::cout << "sending with syntax error: " << out << std::endl;
             }
           }
-          _serialPort->send(out);
+          sendDelimited(out);
         }
         else {
-          _serialPort->send("error: unknow data format");
+          sendDelimited("error: unknow data format");
         }
       }
       else {
-        _serialPort->send("error: unknown trace");
+        sendDelimited("error: unknown trace");
       }
     }
     else if(data.find("altDelimLine") == 0) {
-        auto replyStr = stripDelim(data, SERIAL_DEFAULT_DELIMITER, std::size(SERIAL_DEFAULT_DELIMITER) -1); //-1 for null terminator
-        _serialPort->send(replyStr); //Do not add a delimiter here.
+      auto replyStr =
+          stripDelim(data, SERIAL_DEFAULT_DELIMITER, std::size(SERIAL_DEFAULT_DELIMITER) - 1); //-1 for null terminator
+      _serialPort->send(replyStr); // Do not add a delimiter here.
     }
     else {
       std::vector<std::string> lines = splitString(data, ";");
@@ -298,7 +300,7 @@ void DummyServer::mainLoop() {
         if(_debug) {
           std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
         }
-        _serialPort->send(dat);
+        sendDelimited(dat);
       }
     }
   }
@@ -313,7 +315,7 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
     i = 1;
   }
   else {
-    _serialPort->send("12345 Unknown axis: " + axis);
+    sendDelimited("12345 Unknown axis: " + axis);
     return;
   }
   try {
@@ -323,13 +325,13 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
     }
   }
   catch(...) {
-    _serialPort->send("12345 Syntax error in argument: " + value);
+    sendDelimited("12345 Syntax error in argument: " + value);
   }
 }
 
 void DummyServer::setHex(size_t i, const std::string& value) {
   if(i > 2) {
-    _serialPort->send("12345 Unknown element: " + std::to_string(i));
+    sendDelimited("12345 Unknown element: " + std::to_string(i));
     return;
   }
   try {
@@ -345,7 +347,7 @@ void DummyServer::setHex(size_t i, const std::string& value) {
     }
   }
   catch(...) {
-    _serialPort->send("12345 Syntax error in argument: " + value);
+    sendDelimited("12345 Syntax error in argument: " + value);
   }
 }
 
