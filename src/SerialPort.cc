@@ -19,7 +19,7 @@
 #include <unistd.h>  //POSIX OS API
 
 namespace ChimeraTK {
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   SerialPort::SerialPort(const std::string& device) {
     _fileDescriptor = open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK); // from fcntl
@@ -69,13 +69,13 @@ namespace ChimeraTK {
     }
   } // end SerialPort constructor
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   SerialPort::~SerialPort() {
     close(_fileDescriptor);
   }
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void SerialPort::send(const std::string& str) const {
     ssize_t bytesWritten = write(_fileDescriptor, str.c_str(), str.size()); // unistd::write
@@ -86,8 +86,8 @@ namespace ChimeraTK {
     }
   }
 
-  /**********************************************************************************************************************/
-  
+  /********************************************************************************************************************/
+
   std::optional<std::string> SerialPort::readline(const std::string& delimiter) noexcept {
     size_t delimPos;
     static constexpr int readBufferLen = 256;
@@ -118,7 +118,7 @@ namespace ChimeraTK {
     return std::make_optional(outputStr);
   } // end readline
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   std::optional<std::string> SerialPort::readBytes(const size_t nBytesToRead) {
     // Read until we've read nBytesToRead, with possible interrupts through _terminateRead
@@ -158,7 +158,7 @@ namespace ChimeraTK {
     return std::make_optional(outputBuffer);
   }
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   std::string SerialPort::readlineWithTimeout(const std::chrono::milliseconds& timeout, const std::string& delimiter) {
     auto future =
@@ -181,7 +181,7 @@ namespace ChimeraTK {
     return readData.value();
   } // end readlineWithTimeout
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
   std::string SerialPort::readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout) {
     auto future =
         std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readBytes(nBytesToRead); });
@@ -205,7 +205,7 @@ namespace ChimeraTK {
     return readData.value();
   }
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void SerialPort::terminateRead() {
     _terminateRead = true;

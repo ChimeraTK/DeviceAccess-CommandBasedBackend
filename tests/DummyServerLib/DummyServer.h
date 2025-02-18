@@ -64,7 +64,7 @@ class DummyServer {
   std::array<LockingString, 2> sai = {LockingString("AXIS_1"), LockingString("AXIS_2")};
   std::array<std::atomic<uint64_t>, 3> hex = {0xbabef00d, 0xFEEDC0DE, 0xBADdCAFE};
   std::atomic<uint64_t> voidCounter{0};
-  std::vector<unsigned char> byteData{0};
+  std::string byteData{""};
 
   std::atomic_bool sendNothing{false};
   std::atomic_bool sendTooFew{false};

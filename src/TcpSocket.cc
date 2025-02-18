@@ -228,6 +228,6 @@ namespace ChimeraTK {
     catch(std::exception& ex) {
       throw ChimeraTK::runtime_error(ex.what());
     } //
-  } // end readBytesWithTimeout
+  }   // end readBytesWithTimeout
   /********************************************************************************************************************/
 } // namespace ChimeraTK
