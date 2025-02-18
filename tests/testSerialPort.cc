@@ -101,20 +101,28 @@ BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
 }
 
 BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
-    //Send cmd consisting of two lines that use an alternate delimiter.
-    //Dummy sends that back, minus the write delimiter, resulting in two lines.
-    //Dummy relies on cmdline1 starting with "altDelimLine"
-    std::string delim = "|";
-    std::string cmdline1 = "altDelimLine1";
-    std::string cmdline2 = "altDelimLine2";
-    std::string cmd = cmdline1 + delim + cmdline2 + delim;
-    auto res = s.sendCommandAndReadLines(cmd,2,std::nullopt, delim);
+  // Send cmd consisting of two lines that use an alternate delimiter.
+  // Dummy sends that back, minus the write delimiter, resulting in two lines.
+  // Dummy relies on cmdline1 starting with "altDelimLine"
+  std::string delim = "|";
+  std::string cmdline1 = "altDelimLine1";
+  std::string cmdline2 = "altDelimLine2";
+  std::string cmd = cmdline1 + delim + cmdline2 + delim;
+  auto res = s.sendCommandAndReadLines(cmd, 2, std::nullopt, delim);
 
-    if(ret.size() == 2) {
-        BOOST_TEST(ret[0] == cmdline1);
-        BOOST_TEST(ret[1] == cmdline2);
-    }
+  if(ret.size() == 2) {
+    BOOST_TEST(ret[0] == cmdline1);
+    BOOST_TEST(ret[1] == cmdline2);
+  }
 }
 
+BOOST_AUTO_TEST_CASE(testOverrideWriteDelimiter) {
+  // Use "\n" as the overrideWriteDelimiter, but combine with "\r" in the command to make the dummy server
+  // recognize the delimiter and return cmd
+  std::string cmd = "testOverrideWriteDelimiter";
+  std::string res = s.sendCommandAndReadLines(cmd + "\r", 1, std::make_optional("\n"))[0];
+  BOOST_TEST(res == cmd);
+}
+}
 
 BOOST_AUTO_TEST_SUITE_END()
