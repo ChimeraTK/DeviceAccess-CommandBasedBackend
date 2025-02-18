@@ -100,4 +100,21 @@ BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
   }
 }
 
+BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
+    //Send cmd consisting of two lines that use an alternate delimiter.
+    //Dummy sends that back, minus the write delimiter, resulting in two lines.
+    //Dummy relies on cmdline1 starting with "altDelimLine"
+    std::string delim = "|";
+    std::string cmdline1 = "altDelimLine1";
+    std::string cmdline2 = "altDelimLine2";
+    std::string cmd = cmdline1 + delim + cmdline2 + delim;
+    auto res = s.sendCommandAndReadLines(cmd,2,std::nullopt, delim);
+
+    if(ret.size() == 2) {
+        BOOST_TEST(ret[0] == cmdline1);
+        BOOST_TEST(ret[1] == cmdline2);
+    }
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()

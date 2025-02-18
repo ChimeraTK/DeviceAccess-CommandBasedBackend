@@ -288,6 +288,10 @@ void DummyServer::mainLoop() {
         _serialPort->send("error: unknown trace");
       }
     }
+    else if(data.find("altDelimLine") == 0) {
+        auto replyStr = stripDelim(data, SERIAL_DEFAULT_DELIMITER, std::size(SERIAL_DEFAULT_DELIMITER) -1); //-1 for null terminator
+        _serialPort->send(replyStr); //Do not add a delimiter here.
+    }
     else {
       std::vector<std::string> lines = splitString(data, ";");
       for(const std::string& dat : lines) {
