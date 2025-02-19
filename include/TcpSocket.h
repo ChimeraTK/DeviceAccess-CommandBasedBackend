@@ -33,10 +33,11 @@ namespace ChimeraTK {
     /**
      * @brief Sends a command to the connected remote host.
      * No delimiter is added internally, and must part of the provided command
+     * Send cannot be made a const function because of asio.
      * @param[in] command The string command to send.
      * @throws ChimeraTK::runtime_error If the socket is not connected or the send operation fails.
      */
-    void send(const std::string& command) const;
+    void send(const std::string& command);
 
     /**
      * @brief Reads a response from the remote host.
@@ -93,9 +94,9 @@ namespace ChimeraTK {
      */
     void waitForIoContextToStop();
 
-    boost::asio::io_context _io_context;               //!< Boost.Asio I/O context for asynchronous operations.
-    std::mutex ioContextMutex;                         //!< For synchronization management of io_context state
-    std::condition_variable ioContextStoppedCondition; //!< For synchronization management of io_context state
+    boost::asio::io_context _io_context;                //!< Boost.Asio I/O context for asynchronous operations.
+    std::mutex _ioContextMutex;                         //!< For synchronization management of io_context state
+    std::condition_variable _ioContextStoppedCondition; //!< For synchronization management of io_context state
 
     boost::asio::ip::tcp::socket _socket; //!< TCP socket used for communication.
     std::mutex _socketMutex;              //!< For synchronization management of socket state

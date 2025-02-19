@@ -28,7 +28,7 @@ namespace ChimeraTK {
     if(ec) {
       throw ChimeraTK::runtime_error("Connection failed");
     }
-    _opened.store(true);
+    _opened = true;
   }
 
   /********************************************************************************************************************/
@@ -44,7 +44,7 @@ namespace ChimeraTK {
     if(ec) {
       throw ChimeraTK::runtime_error("Error when disconnecting");
     }
-    _opened.store(false);
+    _opened = false;
   }
 
   /********************************************************************************************************************/
@@ -62,13 +62,10 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  void TcpSocket::send(const std::string& command) const {
-    if(not _opened.load()) {
-      throw ChimeraTK::runtime_error("Attempting to send from a closed TcpSocket");
-    }
+  void TcpSocket::send(const std::string& command) {
+    assert(_opened);
 
     boost::system::error_code ec;
-    std::lock_guard<std::mutex> socketLock(_socketMutex);
     try {
       boost::asio::write(_socket, boost::asio::buffer(command));
     }
@@ -83,8 +80,8 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   void TcpSocket::waitForIoContextToStop() {
-    std::unique_lock<std::mutex> lock(ioContextMutex);
-    ioContextStoppedCondition.wait(lock, [this] { return _io_context.stopped(); });
+    std::unique_lock<std::mutex> lock(_ioContextMutex);
+    _ioContextStoppedCondition.wait(lock, [this] { return _io_context.stopped(); });
   }
 
   /********************************************************************************************************************/
@@ -104,7 +101,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string TcpSocket::readlineWithTimeout(const std::chrono::milliseconds& timeout, const std::string& delimiter) {
-    if(not _opened.load()) {
+    if(not _opened) {
       throw ChimeraTK::runtime_error("Attempting to readline from a closed TcpSocket");
     }
 
@@ -113,7 +110,7 @@ namespace ChimeraTK {
       auto spTimer = std::make_shared<boost::asio::steady_timer>(_io_context);
       std::shared_ptr<std::optional<boost::system::error_code>> spErrorCode =
           std::make_shared<std::optional<boost::system::error_code>>(std::nullopt);
-      std::shared_ptr<std::string> spResponse = std::make_shared<std::string>(nBytesToRead, '\0');
+      std::shared_ptr<std::string> spResponse = std::make_shared<std::string>();
 
       spTimer->expires_after(timeout);
       spTimer->async_wait([spErrorCode, this](const boost::system::error_code& error) {
@@ -149,7 +146,7 @@ namespace ChimeraTK {
       }
 
       // Return the spResponse without the delimiter.
-      return spResponse.substr(0, spResponse.size() - delimiter.size());
+      return spResponse->substr(0, spResponse->size() - delimiter.size());
     }
     catch(const boost::system::system_error& ex) {
       throw ChimeraTK::runtime_error(static_cast<std::string>("Boost.Asio error: ") + ex.what());
@@ -166,7 +163,7 @@ namespace ChimeraTK {
       return "";
     }
 
-    if(not _opened.load()) {
+    if(not _opened) {
       throw ChimeraTK::runtime_error("Attempting to read a closed socket");
     }
 
