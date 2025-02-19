@@ -27,50 +27,32 @@ class SerialCommandHandler : public CommandHandler {
 
   ~SerialCommandHandler() override = default;
 
-  /**
-   * @brief Sends the command cmd to the device and collects the repsonce as a vector of nLinesToRead strings.
-   * @param[in] cmd The command to be sent
-   * @param[in] nLinesToRead The number of lines required in reply to the sent command cmd, and the length of hte
-   * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
-sending cmd. Can be set to "" to send a raw binary command
-   * @param[in] overrideReadDelimiter if set, overrides the default _delimiter that is set in the constructor for
-reading back lines.
-   * return vector
-   * @returns A vector of strings containing the responce lines.
-   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
-   */
   std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
-      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt,
-      const std::string& overrideReadDelimiter = "") override;
+      const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+      const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) override;
 
-  /**
-   * @brief Sends the command cmd to the device and collects the repsonce as a string container for bytes.
-   * @param[in] cmd The command to be sent
-   * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd, and the length of the
-   * @param[in] overrideWriteDelimiter if set, overrides the default _delimiter that is set in the constructor for
-   * sending cmd. Can be set to "" to send a raw binary command return vector
-   * @returns A string as a container of bytes containing the responce.
-   * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
-   */
-  std::string sendCommandAndReadBytes(std::string cmd, size_t nBytesToRead,
-      const std::optional<std::string>& overrideWriteDelimiter = std::nullopt) override;
+  std::string sendCommandAndReadBytes(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) override;
 
   /**
    * @brief Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
-   * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is
-   * used. string setting overrides that delimiter. Set to "" to send cmd as a pure binary sequence.
+   * @param[in] writeDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is
+   * used. Setting this to a string overrides that delimiter. Set to "" or (preferably) NoDelimiter{} to send cmd as a
+   * pure binary sequence.
    */
-  void write(std::string& cmd, const std::optional<std::string>& overrideDelimiter = std::nullopt) const;
+  inline void write(std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const;
 
   /**
    * @brief A simple blocking readline with no timeout. This can wait forever.
-   * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this
+   * @param[in] delimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this
    * string setting overrides that delimiter.
+   * If set to "", the default delimiter is used.
    * @returns The line read from the serail port.
    * @throws ChimeraTK::logic_error if interface fails to read a value.
    */
-  [[nodiscard]] std::string waitAndReadline(const std::string& overrideDelimiter = "") const;
+  [[nodiscard]] std::string waitAndReadline(
+      const ReadableDelimiter& delimiter = CommandHandlerDefaultDelimiter{}) const;
 
  protected:
   /**
