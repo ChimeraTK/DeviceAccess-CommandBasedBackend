@@ -45,7 +45,7 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::stri
     return outputStrVec;
   }
 
-  std::string readDelimiter = overrideReadDelimiter == "" ? _delimiter : overrideReadDelimiter;
+  std::string readDelimiter = ((overrideReadDelimiter == "") ? _delimiter : overrideReadDelimiter);
   std::string readStr;
   for(size_t nLinesFound = 0; nLinesFound < nLinesToRead; ++nLinesFound) {
     try {
@@ -75,7 +75,7 @@ std::string SerialCommandHandler::sendCommandAndReadBytes(
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::waitAndReadline(const std::string& overrideDelimiter) const {
-  std::string delimiter = overrideDelimiter == "" ? _delimiter : overrideDelimiter;
+  std::string delimiter = ((overrideDelimiter == "") ? _delimiter : overrideDelimiter);
   auto readData = _serialPort->readline(delimiter);
   if(not readData.has_value()) {
     throw std::logic_error("FIXME: BAD INTERFACE");
