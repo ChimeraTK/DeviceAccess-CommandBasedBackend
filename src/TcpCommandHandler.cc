@@ -23,13 +23,15 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> TcpCommandHandler::sendCommandAndReadLines(const std::string cmd, const size_t nLinesToRead,
-      const std::optional<std::string>& overrideWriteDelimiter, const std::string& overrideReadDelimiter) {
+  std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
     std::vector<std::string> ret;
-    std::string readDelimiter = ((overrideReadDelimiter == "") ? _delimiter : overrideReadDelimiter);
-    write(cmd, overrideWriteDelimiter);
+
+    write(cmd, writeDelimiter);
+
+    std::string delimiter = toString(readDelimiter);
     for(size_t line = 0; line < nLinesToRead; ++line) {
-      ret.push_back(_tcpDevice->readlineWithTimeout(_timeout, readDelimiter));
+      ret.push_back(_tcpDevice->readlineWithTimeout(_timeout, delimiter));
     }
 
     return ret;
@@ -38,21 +40,15 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string TcpCommandHandler::sendCommandAndReadBytes(
-      const std::string cmd, const size_t nBytesToRead, const std::optional<std::string>& overrideWriteDelimiter) {
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
     write(cmd, overrideWriteDelimiter);
     return _tcpDevice->readBytesWithTimeout(nBytesToRead, _timeout);
   }
 
   /********************************************************************************************************************/
 
-  inline void TcpCommandHandler::write(
-      const std::string& cmd, const std::optional<std::string>& overrideDelimiter) const {
-    if(not overrideDelimiter.has_value()) {
-      _tcpDevice->send(cmd + _delimiter);
-    }
-    else {
-      _tcpDevice->send(cmd + overrideDelimiter.value());
-    }
+  inline void TcpCommandHandler::write(const std::string& cmd, const WritableDelimiter& writeDelimiter) const {
+    _tcpDevice->send(cmd + toString(writeDelimiter));
   }
 
   /********************************************************************************************************************/

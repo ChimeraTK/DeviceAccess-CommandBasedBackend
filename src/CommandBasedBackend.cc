@@ -78,10 +78,10 @@ namespace ChimeraTK {
           // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
           // TransportLayerType: { DEC_INT, HEX_INT, BIN_INT, DEC_FLOAT, STRING, VOID}
           // Must be lower case.
-          "dec_int",
-          "hex_int",
-          "bin_int",
-          "dec_float",
+          "decint",
+          "hexint",
+          "binint",
+          "decfloat",
           "string",
           "void",
   };

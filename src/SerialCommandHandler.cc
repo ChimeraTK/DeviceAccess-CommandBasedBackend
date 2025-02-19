@@ -23,33 +23,28 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
-void SerialCommandHandler::write(std::string& cmd, const std::optional<std::string>& overrideDelimiter) const {
-  if(not overrideDelimiter.has_value()) {
-    _serialPort->send(cmd + _delimiter);
-  }
-  else {
-    _serialPort->send(cmd + overrideDelimiter.value());
-  }
-} // end write
+inline void SerialCommandHandler::write(std::string& cmd, const WritableDelimiter& writeDelimiter) const;
+_serialPort->send(cmd + toString(delimiter));
+}
 
 /**********************************************************************************************************************/
 
 std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, const size_t nLinesToRead,
-    const std::optional<std::string>& overrideWriteDelimiter, const std::optional<std::string>& overrideReadDelimiter) {
+    const std::optional<std::string>& writeDelimiter, const std::optional<std::string>& readDelimiter) {
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesToRead);
 
-  write(cmd, overrideWriteDelimiter);
+  write(cmd, writeDelimiter);
 
   if(nLinesToRead == 0) {
     return outputStrVec;
   }
 
-  std::string readDelimiter = ((overrideReadDelimiter == "") ? _delimiter : overrideReadDelimiter);
+  std::string delimiter = toString(readDelimiter);
   std::string readStr;
   for(size_t nLinesFound = 0; nLinesFound < nLinesToRead; ++nLinesFound) {
     try {
-      readStr = _serialPort->readlineWithTimeout(_timeout, readDelimiter);
+      readStr = _serialPort->readlineWithTimeout(_timeout, delimiter);
     }
     catch(const ChimeraTK::runtime_error& e) {
       std::string err = std::string(e.what()) + " Retrieved:";
@@ -67,23 +62,23 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::stri
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::sendCommandAndReadBytes(
-    std::string cmd, size_t nBytesToRead, const std::optional<std::string>& overrideWriteDelimiter) {
-  write(cmd, overrideWriteDelimiter);
+    std::string cmd, size_t nBytesToRead, const std::optional<std::string>& writeDelimiter) {
+  write(cmd, writeDelimiter);
   return _serialPort->readBytesWithTimeout(nBytesToRead, _timeout);
 }
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::waitAndReadline(const std::string& overrideDelimiter) const {
-  std::string delimiter = ((overrideDelimiter == "") ? _delimiter : overrideDelimiter);
-  auto readData = _serialPort->readline(delimiter);
-  if(not readData.has_value()) {
-    throw std::logic_error("FIXME: BAD INTERFACE");
-    // Needs to actually be std::logic_error
-    // This is not a ChimeraTK::logic_error since it occurs at runtime
-    // Yet it indicates a programming mistake
-    // So it's not a ChimeraTK::runtime_error either.
-    // FIXME ticket 13739
-  }
-  return readData.value();
+std::string SerialCommandHandler::waitAndReadline(const ReadableDelimiter& readDelimiter) const;
+std::string delimiter = toString(readDelimiter);
+auto readData = _serialPort->readline(delimiter);
+if(not readData.has_value()) {
+  throw std::logic_error("FIXME: BAD INTERFACE");
+  // Needs to actually be std::logic_error
+  // This is not a ChimeraTK::logic_error since it occurs at runtime
+  // Yet it indicates a programming mistake
+  // So it's not a ChimeraTK::runtime_error either.
+  // FIXME ticket 13739
+}
+return readData.value();
 }
