@@ -34,20 +34,20 @@ void SerialCommandHandler::write(std::string& cmd, const std::optional<std::stri
 
 /**********************************************************************************************************************/
 
-std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, const size_t nLinesExpected,
+std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, const size_t nLinesToRead,
     const std::optional<std::string>& overrideWriteDelimiter, const std::optional<std::string>& overrideReadDelimiter) {
   std::vector<std::string> outputStrVec;
-  outputStrVec.reserve(nLinesExpected);
+  outputStrVec.reserve(nLinesToRead);
 
   write(cmd, overrideWriteDelimiter);
 
-  if(nLinesExpected == 0) {
+  if(nLinesToRead == 0) {
     return outputStrVec;
   }
 
   std::string readDelimiter = overrideReadDelimiter == "" ? _delimiter : overrideReadDelimiter;
   std::string readStr;
-  for(size_t nLinesFound = 0; nLinesFound < nLinesExpected; ++nLinesFound) {
+  for(size_t nLinesFound = 0; nLinesFound < nLinesToRead; ++nLinesFound) {
     try {
       readStr = _serialPort->readlineWithTimeout(_timeout, readDelimiter);
     }

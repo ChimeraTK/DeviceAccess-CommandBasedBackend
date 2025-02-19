@@ -50,14 +50,14 @@ namespace ChimeraTK {
     std::string sendCommand(std::string cmd);
 
     /**
-     * Send a single command through and receive a vector (len nLinesExpected) responses.
+     * @brief Send a single command through and receive a vector (of length nLinesToRead) responses.
      * @param[in] cmd The command sent to the device.
-     * @param[in] nLinesExpected The number of expected lines in reply to sending command cmd
-     * @returns a vector of length nLinesExpected containing the responce to cmd, with one line of responce per entry in
+     * @param[in] nLinesToRead The required number of lines in reply to sending command cmd
+     * @returns a vector of length nLinesToRead containing the responce to cmd, with one line of responce per entry in
      * the vector.
      * @throws ChimeraTK::runtime_error if any line of reply doesn't come before a timeout for that line.
      */
-    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesExpected);
+    std::vector<std::string> sendCommand(std::string cmd, size_t nLinesToRead);
 
     template<typename UserType>
     // NOLINTNEXTLINE(readability-identifier-naming)

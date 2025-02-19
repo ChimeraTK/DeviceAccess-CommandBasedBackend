@@ -98,7 +98,7 @@ namespace ChimeraTK {
     if(_readResponseRegex.mark_count() != _registerInfo.nElements) {
       throw ChimeraTK::logic_error("Wrong number of capture groups (" +
           std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
-          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", expected " +
+          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
           std::to_string(_registerInfo.nElements));
     }
 
