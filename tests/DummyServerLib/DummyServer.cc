@@ -65,7 +65,7 @@ void DummyServer::activate() {
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     try {
-      _serialPort = std::make_unique<SerialPort>(_backportNode);
+      _serialPort = std::make_unique<ChimeraTK::SerialPort>(_backportNode);
       break;
     }
     catch(ChimeraTK::runtime_error&) {
@@ -291,9 +291,9 @@ void DummyServer::mainLoop() {
         }
       }
       else if(data.find("altDelimLine") == 0) {
-        auto replyStr = stripDelim(
-            data, SERIAL_DEFAULT_DELIMITER, std::size(SERIAL_DEFAULT_DELIMITER) - 1); //-1 for null terminator
-        _serialPort->send(replyStr);                                                  // Do not add a delimiter here.
+        auto replyStr = stripDelim(data, ChimeraTK::SERIAL_DEFAULT_DELIMITER,
+            std::size(ChimeraTK::SERIAL_DEFAULT_DELIMITER) - 1); //-1 for null terminator
+        _serialPort->send(replyStr);                             // Do not add a delimiter here.
       }
       else if(data.find("setByteMode") == 0) {
         // Turn the system to byte mode so that the next command will read bytesToRead rather than lines.

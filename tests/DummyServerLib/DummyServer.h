@@ -86,13 +86,13 @@ class DummyServer {
   std::string deviceNode{"/tmp/virtual-tty"};
 
   void sendDelimited(std::string s) {
-    s.append(SERIAL_DEFAULT_DELIMITER);
+    s.append(ChimeraTK::SERIAL_DEFAULT_DELIMITER);
     _serialPort->send(s);
   }
 
  protected:
   void mainLoop();
-  std::unique_ptr<SerialPort> _serialPort;
+  std::unique_ptr<ChimeraTK::SerialPort> _serialPort;
 
   void setAcc(const std::string& axis, const std::string& value);
   void setHex(size_t i, const std::string& value);
