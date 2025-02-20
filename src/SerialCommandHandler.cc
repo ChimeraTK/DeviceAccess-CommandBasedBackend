@@ -23,12 +23,6 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
-inline void SerialCommandHandler::write(std::string& cmd, const WritableDelimiter& writeDelimiter) const;
-_serialPort->send(cmd + toString(delimiter));
-}
-
-/**********************************************************************************************************************/
-
 std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, const size_t nLinesToRead,
     const std::optional<std::string>& writeDelimiter, const std::optional<std::string>& readDelimiter) {
   std::vector<std::string> outputStrVec;

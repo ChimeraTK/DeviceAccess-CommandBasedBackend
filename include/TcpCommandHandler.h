@@ -40,7 +40,10 @@ namespace ChimeraTK {
      * @param[in] cmd The string to be written to the device.
      * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is used.
      */
-    inline void write(const std::string& cmd, const std::optional<std::string>& overrideDelimiter = std::nullopt) const;
+    inline void write(
+        const std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
+      _tcpDevice->send(cmd + toString(writeDelimiter));
+    }
 
    protected:
     std::unique_ptr<TcpSocket> _tcpDevice;
