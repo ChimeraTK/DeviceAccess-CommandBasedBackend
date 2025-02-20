@@ -23,8 +23,8 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
-std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, const size_t nLinesToRead,
-    const std::optional<std::string>& writeDelimiter, const std::optional<std::string>& readDelimiter) {
+std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+    const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesToRead);
 
@@ -56,7 +56,7 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLines(std::stri
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::sendCommandAndReadBytes(
-    std::string cmd, size_t nBytesToRead, const std::optional<std::string>& writeDelimiter) {
+    std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
   write(cmd, writeDelimiter);
   return _serialPort->readBytesWithTimeout(nBytesToRead, _timeout);
 }

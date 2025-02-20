@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
   std::string cmdline1 = "altDelimLine1";
   std::string cmdline2 = "altDelimLine2";
   std::string cmd = cmdline1 + delim + cmdline2 + delim;
-  auto res = s.sendCommandAndReadLines(cmd, 2, std::nullopt, delim);
+  auto res = s.sendCommandAndReadLines(cmd, 2, CommandHandlerDefaultDelimiter{}, delim);
 
   if(res.size() == 2) {
     BOOST_TEST(res[0] == cmdline1);
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(testOverrideWriteDelimiter) {
   // recognize the delimiter and return cmd
   std::string cmd = "testOverrideWriteDelimiter";
   std::cout << cmd << std::endl; // DEBUG
-  std::string res = s.sendCommandAndReadLines(cmd + "\r", 1, std::make_optional("\n"))[0];
+  std::string res = s.sendCommandAndReadLines(cmd + "\r", 1, "\n")[0];
   BOOST_TEST(res == cmd);
 }
 
