@@ -104,6 +104,7 @@ BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
   // Send cmd consisting of two lines that use an alternate delimiter.
   // Dummy sends that back, minus the write delimiter, resulting in two lines.
   // Dummy relies on cmdline1 starting with "altDelimLine"
+  std::cout << "testOverrideReadDelimiter" << std::endl; // DEBUG
   std::string delim = "|";
   std::string cmdline1 = "altDelimLine1";
   std::string cmdline2 = "altDelimLine2";
@@ -120,9 +121,35 @@ BOOST_AUTO_TEST_CASE(testOverrideWriteDelimiter) {
   // Use "\n" as the overrideWriteDelimiter, but combine with "\r" in the command to make the dummy server
   // recognize the delimiter and return cmd
   std::string cmd = "testOverrideWriteDelimiter";
+  std::cout << cmd << std::endl; // DEBUG
   std::string res = s.sendCommandAndReadLines(cmd + "\r", 1, std::make_optional("\n"))[0];
   BOOST_TEST(res == cmd);
 }
+
+BOOST_AUTO_TEST_CASE(testBinary) {
+  // Use "\n" as the overrideWriteDelimiter, but combine with "\r" in the command to make the dummy server
+  // recognize the delimiter and return cmd
+  std::cout << "testBinary" << std::endl; // DEBUG
+  int bytesToRead = 11;                   // Must be >= 11 because "setLineMode" is 11 characters long
+
+  // We're in line mode, so Dummy server is expecting lines. So here we have to use the default delimiter.
+  std::string status1 =
+      s.sendCommandAndReadBytes("setByteMode " + std::to_string(bytesToRead), 2, CommandHandlerDefaultDelimiter{});
+
+  // send pure bytes, receive bytes
+  std::string packet = "0123456789A"; // 11 bytes.
+  std::string echo = s.sendCommandAndReadBytes(packet, bytesToRead);
+
+  // Send bytes with a special command (so NoDelimter on write) to switch back to line mode.
+  // The reply comes back line delimited.
+  std::string status2 = s.sendCommandAndReadLines("setLineMode", 1, NoDelimiter{})[0];
+
+  BOOST_TEST(status1 == "ok");
+  BOOST_TEST(echo == packet);
+  BOOST_TEST(status2 == "OK");
+
+  // If we don't get OK back then we're stuck in byte mode, and the rest of the test will fail.
+  assert(status2 == "OK");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

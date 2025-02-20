@@ -70,6 +70,8 @@ class DummyServer {
   std::atomic_bool sendTooFew{false};
   std::atomic_bool responseWithDataAndSyntaxError{false};
   std::atomic_bool sendGarbage{false};
+  std::atomic_bool byteMode{false};
+  size_t bytesToRead{16};
 
   // Pause execution here to wait for the main thread to stop (e.g. because ^C has been pressed).
   void waitForStop();
