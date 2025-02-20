@@ -58,5 +58,5 @@ class SerialCommandHandler : public CommandHandler {
   /**
    * The SerialPort handle
    */
-  std::unique_ptr<SerialPort> _serialPort;
+  std::unique_ptr<ChimeraTK::SerialPort> _serialPort;
 }; // end SerialCommandHandler
