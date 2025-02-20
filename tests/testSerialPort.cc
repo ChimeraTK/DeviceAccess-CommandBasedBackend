@@ -111,9 +111,9 @@ BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
   std::string cmd = cmdline1 + delim + cmdline2 + delim;
   auto res = s.sendCommandAndReadLines(cmd, 2, std::nullopt, delim);
 
-  if(ret.size() == 2) {
-    BOOST_TEST(ret[0] == cmdline1);
-    BOOST_TEST(ret[1] == cmdline2);
+  if(res.size() == 2) {
+    BOOST_TEST(res[0] == cmdline1);
+    BOOST_TEST(res[1] == cmdline2);
   }
 }
 
