@@ -23,7 +23,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+  std::vector<std::string> TcpCommandHandler::sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
       const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
     std::vector<std::string> ret;
 

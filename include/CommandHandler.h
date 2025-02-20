@@ -72,7 +72,11 @@ class CommandHandler {
   std::chrono::milliseconds _timeout;
 
   [[nodiscard]] std::string toString(
-      const WritableDelimiter& delimOption) const; //!< Converts a writeable delimiter option to string
-  [[nodiscard]] std::string toString(
-      const ReadableDelimiter& delimOption) const; //!< Converts a readable delimiter option to string
+      const WritableDelimiter& delimOption) const noexcept; //!< Converts a writeable delimiter option to string
+
+  /**
+   * @brief Converts a readable delimiter option to string
+   * @param[in] delimOption must never be "", and this case must be externally protected against.
+   */
+  [[nodiscard]] std::string toString(const ReadableDelimiter& delimOption) const noexcept;
 };
