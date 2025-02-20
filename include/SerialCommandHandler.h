@@ -41,7 +41,10 @@ class SerialCommandHandler : public CommandHandler {
    * used. Setting this to a string overrides that delimiter. Set to "" or (preferably) NoDelimiter{} to send cmd as a
    * pure binary sequence.
    */
-  inline void write(std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const;
+  inline void write(
+      std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
+    _serialPort->send(cmd + toString(writeDelimiter));
+  }
 
   /**
    * @brief A simple blocking readline with no timeout. This can wait forever.
