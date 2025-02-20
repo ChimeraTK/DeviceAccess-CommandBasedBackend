@@ -178,7 +178,7 @@ namespace ChimeraTK {
     assert(_opened);
     std::lock_guard<std::mutex> lock(_mux);
 
-    return _commandHandler->sendCommand(std::move(cmd));
+    return _commandHandler->sendCommandAndReadLines(std::move(cmd))[0];
   }
 
   /********************************************************************************************************************/
@@ -186,7 +186,7 @@ namespace ChimeraTK {
   std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesToRead) {
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
-    return _commandHandler->sendCommand(std::move(cmd), nLinesToRead);
+    return _commandHandler->sendCommandAndReadLines(std::move(cmd), nLinesToRead);
   }
 
   /********************************************************************************************************************/
