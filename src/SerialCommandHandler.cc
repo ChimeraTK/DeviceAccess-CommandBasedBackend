@@ -63,16 +63,16 @@ std::string SerialCommandHandler::sendCommandAndReadBytes(
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::waitAndReadline(const ReadableDelimiter& readDelimiter) const;
-std::string delimiter = toString(readDelimiter);
-auto readData = _serialPort->readline(delimiter);
-if(not readData.has_value()) {
-  throw std::logic_error("FIXME: BAD INTERFACE");
-  // Needs to actually be std::logic_error
-  // This is not a ChimeraTK::logic_error since it occurs at runtime
-  // Yet it indicates a programming mistake
-  // So it's not a ChimeraTK::runtime_error either.
-  // FIXME ticket 13739
-}
-return readData.value();
+std::string SerialCommandHandler::waitAndReadline(const ReadableDelimiter& readDelimiter) const {
+  std::string delimiter = toString(readDelimiter);
+  auto readData = _serialPort->readline(delimiter);
+  if(not readData.has_value()) {
+    throw std::logic_error("FIXME: BAD INTERFACE");
+    // Needs to actually be std::logic_error
+    // This is not a ChimeraTK::logic_error since it occurs at runtime
+    // Yet it indicates a programming mistake
+    // So it's not a ChimeraTK::runtime_error either.
+    // FIXME ticket 13739
+  }
+  return readData.value();
 }
