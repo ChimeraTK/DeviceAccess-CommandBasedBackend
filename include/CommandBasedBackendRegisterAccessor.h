@@ -9,13 +9,23 @@
 #include <ChimeraTK/NDRegisterAccessor.h>
 #include <ChimeraTK/RegisterPath.h>
 
+#include <functional>
 #include <memory>
 #include <regex>
 
 namespace ChimeraTK {
 
+  template<typename UserType>
+  using ToUserTypeFunc =
+      std::function<UserType(const std::string&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+
+  template<typename UserType>
+  using ToTransportLayerFunc =
+      std::function<std::string(const UserType&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+
   class CommandBasedBackend;
 
+  /********************************************************************************************************************/
   /**
    * Implementation of the NDRegisterAccessor for CommandBasedBackend for scalar and 1D registers.
    */
@@ -67,6 +77,9 @@ namespace ChimeraTK {
 
     std::vector<std::string> _readTransferBuffer;
     std::string _writeTransferBuffer;
+
+    ToTransportLayerFunc<UserType> _transportLayerTypeFromUserType;
+    ToUserTypeFunc<UserType> _userTypeFromTransportLayerType;
 
     void doPreRead([[maybe_unused]] TransferType) override;
 

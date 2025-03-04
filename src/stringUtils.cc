@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "stringUtils.h"
 
+#include <type_traits> //used for static asserts of binaryStrFromInt and intFromBinaryStr
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -134,3 +137,12 @@ std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept {
   }
   return hexString;
 }
+
+/**********************************************************************************************************************/
+
+bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept {
+  return std::equal(
+      a.begin(), a.end(), b.begin(), b.end(), [](char A, char B) { return std::tolower(A) == std::tolower(B); });
+}
+
+/**********************************************************************************************************************/
