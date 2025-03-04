@@ -68,7 +68,7 @@ namespace ChimeraTK {
      * @brief Read a delimiter delimited line from the serial port. Result does NOT end in delimiter
      * @param[in] timeout the timeout in milliseconds
      * @param[in] delimiter The line delimiter
-     * @return The responce as a sting
+     * @return The response as a sting
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
     std::string readlineWithTimeout(
@@ -79,7 +79,7 @@ namespace ChimeraTK {
      * null-terminated.
      * @param[in] nBytesToRead The number of bytes that it will attempt to read.
      * @param[in] timeout the timeout in milliseconds
-     * @return The responce as a sting
+     * @return The response as a sting
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
     std::string readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout);

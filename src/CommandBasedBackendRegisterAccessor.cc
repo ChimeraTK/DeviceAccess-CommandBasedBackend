@@ -7,14 +7,47 @@
 #include "CommandBasedBackendRegisterInfo.h"
 #include "stringUtils.h"
 #include <inja/inja.hpp>
+#include <type_traits>
 
 #include <regex>
 #include <sstream>
 #include <string>
 
 namespace ChimeraTK {
-  template<typename UserType>
 
+  using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
+
+  /**
+   * @brief Gets the regex pattern string for this InteractionInfo
+   * @returns the string regex pattern
+   */
+  static std::string getRegexString(const InteractionInfo& info);
+
+  /**
+   * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
+   * This facilitates code reuse once write responses are implemented.
+   * @param[in] InteractionInfo
+   * @param[in] requiredElements How many elements to check against the regex mark_count
+   * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
+   * @throws std::regex_error
+   * @throws inja::ParserError
+   */
+  static std::regex getResponseRegex(
+      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail);
+
+  /** Return the functional for the given TransportLayerType for converting data from the transport layer format to
+   * UserType representation*/
+  template<typename UserType>
+  static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType);
+
+  /** Return the functional for the given TransportLayerType for converting data from the to UserType representation to
+   * the transport layer format*/
+  template<typename UserType>
+  static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType);
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
@@ -49,57 +82,19 @@ namespace ChimeraTK {
 
     this->_exceptionBackend = dev;
 
-    std::string valueRegex;
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_INT) {
-      valueRegex = "([+-]?[0-9]+)";
-    }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
-      valueRegex = "([0-9A-Fa-f]+)";
-    }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::BIN_INT) {
-      valueRegex = "(.*)";
-    }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_FLOAT) {
-      valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
-    }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
-      valueRegex = "(.*)";
+    if(_registerInfo.isWriteable()) {
+      _transportLayerTypeFromUserType =
+          getToTransportLayerFunction<UserType>(_registerInfo.writeInfo.getTransportLayerType());
     }
 
-    if(_registerInfo.transportLayerType != CommandBasedBackendRegisterInfo::TransportLayerType::VOID) {
-      assert(!valueRegex.empty());
-    }
+    if(_registerInfo.isReadable()) {
+      _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
 
-    if(!_registerInfo.isReadable()) {
-      return;
-    }
-
-    // Prepare the readResponseRegex.
-    inja::json replacePatterns;
-    replacePatterns["x"] = {};
-    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
-      // FIXME: does not know about formating. TODO ticket 13534.
-      replacePatterns["x"].push_back(valueRegex);
-    }
-
-    try {
-      auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
-      _readResponseRegex = regexText;
-    }
-    catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error(
-          "Regex error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
-    }
-    catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error(
-          "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
-    }
-    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
-    if(_readResponseRegex.mark_count() != _registerInfo.nElements) {
-      throw ChimeraTK::logic_error("Wrong number of capture groups (" +
-          std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
-          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
-          std::to_string(_registerInfo.nElements));
+      // We seek registerInfo.getNumberOfElements() matches in the response regex,
+      // which may be more than the number of elements in the the register (_numberOfElements), due to a non-zero
+      // _elementOffsetInRegister.
+      _readResponseRegex = getResponseRegex(
+          _registerInfo.readInfo, registerInfo.getNumberOfElements(), "read in " + _registerInfo.registerPath);
     }
 
   } // end constructor CommandBasedBackendRegisterAccessor
@@ -126,10 +121,9 @@ namespace ChimeraTK {
     }
 
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
-    auto readCommand = _registerInfo.readCommandPattern;
+    auto readCommand = _registerInfo.readInfo.commandPattern;
 
-    _readTransferBuffer =
-        _backend->sendCommandAndReadLines(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
+    _readTransferBuffer = _backend->sendCommandAndRead(readCommand, _registerInfo.readInfo);
   }
 
   /********************************************************************************************************************/
@@ -141,9 +135,15 @@ namespace ChimeraTK {
     if(updateDataBuffer) {
       // For technical reasons the response has been read line by line.
       // Combine them here back into a single response string.
-      std::string combinedReadString;
-      for(const auto& line : _readTransferBuffer) {
-        combinedReadString += line + _registerInfo.delimiter;
+      std::string combinedReadString = "";
+      if(_registerInfo.readInfo.usesReadLines()) {
+        std::string delim = *_registerInfo.readInfo.getResponseLinesDelimiter();
+        for(const auto& line : _readTransferBuffer) {
+          combinedReadString += line + delim;
+        }
+      }
+      else if(_registerInfo.readInfo.usesReadBytes()) {
+        combinedReadString = _readTransferBuffer[0];
       }
 
       std::smatch valueMatch;
@@ -152,12 +152,9 @@ namespace ChimeraTK {
             "\" in " + _registerInfo.registerPath);
       }
 
-      std::string hexIndicator =
-          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT ? "0x" :
-                                                                                                              "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
         buffer_2D[0][i] =
-            userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
+            _userTypeFromTransportLayerType(valueMatch.str(i + _elementOffsetInRegister + 1), _registerInfo.readInfo);
       }
       this->_versionNumber = {};
     }
@@ -181,28 +178,17 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        std::ostringstream oss;
-        oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
-        replacePatterns["x"].push_back(oss.str());
-      }
-    }
-    else {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        // FIXME: does not know about formating. TODO ticket 13534.
-        // May need leading zeros or other formatting to satisfy the hardware interface.
-        replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
-      }
+    for(size_t i = 0; i < _numberOfElements; ++i) {
+      replacePatterns["x"].push_back(_transportLayerTypeFromUserType(buffer_2D[0][i], _registerInfo.writeInfo));
     }
 
     // Form the write command.
     try {
-      _writeTransferBuffer = inja::render(_registerInfo.writeCommandPattern, replacePatterns);
+      _writeTransferBuffer = inja::render(_registerInfo.writeInfo.commandPattern, replacePatterns);
     }
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
-          "Inja parser error in writeCommandPattern of " + _registerInfo.registerPath + ": " + e.what());
+          "Inja parser error in write commandPattern of " + _registerInfo.registerPath + ": " + e.what());
     }
 
     // remember this register as the last used one if the register is readable
@@ -223,13 +209,192 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommandAndReadLines(_writeTransferBuffer, 0);
+    _backend->sendCommandAndRead(_writeTransferBuffer, _registerInfo.writeInfo);
     return false; // no data was lost
   }
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
+  static std::string getRegexString(const InteractionInfo& info) {
+    TransportLayerType type = info.getTransportLayerType();
+
+    std::string valueRegex = "";
+    if(info.fixedRegexCharacterWidthOpt) { // a fixedSizeNumberWidth is specified
+      std::string width = std::to_string(*(info.fixedRegexCharacterWidthOpt));
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]{" + width + "})";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]{" + width + "})";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.{" + width + "})";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
+    }
+    else { // no fixedSizeNumberWidth is specified
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]+)";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]+)";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.*)";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
+    }
+    return valueRegex;
+  }
+
+  /********************************************************************************************************************/
+
+  static std::regex getResponseRegex(
+      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail) {
+    std::string valueRegex = getRegexString(info);
+
+    inja::json replacePatterns;
+    replacePatterns["x"] = {};
+    for(size_t i = 0; i < requiredElements; ++i) {
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns["x"].push_back(valueRegex);
+    }
+
+    std::regex returnRegex;
+    try {
+      auto regexText = inja::render(info.responsePattern, replacePatterns);
+      returnRegex = regexText;
+    }
+    catch(std::regex_error& e) {
+      throw ChimeraTK::logic_error("Regex error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+    }
+    catch(inja::ParserError& e) {
+      throw ChimeraTK::logic_error(
+          "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+    }
+    // Alignment between the mark_count and requiredElements can be enforced by using non-capture groups: (?:   )
+    if(returnRegex.mark_count() != requiredElements) {
+      throw ChimeraTK::logic_error("Wrong number of capture groups " + std::to_string(returnRegex.mark_count()) + "(" +
+          std::to_string(requiredElements) + " required) in responsePattern \"" + info.responsePattern + "\" for " +
+          errorMessageDetail);
+    }
+    return returnRegex;
+  } // end getResponseRegex
+
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+  // For use in preWrite
+  template<typename T>
+  using enableIfIntegral = std::enable_if_t<std::is_integral<T>::value || std::is_same_v<T, ChimeraTK::Boolean>>;
+
+  // FIXME: does not know about formating. TODO ticket 13534.
+  // May need leading zeros or other formatting to satisfy the hardware interface.
+  // Do this using _registerInfo.writeInfo.fixedRegexCharacterWidthOpt in the function pointer implementation.
+
+  template<typename UserType>
+  static std::string toTransportLayerDefault(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+    return ChimeraTK::userTypeToUserType<std::string, UserType>(val);
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+  static std::string toTransportLayerHexInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+    std::ostringstream oss;
+    oss << std::hex << ChimeraTK::userTypeToUserType<uint64_t, UserType>(val);
+    return oss.str();
+  }
+
+  /********************************************************************************************************************/
+
+  // Won't try to compile this if UserType is not an integer type.
+  template<typename UserType, typename = enableIfIntegral<UserType>>
+  static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+    auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedRegexCharacterWidthOpt);
+    if(not maybeStr) {
+      throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
+    }
+    return *maybeStr;
+  }
+
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+  // For use in postRead
+
+  template<typename UserType>
+  UserType toUserTypeDefault(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    return ChimeraTK::userTypeToUserType<UserType, std::string>(str);
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+  static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str);
+  }
+
+  /********************************************************************************************************************/
+
+  // Won't try to compile this if UserType is not an integer type.
+  template<typename UserType, typename = enableIfIntegral<UserType>>
+  static UserType toUserTypeBinInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    auto maybeInt = intFromBinaryStr<UserType>(str);
+    if(not maybeInt) {
+      throw ChimeraTK::runtime_error("Unable to fit the read value into UserType.");
+    }
+    return *maybeInt;
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+  static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
+    if constexpr(std::is_integral_v<UserType>) {
+      // toUserTypeBinInt is only defined if UserType is an integer type, so guard it.
+      if(transportLayerType == TransportLayerType::BIN_INT) {
+        return &toUserTypeBinInt<UserType>;
+      }
+    }
+    if(transportLayerType == TransportLayerType::HEX_INT) {
+      return &toUserTypeHexInt<UserType>;
+    }
+    else { // DEC_INT, DEC_FLOAT, STRING
+      return &toUserTypeDefault<UserType>;
+    }
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+  static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType) {
+    if constexpr(std::is_integral_v<UserType>) {
+      // toTransportLayerBinInt is only defined if UserType is an integer type, so guard it.
+      if(transportLayerType == TransportLayerType::BIN_INT) {
+        return &toTransportLayerBinInt<UserType>;
+      }
+    }
+    if(transportLayerType == TransportLayerType::HEX_INT) {
+      return &toTransportLayerHexInt<UserType>;
+    }
+    else { // DEC_INT, DEC_FLOAT, STRING
+      return &toTransportLayerDefault<UserType>;
+    }
+  }
+
+  /********************************************************************************************************************/
   // Magic from SupportedUserTypes.h
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
-
 } // end namespace ChimeraTK
