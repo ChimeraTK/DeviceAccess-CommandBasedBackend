@@ -30,7 +30,7 @@ class CommandHandler {
   : _delimiter(delimiter), _timeout(timeoutInMilliseconds) {}
 
   /**
-   * @brief Send a command to a SCPI device, read back nLinesToRead line of responce.
+   * @brief Send a command to a SCPI device, read back nLinesToRead line of response.
    * Resulting vector will be nLinesToRead long or else throw a ChimeraTK::runtime_error
    * @param[in] cmd The command to be sent, which should have no delimiter
    * @param[in] nLinesToRead The number of lines required in the reply to the sent command cmd, and the length of the
@@ -39,7 +39,7 @@ class CommandHandler {
    * It can be set to "" or (preferably) to NoDelimiter{} to send a raw binary command.
    * @param[in] readDelimiter if set, this overrides the default _delimiter for the reading operation in this call.
    * Since empty string cannot be a line delimitier, if overrideReadDelimiter is "", the default delimiter will be used.
-   * @returns A vector, of length nLinesToRead, of strings containing the responce lines.
+   * @returns A vector, of length nLinesToRead, of strings containing the response lines.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
   virtual std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
@@ -47,14 +47,14 @@ class CommandHandler {
       const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) = 0;
 
   /**
-   * @brief Send a command to a SCPI device, read back a set number of bytes of responce.
+   * @brief Send a command to a SCPI device, read back a set number of bytes of response.
    * Resulting string will be nBytesToRead long or else throw a ChimeraTK::runtime_error
    * Since this is binary oriented, no write delimiter is used by default.
    * @param[in] cmd The command to be sent, which should have no delimiter
    * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd. If 0, no read is attempted.
    * @param[in] writeDelimiter if set, the specified write delimiter is added for this call, which can be a string or
    * CommandHandlerDefaultDelimiter{}.
-   * @returns A string as a container of bytes containing the responce. The return string is not null terminated.
+   * @returns A string as a container of bytes containing the response. The return string is not null terminated.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
   virtual std::string sendCommandAndReadBytes(
