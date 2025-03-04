@@ -30,7 +30,7 @@ namespace ChimeraTK {
         std::string readCommandPattern_ = "", std::string readResponsePattern_ = "", uint nElements_ = 1,
         size_t nLinesReadResponse_ = 1,
         TransportLayerType type = TransportLayerType::DEC_INT, // FIXME remove default Type
-        std::string delimiter_ = "\r\n");
+        std::string readDelimiter_ = "\r\n", std::string writeDelimiter_ = "\r\n");
     ~CommandBasedBackendRegisterInfo() override = default;
 
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
@@ -65,9 +65,14 @@ namespace ChimeraTK {
     DataDescriptor dataDescriptor;
 
     /**
-     * The delimiter between lines.
+     * The delimiter between lines for reading.
      */
-    std::string delimiter;
+    std::string readDelimiter;
+
+    /**
+     * The delimiter between lines for writing.
+     */
+    std::string writeDelimiter;
 
   }; // end CommandBasedBackendRegisterInfo
 

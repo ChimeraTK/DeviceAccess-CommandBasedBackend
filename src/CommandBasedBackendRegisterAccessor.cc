@@ -142,7 +142,7 @@ namespace ChimeraTK {
       // Combine them here back into a single response string.
       std::string combinedReadString;
       for(const auto& line : _readTransferBuffer) {
-        combinedReadString += line + _registerInfo.delimiter;
+        combinedReadString += line + _registerInfo.readDelimiter;
       }
 
       std::smatch valueMatch;
