@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(testLongCommandBuffer) {
 }
 
 BOOST_AUTO_TEST_CASE(testLongCommandBufferFollowup) {
-  // Intermediate basic tests to see if the responce from the previous test overflows into the next reply.
+  // Intermediate basic tests to see if the response from the previous test overflows into the next reply.
   std::string cmd = "test3";
   std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
