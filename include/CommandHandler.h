@@ -33,7 +33,8 @@ class CommandHandler {
    * @brief Send a command to a SCPI device, read back nLinesToRead line of responce.
    * Resulting vector will be nLinesToRead long or else throw a ChimeraTK::runtime_error
    * @param[in] cmd The command to be sent, which should have no delimiter
-   * @param[in] nLinesToRead The number of lines required in the reply to the sent command cmd, and the length of hte
+   * @param[in] nLinesToRead The number of lines required in the reply to the sent command cmd, and the length of the
+   * return vector. If 0, then no read is attempted.
    * @param[in] writeDelimiter if set, this overrides the default _delimiter the writing operation in this call.
    * It can be set to "" or (preferably) to NoDelimiter{} to send a raw binary command.
    * @param[in] readDelimiter if set, this overrides the default _delimiter for the reading operation in this call.
@@ -50,7 +51,7 @@ class CommandHandler {
    * Resulting string will be nBytesToRead long or else throw a ChimeraTK::runtime_error
    * Since this is binary oriented, no write delimiter is used by default.
    * @param[in] cmd The command to be sent, which should have no delimiter
-   * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd, and the length of the
+   * @param[in] nBytesToRead The number of bytes required in reply to the sent command cmd. If 0, no read is attempted.
    * @param[in] writeDelimiter if set, the specified write delimiter is added for this call, which can be a string or
    * CommandHandlerDefaultDelimiter{}.
    * @returns A string as a container of bytes containing the responce. The return string is not null terminated.

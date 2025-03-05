@@ -174,19 +174,20 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::string CommandBasedBackend::sendCommand(std::string cmd) {
-    assert(_opened);
+  std::vector<std::string> CommandBasedBackend::sendCommandAndReadLines(std::string cmd, size_t nLinesToRead,
+      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
+    assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
-
-    return _commandHandler->sendCommandAndReadLines(std::move(cmd))[0];
+    return _commandHandler->sendCommandAndReadLines(std::move(cmd), nLinesToRead, writeDelimiter, readDelimiter);
   }
 
   /********************************************************************************************************************/
 
-  std::vector<std::string> CommandBasedBackend::sendCommand(std::string cmd, size_t nLinesToRead) {
+  std::string CommandBasedBackend::sendCommandAndReadBytes(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
-    return _commandHandler->sendCommandAndReadLines(std::move(cmd), nLinesToRead);
+    return _commandHandler->sendCommandAndReadBytes(std::move(cmd), nBytesToRead, writeDelimiter);
   }
 
   /********************************************************************************************************************/

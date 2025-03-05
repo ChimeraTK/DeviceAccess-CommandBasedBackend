@@ -128,7 +128,8 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readCommandPattern;
 
-    _readTransferBuffer = _backend->sendCommand(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
+    _readTransferBuffer =
+        _backend->sendCommandAndReadLines(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
   }
 
   /********************************************************************************************************************/
@@ -222,7 +223,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommand(_writeTransferBuffer, 0);
+    _backend->sendCommandAndReadLines(_writeTransferBuffer, 0);
     return false; // no data was lost
   }
 
