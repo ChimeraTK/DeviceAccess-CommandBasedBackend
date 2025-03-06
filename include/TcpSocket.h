@@ -11,6 +11,9 @@
 
 namespace ChimeraTK {
 
+  using AsyncReadFn = std::function<void(boost::asio::ip::tcp::socket&, boost::asio::streambuf&,
+      std::function<void(const boost::system::error_code&, std::size_t)>)>;
+
   constexpr const char TCP_DEFAULT_DELIMITER[] = "\r\n";
   /**
    * @class TcpSocket
@@ -84,27 +87,23 @@ namespace ChimeraTK {
     ~TcpSocket();
 
    private:
-    /**
-     * @brief Runs the _io_context.run() and resets the _io_context in a thread-safe manner.
-     */
-    void runAndResetIoContext();
-
-    /**
-     * @brief Waits for the io_context to stop in a thread-safe manner.
-     */
-    void waitForIoContextToStop();
-
     boost::asio::io_context _io_context;                //!< Boost.Asio I/O context for asynchronous operations.
-    std::mutex _ioContextMutex;                         //!< For synchronization management of io_context state
     std::condition_variable _ioContextStoppedCondition; //!< For synchronization management of io_context state
 
     boost::asio::ip::tcp::socket _socket; //!< TCP socket used for communication.
-    std::mutex _socketMutex;              //!< For synchronization management of socket state
 
     boost::asio::ip::tcp::resolver _resolver; //!< Resolver for hostname and port resolution.
     std::string _host;                        //!< Hostname or IP address of the remote host.
     std::string _port;                        //!< Port number of the remote host.
     std::atomic<bool> _opened{false};         //!< Indicates whether the socket is currently open.
+
+    /**
+     * @brief A common underlying read function used by readBytesWithTimeout and readlineWithTimeout.
+     * @param[in] timeout the timeout in milliseconds
+     * @param[in] asyncReadFn A lambda wrapping the async read function to be used.
+     * @throws ChimeraTK::runtime_error if timeout exceeded.
+     */
+    std::string readWithTimeout(const std::chrono::milliseconds& timeout, AsyncReadFn asyncReadFn);
   };
 
 } // namespace ChimeraTK
