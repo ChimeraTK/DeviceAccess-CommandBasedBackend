@@ -211,29 +211,6 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  /**
-   * Throws a ChimeraTK::logic_error if the json key is not in an std::array of valid keys.
-   */
-  template<size_t N>
-  void throwIfHasInvalidJsonKey(
-      const json& j, const std::array<std::string, N>& validKeys, const std::string& errorMessage) {
-    for(auto it = j.begin(); it != j.end(); ++it) {
-      bool stringIsNotInArray = true;
-      for(const std::string& i : validKeys) {
-        if(it.key() == i) {
-          stringIsNotInArray = false;
-          break;
-        }
-      }
-
-      if(stringIsNotInArray) {
-        throw ChimeraTK::logic_error(errorMessage + " " + it.key());
-      }
-    }
-  }
-
-  /********************************************************************************************************************/
-
   void CommandBasedBackend::parseJsonAndPopulateCatalogue(const std::string& mapFileName) {
     std::ifstream file(mapFileName);
     if(!file.is_open()) {
