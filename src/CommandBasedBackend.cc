@@ -3,6 +3,7 @@
 
 #include "CommandBasedBackend.h"
 
+#include "mapFileKeys.h"
 #include "SerialCommandHandler.h"
 #include "stringUtils.h"
 #include "TcpCommandHandler.h"
@@ -16,78 +17,6 @@ using json = nlohmann::json;
 namespace ChimeraTK {
 
   CommandBasedBackendRegisterInfo registerInfoFromJson(const json& j, const std::string& regKey);
-
-  /********************************************************************************************************************/
-
-  const int requiredMapFileFormatVersion = 1;
-
-  /********************************************************************************************************************/
-
-  enum mapFileTopLevelKeys {
-    MAP_FILE_FORMAT_VERSION = 0,
-    METADATA,
-    REGISTERS,
-    N_TOP_LEVEL_KEYS // Keep this at the end so as to automatically be the count of keys.
-  };
-
-  static const std::array<std::string, N_TOP_LEVEL_KEYS> topLevelKeyStrs = {
-      // Indexed by mapFileTopLevelKeys so keep them in the same order.
-      "mapFileFormatVersion", "metadata", "registers"};
-  inline std::string toStr(mapFileTopLevelKeys keyEnum) {
-    return topLevelKeyStrs[keyEnum];
-  }
-  /********************************************************************************************************************/
-
-  enum mapFileMetadataKeys {
-    DEFAULT_RECOVERY_REGISTER = 0,
-    DELIMITER,
-    // Add other keys here.
-    N_METADATA_KEYS // Keep this at the end so as to automatically be the count of keys.
-  };
-
-  static const std::array<std::string, N_METADATA_KEYS> metadataKeyStrs = {
-      // Indexed by mapFileMetadataKeys so keep them in the same order.
-      "defaultRecoveryRegister", "delimiter"};
-  inline std::string toStr(mapFileMetadataKeys keyEnum) {
-    return metadataKeyStrs[keyEnum];
-  }
-  /********************************************************************************************************************/
-
-  enum mapFileRegisterKeys {
-    WRITE_CMD = 0,
-    WRITE_RESP,
-    READ_CMD,
-    READ_RESP,
-    N_ELEM,
-    N_LN_READ,
-    TYPE,
-    // Add other keys here.
-    N_REGISTER_KEYS // Keep this at the end so as to automatically be the count of keys.
-  };
-  static const std::array<std::string, N_REGISTER_KEYS> registerKeyStrs = {
-      // Indexed by mapFileRegisterKeys so keep them in the same order.
-      "writeCmd", "writeResp", "readCmd", "readResp", "nElem", "nLnRead", "type"};
-  inline std::string toStr(mapFileRegisterKeys keyEnum) {
-    return registerKeyStrs[keyEnum];
-  }
-
-  /********************************************************************************************************************/
-  static const std::array<std::string,
-      static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)>
-      registerTypeStrs = {
-          // Indexed by CommandBasedBackendRegisterInfo::TransportLayerType so keep them in the same order:
-          // TransportLayerType: { DEC_INT, HEX_INT, BIN_INT, DEC_FLOAT, STRING, VOID}
-          // Must be lower case.
-          "decint",
-          "hexint",
-          "binint",
-          "decfloat",
-          "string",
-          "void",
-  };
-  inline std::string toStr(CommandBasedBackendRegisterInfo::TransportLayerType eType) {
-    return registerTypeStrs[static_cast<int>(eType)];
-  }
 
   /********************************************************************************************************************/
 
@@ -222,8 +151,9 @@ namespace ChimeraTK {
 
     throwIfHasInvalidJsonKey(j, topLevelKeyStrs, "Map file top level has unknown key");
 
-    if(j.contains(toStr(MAP_FILE_FORMAT_VERSION))) {
-      int mapFileFormatVersion = j.value(toStr(MAP_FILE_FORMAT_VERSION), 0);
+    if(auto mapFileFormatVersionOpt =
+            caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION))) {
+      int mapFileFormatVersion = mapFileFormatVersionOpt->get<int>();
       if(mapFileFormatVersion != requiredMapFileFormatVersion) {
         throw ChimeraTK::logic_error("Incorrect map file format version " + std::to_string(mapFileFormatVersion) +
             ", version " + std::to_string(requiredMapFileFormatVersion) + " required.");

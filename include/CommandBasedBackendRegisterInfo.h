@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "mapFileKeys.h"
+
 #include <ChimeraTK/BackendRegisterInfoBase.h>
 #include <ChimeraTK/DataDescriptor.h>
 
@@ -12,17 +14,6 @@ namespace ChimeraTK {
     Holds info all about the command you're sending, but not about the device you're sending it to.
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
-    /** Internal representation type to which we have to convert successfully.*/
-    enum class TransportLayerType {
-      DEC_INT = 0,
-      HEX_INT,
-      BIN_INT,
-      DEC_FLOAT,
-      STRING,
-      VOID,
-      // Add other keys here.
-      N_TYPES // Keep this at the end so as to automatically be the count of keys.
-    };
     // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
 
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {},
