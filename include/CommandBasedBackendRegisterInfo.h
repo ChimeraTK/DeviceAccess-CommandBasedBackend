@@ -3,12 +3,17 @@
 #pragma once
 
 #include "mapFileKeys.h"
+#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/BackendRegisterInfoBase.h>
 #include <ChimeraTK/DataDescriptor.h>
 
 #include <memory>
 #include <optional>
+#include <variant>
+
+using json = nlohmann::json;
+
 namespace ChimeraTK {
 
   /**
@@ -43,19 +48,25 @@ namespace ChimeraTK {
                         // responseInfo variant type order must match the SendCommandType enum values.
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
-      inline bool isActive() { return not commandPattern.empty(); }
-      inline SendCommandType getSendCommandType() const { return responseInfo.index(); }
+      inline bool isActive() const { return not commandPattern.empty(); }
+      inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
       inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
       inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
 
       // get ResponseLinesInfo if its there
       inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
-        return useReadLines() ? std::get<ResponseLinesInfo>(responseInfo) : std::nullopt;
+        if(useReadLines()) {
+          return std::get<ResponseLinesInfo>(responseInfo);
+        }
+        return std::nullopt;
       }
 
       // get ResponceBytesInfo if its there
       inline std::optional<ResponceBytesInfo> getResponceBytesInfo() const {
-        return isReadBytes() ? std::get<ResponceBytesInfo>(responseInfo) : std::nullopt;
+        if(isReadBytes()) {
+          return std::get<ResponceBytesInfo>(responseInfo);
+        }
+        return std::nullopt;
       }
       void populateFromJson(const json& j, std::string errorMessageDetail);
     };

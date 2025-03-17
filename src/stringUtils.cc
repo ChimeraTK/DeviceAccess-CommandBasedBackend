@@ -142,7 +142,7 @@ std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept {
 
 bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept {
   return std::equal(
-      a.begin(), a.end(), b.begin(), b.end(), [](char a, char b) { return std::tolower(a) == std::tolower(b); });
+      a.begin(), a.end(), b.begin(), b.end(), [](char A, char B) { return std::tolower(A) == std::tolower(B); });
 }
 
 /**********************************************************************************************************************/
@@ -192,7 +192,7 @@ std::optional<std::string> binaryStrFromInt(
 
   std::string result(strWidth, leftPackChar);
 
-  const size_t nLeftPackBytes = std::max(0, strWidth - sizeof(intType));
+  const size_t nLeftPackBytes = std::max(static_cast<size_t>(0), strWidth - sizeof(intType));
   const size_t bytesToTransfer = strWidth - nLeftPackBytes;
   for(size_t i = 0; i < bytesToTransfer; i++) {
     // Transfer digits from least significant to most, populating the string from back to front
@@ -204,7 +204,7 @@ std::optional<std::string> binaryStrFromInt(
 
 static size_t getStrNaturalWidth(const std::string binaryContainer, const bool interpretAsPositive = true) noexcept {
   const char leftpackChar = (interpretAsPositive ? '\0' : '\xFF');
-  naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
+  size_t naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
   return ((naturalWidth == std::string::npos) ? 1 : naturalWidth);
 }
 
@@ -228,10 +228,10 @@ std::optional<intType> intFromBinaryStr(const std::string& binaryContainer, cons
   intType result = 0;
 
   // Calculate how many leading F's we need to add if the string is shorter than expected
-  const size_t nLeftPackBytes = std::max(0, maxBytes - binaryContainer.size());
+  const size_t nLeftPackBytes = std::max(static_cast<size_t>(0), maxBytes - binaryContainer.size());
   if(isNegative) {
     for(int i = 0; i < nLeftPackBytes; i++) {
-      shift = 8 * (maxBytes - 1 - i);
+      size_t shift = 8 * (maxBytes - 1 - i);
       result |= static_cast<intType>(0xFF) << shift;
     }
   }

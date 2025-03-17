@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
   BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(0xABCDEF, 2, OverflowBehavior::TRUNCATE).value_or(""), /*==*/"\xCD\xEF");
 
   // Test fixed width with NULLOPT overflow behavior
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(300, 1, OverflowBehavior::NULLOPT), /*==*/std::nullopt);
+  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(300, 1, OverflowBehavior::NULLOPT).has_value(), /*==*/false);
 }
 
 /**********************************************************************************************************************/
@@ -130,10 +130,10 @@ BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
   BOOST_CHECK_EQUAL(intFromBinaryStr<int8_t>({"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE"}).value_or(-1), /*==*/-2);
 
   // Test overflow case with truncation
-  truncateIfOverflow = true;
+  bool truncateIfOverflow = true;
   BOOST_CHECK_EQUAL(intFromBinaryStr<int8_t>({"\xF0\x00\x00\x05"}, truncateIfOverflow).value_or(-999), /*==*/5);
 
   // Test overflow case without truncation
   truncateIfOverflow = false;
-  BOOST_CHECK_EQUAL(intFromBinaryStr<int8_t>({"\xF0\x00\x00\x05"}, truncateIfOverflow), /*==*/std::nullopt);
+  BOOST_CHECK_EQUAL(intFromBinaryStr<int8_t>({"\xF0\x00\x00\x05"}, truncateIfOverflow).has_value(), /*==*/false);
 }

@@ -13,6 +13,14 @@
 #include <memory>
 #include <regex>
 
+template<typename UserType>
+using ToUserTypeFunc =
+    std::function<UserType(const std::string&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+
+template<typename UserType>
+using ToTransportLayerFunc =
+    std::function<std::string(const UserType&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+
 namespace ChimeraTK {
 
   class CommandBasedBackend;
@@ -69,10 +77,8 @@ namespace ChimeraTK {
     std::vector<std::string> _readTransferBuffer;
     std::string _writeTransferBuffer;
 
-    const std::function<std::string(const UserType&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>
-        _transportLayerTypeFromUserType;
-    const std::function<UserType(const std::string&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>
-        _userTypeFromTransportLayerType;
+    const ToTransportLayerFunc<UserType> _transportLayerTypeFromUserType;
+    const ToUserTypeFunc<UserType> _userTypeFromTransportLayerType;
 
     void doPreRead([[maybe_unused]] TransferType) override;
 
