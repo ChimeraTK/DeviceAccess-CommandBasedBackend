@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "stringUtils.h"
 
+#include <type_traits> //used for static asserts of binaryStrFromInt and intFromBinaryStr
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -143,3 +146,103 @@ bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexc
 }
 
 /**********************************************************************************************************************/
+
+template<typename intType>
+static size_t getIntNaturalWidth(const intType payload) noexcept {
+  size_t naturalWidth = 1; // how many chars long should payload be with no leading 0's.
+  if(payload >= 0) {
+    intType temp = payload >> 8;
+    while(temp > 0) {
+      temp >>= 8;
+      naturalWidth++;
+    }
+  }
+  else { // negative payload
+    intType temp = payload >> 8;
+    while(temp != -1) {
+      temp >>= 8; // bit shift left-packs with 0xFF for negatives.
+      naturalWidth++;
+    }
+  }
+  return naturalWidth;
+}
+
+template<typename intType>
+std::optional<std::string> binaryStrFromInt(
+    const intType payload, const std::optional<size_t>& fixedWidth, const OverflowBehavior overflowBehavior) noexcept {
+  static_assert(std::is_integral<intType>::value, "Type must be integral");
+
+  char leftPackChar = ((payload >= 0) ? '\0' : '\xFF');
+  size_t naturalWidth =
+      getIntNaturalWidth<intType>(payload); // how many chars long should payload be with no leading 0's.
+  size_t strWidth = naturalWidth;
+  ;
+  if(fixedWidth.has_value()) {
+    strWidth = fixedWidth.value();
+
+    if(strWidth < naturalWidth) { // overflow situation
+      if(overflowBehavior == OverflowBehavior::EXPAND) {
+        strWidth = naturalWidth;
+      }
+      else if(overflowBehavior == OverflowBehavior::NULLOPT) {
+        return std::nullopt;
+      } // else overflowBehavior = TRUNCATE
+    }
+  }
+
+  std::string result(strWidth, leftPackChar);
+
+  const size_t nLeftPackBytes = std::max(0, strWidth - sizeof(intType));
+  const size_t bytesToTransfer = strWidth - nLeftPackBytes;
+  for(size_t i = 0; i < bytesToTransfer; i++) {
+    // Transfer digits from least significant to most, populating the string from back to front
+    result[strWidth - 1 - i] = static_cast<char>((payload >> (8 * i)) & 0xFF);
+  }
+  return result;
+}
+/**********************************************************************************************************************/
+
+static size_t getStrNaturalWidth(const std::string binaryContainer, const bool interpretAsPositive = true) noexcept {
+  const char leftpackChar = (interpretAsPositive ? '\0' : '\xFF');
+  naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
+  return ((naturalWidth == std::string::npos) ? 1 : naturalWidth);
+}
+
+template<typename intType>
+std::optional<intType> intFromBinaryStr(const std::string& binaryContainer, const bool truncateIfOverflow) noexcept {
+  static_assert(std::is_integral<intType>::value, "Type must be integral");
+
+  if(binaryContainer.empty()) {
+    return 0;
+  }
+
+  bool isNegative = (std::is_signed<intType>::value) and (static_cast<unsigned char>((binaryContainer[0]) & 0x80) != 0);
+  size_t naturalWidth = getStrNaturalWidth(binaryContainer, not isNegative);
+  const size_t maxBytes = sizeof(intType);
+
+  // Validate input length
+  if((not truncateIfOverflow) and (naturalWidth > maxBytes)) {
+    return std::nullopt;
+  }
+
+  intType result = 0;
+
+  // Calculate how many leading F's we need to add if the string is shorter than expected
+  const size_t nLeftPackBytes = std::max(0, maxBytes - binaryContainer.size());
+  if(isNegative) {
+    for(int i = 0; i < nLeftPackBytes; i++) {
+      shift = 8 * (maxBytes - 1 - i);
+      result |= static_cast<intType>(0xFF) << shift;
+    }
+  }
+
+  // Process each byte in the input string
+  const size_t bytesToTransfer = maxBytes - nLeftPackBytes;
+  const size_t truncationBytes = binaryContainer.size() - bytesToTransfer;
+  for(size_t i = 0; i < bytesToTransfer; ++i) {
+    size_t shift = 8 * (bytesToTransfer - 1 - i);
+    result |= static_cast<intType>(static_cast<unsigned char>(binaryContainer[i + truncationBytes])) << shift;
+  }
+
+  return result;
+}
