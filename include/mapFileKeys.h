@@ -10,7 +10,7 @@
 
 /**********************************************************************************************************************/
 
-const int requiredMapFileFormatVersion = 1;
+const int requiredMapFileFormatVersion = 2;
 
 /**********************************************************************************************************************/
 // TODO refactor this to use maps rather than arrays. Maybe undordered_map, maybe bimap

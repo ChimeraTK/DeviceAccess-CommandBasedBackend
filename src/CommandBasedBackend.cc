@@ -16,8 +16,6 @@ using json = nlohmann::json;
 
 namespace ChimeraTK {
 
-  CommandBasedBackendRegisterInfo registerInfoFromJson(const json& j, const std::string& regKey);
-
   /********************************************************************************************************************/
 
   CommandBasedBackend::CommandBasedBackend(
@@ -163,112 +161,26 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Missing mapFileFormatVersion key in metadata");
     }
 
-    if(j.contains(toStr(METADATA))) {
-      const json& metaDataJson = j.at(toStr(METADATA));
-      _defaultRecoveryRegister = RegisterPath(metaDataJson.value(toStr(DEFAULT_RECOVERY_REGISTER), ""));
-      _serialDelimiter = j.value(toStr(DELIMITER), "\r\n");
+    if(auto metaDataJsonOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::METADATA))) {
+      const json& metaDataJson = metaDataJsonOpt->get<json>();
+      _defaultRecoveryRegister = RegisterPath(
+          caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER), ""));
+      _serialDelimiter = caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DELIMITER), "\r\n");
     }
     else {
-      throw ChimeraTK::logic_error("Missing keys " + toStr(METADATA) + " in JSON data");
+      throw ChimeraTK::logic_error("Missing keys " + toStr(mapFileTopLevelKeys::METADATA) + " in JSON data");
     }
 
-    if(j.contains(toStr(REGISTERS))) {
-      for(const auto& [key, value] : j.at(toStr(REGISTERS)).items()) {
-        _backendCatalogue.addRegister(registerInfoFromJson(value, key));
+    if(auto registerOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::REGISTERS))) {
+      for(const auto& [key, value] : registerOpt->get<json>().items()) {
+        _backendCatalogue.addRegister(CommandBasedBackendRegisterInfo(value, key));
       }
     }
     else {
-      throw ChimeraTK::logic_error("Missing keys " + toStr(REGISTERS) + " in JSON data");
+      throw ChimeraTK::logic_error("Missing keys " + toStr(mapFileTopLevelKeys::REGISTERS) + " in JSON data");
     }
   }
 
   /********************************************************************************************************************/
-
-  CommandBasedBackendRegisterInfo registerInfoFromJson(const json& j, const std::string& regKey) {
-    // regKey is the key (register path) whose value is j. This is needed information for debugging.
-
-    throwIfHasInvalidJsonKey(j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
-
-    if(not(j.contains(toStr(READ_CMD)) or j.contains(toStr(WRITE_CMD)))) {
-      throw ChimeraTK::logic_error("A non-empty " + toStr(READ_CMD) + " or " + toStr(WRITE_CMD) +
-          " tags is required, and neither are present for register " + regKey);
-    }
-    if((not j.contains(toStr(READ_CMD))) and j.at(toStr(WRITE_CMD)).empty()) {
-      throw ChimeraTK::logic_error("A non-empty " + toStr(READ_CMD) + " or " + toStr(WRITE_CMD) +
-          " tags is required. writeCmd is blankd and readCmd is missing for register " + regKey);
-    }
-    if((not j.contains(toStr(WRITE_CMD))) and j.at(toStr(READ_CMD)).empty()) {
-      throw ChimeraTK::logic_error("A non-empty " + toStr(READ_CMD) + " or " + toStr(WRITE_CMD) +
-          " tags is required. readCmd is blankd and writeCmd is missing for register " + regKey);
-    }
-
-    // Throw if there are responces without corresponding commands.
-    if((!j.value(toStr(READ_RESP), "").empty()) and (j.value(toStr(READ_CMD), "").empty())) {
-      throw ChimeraTK::logic_error(
-          "A non-empty " + toStr(READ_RESP) + " without a non-empty " + toStr(READ_CMD) + " for register " + regKey);
-    }
-    if((!j.value(toStr(WRITE_RESP), "").empty()) and (j.value(toStr(WRITE_CMD), "").empty())) {
-      throw ChimeraTK::logic_error(
-          "A non-empty " + toStr(WRITE_RESP) + " without a non-empty " + toStr(WRITE_CMD) + " for register " + regKey);
-    }
-
-    CommandBasedBackendRegisterInfo::TransportLayerType eType{};
-
-    std::string typeStr = j.value(toStr(TYPE), "invalid");
-    if(typeStr == "invalid") {
-      throw ChimeraTK::logic_error("type is required but is missing for register " + regKey);
-    }
-    toLowerCase(typeStr);
-
-    if(typeStr == toStr(CommandBasedBackendRegisterInfo::TransportLayerType::VOID)) {
-      if(!j.value(toStr(READ_CMD), "").empty()) {
-        throw ChimeraTK::logic_error(
-            "Void type must be write-only but has a " + toStr(READ_CMD) + " for register " + regKey);
-      }
-      if(j.value(toStr(N_ELEM), 1) != 1) {
-        throw ChimeraTK::logic_error("Void type must only have 1 element but has a " + toStr(N_ELEM) + " = " +
-            j.at(toStr(N_ELEM)) + " for register " + regKey);
-      }
-      if(j.value(toStr(N_LN_READ), 1) != 1) {
-        throw ChimeraTK::logic_error(
-            "Void type is read-only but has non-default " + toStr(N_LN_READ) + " for register " + regKey);
-      }
-      std::string writeCommandPattern = j.value(toStr(WRITE_CMD), "");
-      if(writeCommandPattern.find("{{x") != std::string::npos) {
-        throw ChimeraTK::logic_error("Illegal inja template in " + toStr(WRITE_CMD) + " = \"" + writeCommandPattern +
-            "\" for void-type register " + regKey);
-      }
-    }
-
-    for(size_t iType = 0; iType < static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES);) {
-      if(typeStr == registerTypeStrs[iType]) {
-        eType = static_cast<CommandBasedBackendRegisterInfo::TransportLayerType>(iType);
-        break;
-      }
-      if(++iType == static_cast<size_t>(CommandBasedBackendRegisterInfo::TransportLayerType::N_TYPES)) {
-        throw ChimeraTK::logic_error("Unknown register " + toStr(TYPE) + " " + typeStr + " for regisgter " + regKey);
-      }
-    }
-
-    /*
-       Now feed the CommandBasedBackendRegisterInfo constructor
-       explicit CommandBasedBackendRegisterInfo(
-            const RegisterPath& registerPath_ = {},
-            std::string writeCommandPattern_ = "",
-            std::string writeResponsePattern_ = "",
-            std::string readCommandPattern_ = "",
-            std::string readResponsePattern_ = "",
-            uint nElements_ = 1,
-            size_t nLinesReadResponse_ = 1,
-            TransportLayerType type = TransportLayerType::INT64,
-            std::string delimiter_ = "\r\n");
-       */
-    return CommandBasedBackendRegisterInfo(RegisterPath(regKey), j.value(toStr(WRITE_CMD), ""),
-        j.value(toStr(WRITE_RESP), ""), j.value(toStr(READ_CMD), ""), j.value(toStr(READ_RESP), ""),
-        static_cast<uint>(j.value(toStr(N_ELEM), 1)), static_cast<size_t>(j.value(toStr(N_LN_READ), 1)), eType);
-
-    // We may later add input for nChannels = j.value("nChan",1);
-    // We may also add input for setting nLinesWriteResponse
-  }
 
 } // end namespace ChimeraTK

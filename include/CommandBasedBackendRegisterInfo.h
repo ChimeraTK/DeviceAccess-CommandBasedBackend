@@ -63,6 +63,8 @@ namespace ChimeraTK {
     explicit CommandBasedBackendRegisterInfo(
         const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_);
 
+    explicit CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey);
+
     ~CommandBasedBackendRegisterInfo() override = default;
 
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
