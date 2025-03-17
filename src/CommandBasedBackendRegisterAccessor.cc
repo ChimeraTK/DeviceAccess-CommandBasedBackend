@@ -12,17 +12,20 @@
 #include <sstream>
 #include <string>
 
+using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
+using TransportLayerType = CommandBasedBackendRegisterInfo::TransportLayerType;
+
 // For use in preWrite
 template<typename UserType>
-std::string toTransportLayerDefault(const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo);
 template<typename UserType>
-std::string toTransportLayerHexInt(const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo);
 
 // For use in postRead
 template<typename UserType>
-UserType toUserTypeDefault(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo);
 template<typename UserType>
-UserType toUserTypeHexInt(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo);
 
 namespace ChimeraTK {
   template<typename UserType>
@@ -62,31 +65,33 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     std::string valueRegex;
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_INT) {
+    if(_registerInfo.transportLayerType == TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
       _transportLayerTypeFromUserType = &toTransportLayerDefault;
       _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
+    if(_registerInfo.transportLayerType == TransportLayerType::HEX_INT) {
       valueRegex = "([0-9A-Fa-f]+)";
       _transportLayerTypeFromUserType = &toTransportLayerHexInt;
       _userTypeFromTransportLayerType = &toUserTypeHexInt;
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::BIN_INT) {
+    if(_registerInfo.transportLayerType == TransportLayerType::BIN_INT) {
       valueRegex = "(.*)";
+      _transportLayerTypeFromUserType = &toTransportLayerBinInt;
+      _userTypeFromTransportLayerType = &toUserTypeBinInt;
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_FLOAT) {
+    if(_registerInfo.transportLayerType == TransportLayerType::DEC_FLOAT) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
       _transportLayerTypeFromUserType = &toTransportLayerDefault;
       _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
+    if(_registerInfo.transportLayerType == TransportLayerType::STRING) {
       valueRegex = "(.*)";
       _transportLayerTypeFromUserType = &toTransportLayerDefault;
       _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
 
-    if(_registerInfo.transportLayerType != CommandBasedBackendRegisterInfo::TransportLayerType::VOID) {
+    if(_registerInfo.transportLayerType != TransportLayerType::VOID) {
       assert(!valueRegex.empty());
 
       // FIXME what to do here for the function pointers? They should never be called.
@@ -254,28 +259,43 @@ namespace {
 
   // For use in preWrite
   template<typename UserType>
-  std::string toTransportLayerDefault(
-      const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+  std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo) {
     return userTypeToUserType<std::string, UserType>(val);
   }
 
   template<typename UserType>
-  std::string toTransportLayerHexInt(
-      const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+  std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo) {
     std::ostringstream oss;
     oss << std::hex << userTypeToUserType<uint64_t, UserType>(val);
     return oss.str();
   }
 
+  template<typename UserType>
+  std::string toTransportLayerBinInt(const UserType& val, const InteractionInfo& iInfo) {
+    auto maybeStr = binaryStrFromInt<UserType>(val, _registerInfo.writeInfo.fixedSizeNumberWidthOpt);
+    if(not maybeStr) {
+      throw ChimerTK::runtime_error("Unable to fit value into the fixed_width write slot");
+    }
+    return maybeStr.value;
+  }
+
   // For use in postRead
   template<typename UserType>
-  UserType toUserTypeDefault(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+  UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo) {
     return userTypeToUserType<UserType, std::string>(str);
   }
 
   template<typename UserType>
-  UserType toUserTypeHexInt(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+  UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo) {
     return userTypeToUserType<UserType, std::string>("0x" + str);
   }
 
+  template<typename UserType>
+  UserType toUserTypeBinInt(const std::string& str, const InteractionInfo& iInfo) {
+    auto maybeInt = intFromBinaryStr<UserType>(str, _registerInfo.readInfo.fixedSizeNumberWidthOpt);
+    if(not maybeInt) {
+      throw ChimerTK::runtime_error("Unable to fit the read value into UserType.");
+    }
+    return maybeInt.value();
+  }
 } // end anonymous namespace

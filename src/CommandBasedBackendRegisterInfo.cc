@@ -27,6 +27,9 @@ namespace ChimeraTK {
     else if(type == TransportLayerType::HEX_INT) {
       dataDescriptor = DataDescriptor(DataType::uint64);
     }
+    else if(type == TransportLayerType::BIN_INT) {
+      dataDescriptor = DataDescriptor(DataType::uint64);
+    }
     else if(type == TransportLayerType::DEC_FLOAT) {
       dataDescriptor = DataDescriptor(DataType::float64);
     }
