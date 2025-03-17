@@ -69,3 +69,38 @@ void toLowerCase(std::string& str) noexcept;
  */
 [[nodiscard]] bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept;
 
+enum class OverflowBehavior { NULLOPT, EXPAND, TRUNCATE };
+
+/**
+ * @brief Converts signed and unsigned integers into a string holding the binary representation of the int.
+ * @param[in] payload A signed or unsigned integer of type intType.
+ * @param[in] fixedWidth Determines the character width of the output, if set. When fixedWidth exceeding the size of
+ * intType, the output is left-packed with the sign bit of payload.
+ * @param[in] overflowBehavior Determins the behavior if a fixed width is set for the output, but the payload int cannot
+ * fit. When overflowBehavior is not set, output size = natural width When overflowBehavior = NULLOPT,  output size =
+ * fixedWidth if it fits, otherwise return a std::nullopt. When overflowBehavior = EXPAND,   output size =
+ * max(fixedWidth,natural width) When overflowBehavior = TRUNCATE, output size = fixedWidth Overflow behavior comes into
+ * play if the natural width of the payload exceeds the value of fixedWidth. (if payload is an int64 = 255, its natural
+ * width is 1 char = '\xFF'. If payload is an int = -257, its natural width is 2 = "\xFE\xFF".
+ * @returns an optional to a string container holding the binary representation of the int. std::nullopt is returned if
+ * the int overflows and overflowBehavior = NULLOPT.
+ */
+template<typename intType>
+[[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload,
+    const std::optional<size_t>& fixedWidth = std::nullopt,
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept;
+
+/**
+ * @brief Interprets the data in the string as a binary representation of an integer
+ * The binaryContiainer is interpreted as negative if intType is signed and the first bit of binaryContainer is 1
+ * binaryContainer is assumed to be left-packed with the sign bit. The number is not considered to overflow if only the
+ * sign-bit-packed segment overlfows. For example, "\0\0\0\0\0\0\0\0\0\x04" fits in intType=int8 without overflowing.
+ * Similarly, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE" also fits into int8 as -2.
+ * @param[in] binaryContainer A string containing the binary representation of an integer. For example, "\xAB\x04".
+ * @param[in] truncateIfOverflow When true, overflowing binaryContainer are left-truncated to fit in intType. Otherwise,
+ * std::nullopt is returned under that condition.
+ * @returns integer of type intType, if possible, representing the data in binaryContainer.
+ */
+template<typename intType>
+[[nodiscard]] std::optional<intType> intFromBinaryStr(
+    const std::string& binaryContainer, const bool truncateIfOverflow = false) noexcept;
