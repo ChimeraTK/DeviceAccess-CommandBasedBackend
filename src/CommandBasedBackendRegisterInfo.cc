@@ -8,14 +8,10 @@
 
 namespace ChimeraTK {
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_,
-      std::string writeCommandPattern_, std::string writeResponsePattern_, std::string readCommandPattern_,
-      std::string readResponsePattern_, uint nElements_, size_t nLinesReadResponse_,
-      CommandBasedBackendRegisterInfo::TransportLayerType type, std::string readDelimiter_, std::string writeDelimiter_)
-  : nElements(nElements_), registerPath(registerPath_), writeCommandPattern(std::move(writeCommandPattern_)),
-    writeResponsePattern(std::move(writeResponsePattern_)), readCommandPattern(std::move(readCommandPattern_)),
-    readResponsePattern(std::move(readResponsePattern_)), nLinesReadResponse(nLinesReadResponse_),
-    transportLayerType(type), readDelimiter(std::move(readDelimiter_)), writeDelimiter(std::move(writeDelimiter_)) {
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
+      const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
+  : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
+    writeInfo(std::move(writeInfo_)) {
     // Set dataDescriptor from type.
     if(type == TransportLayerType::DEC_INT) {
       dataDescriptor = DataDescriptor(DataType::int64);

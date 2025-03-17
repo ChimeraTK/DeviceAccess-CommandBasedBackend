@@ -8,6 +8,7 @@
 #include <ChimeraTK/DataDescriptor.h>
 
 #include <memory>
+#include <optional>
 namespace ChimeraTK {
 
   /**
@@ -15,13 +16,53 @@ namespace ChimeraTK {
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
     // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
+    struct InteractionInfo {
+      TransportLayerType transportLayerType;
+      std::string commandPattern = "";
+      std::string responsePattern = "";
+      std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
+      std::string cmdLineDelimiter;
+      /*--------------------------------------------------------------------------------------------------------------*/
+      struct ResponseLinesInfo {
+        size_t nLines = 0;
+        std::string delimiter;
+      };
+      struct ResponceBytesInfo {
+        size_t nBytesReadResponse = 0;
+      };
+      enum SendCommandType {
+        /* These serve to label the indicies of the types in the responceInfo variant
+         * so as to name sendCommand functions to be used in CommandBasedBackend.
+         * So, the numeric value MUST match the index order of variants in responseInfo
+         */
+        SEND_COMMAND_AND_READ_LINES = 0,
+        SEND_COMMAND_AND_READ_BYTES = 1
+      };
+      std::variant<ResponseLinesInfo, ResponceBytesInfo>
+          responseInfo; // Default=ResponseLinesInfo
+                        // responseInfo variant type order must match the SendCommandType enum values.
+      /*--------------------------------------------------------------------------------------------------------------*/
+      InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
+      inline bool isActive() { return not commandPattern.empty(); }
+      inline SendCommandType getSendCommandType() const { return responseInfo.index(); }
+      inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
+      inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
 
-    explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {},
-        std::string writeCommandPattern_ = "", std::string writeResponsePattern_ = "",
-        std::string readCommandPattern_ = "", std::string readResponsePattern_ = "", uint nElements_ = 1,
-        size_t nLinesReadResponse_ = 1,
-        TransportLayerType type = TransportLayerType::DEC_INT, // FIXME remove default Type
-        std::string readDelimiter_ = "\r\n", std::string writeDelimiter_ = "\r\n");
+      // get ResponseLinesInfo if its there
+      inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
+        return useReadLines() ? std::get<ResponseLinesInfo>(responseInfo) : std::nullopt;
+      }
+
+      // get ResponceBytesInfo if its there
+      inline std::optional<ResponceBytesInfo> getResponceBytesInfo() const {
+        return isReadBytes() ? std::get<ResponceBytesInfo>(responseInfo) : std::nullopt;
+      }
+      void populateFromJson(const json& j, std::string errorMessageDetail);
+    };
+
+    explicit CommandBasedBackendRegisterInfo(
+        const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_);
+
     ~CommandBasedBackendRegisterInfo() override = default;
 
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
@@ -31,8 +72,8 @@ namespace ChimeraTK {
     [[nodiscard]] inline unsigned int getNumberOfElements() const override { return nElements; }
     [[nodiscard]] inline unsigned int getNumberOfChannels() const override { return nChannels; }
     [[nodiscard]] inline const DataDescriptor& getDataDescriptor() const override { return dataDescriptor; }
-    [[nodiscard]] inline bool isReadable() const override { return !readCommandPattern.empty(); }
-    [[nodiscard]] inline bool isWriteable() const override { return !writeCommandPattern.empty(); }
+    [[nodiscard]] inline bool isReadable() const override { return readInfo.isActive(); }
+    [[nodiscard]] inline bool isWriteable() const override { return writeInfo.isActive(); }
     [[nodiscard]] inline AccessModeFlags getSupportedAccessModes() const override { return {}; }
 
     [[nodiscard]] inline std::unique_ptr<BackendRegisterInfoBase> clone() const override {
@@ -42,29 +83,10 @@ namespace ChimeraTK {
     unsigned int nChannels{1};
     unsigned int nElements{1};
     RegisterPath registerPath;
+    InteractionInfo readInfo;
+    InteractionInfo writeInfo;
 
-    std::string writeCommandPattern;
-    std::string writeResponsePattern;
-    size_t nLinesWriteResponse{0}; // FIXME: extract from pattern; Ticket 13531
-                                   // TODO remove default value if it's set in the constructor
-
-    std::string readCommandPattern;
-    std::string readResponsePattern;
-    size_t nLinesReadResponse;
-
-    TransportLayerType transportLayerType;
     DataDescriptor dataDescriptor;
-
-    /**
-     * The delimiter between lines for reading.
-     */
-    std::string readDelimiter;
-
-    /**
-     * The delimiter between lines for writing.
-     */
-    std::string writeDelimiter;
-
   }; // end CommandBasedBackendRegisterInfo
 
 } // end namespace ChimeraTK
