@@ -157,8 +157,18 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readCommandPattern;
 
-    _readTransferBuffer =
-        _backend->sendCommandAndReadLines(_registerInfo.readCommandPattern, _registerInfo.nLinesReadResponse);
+    if(_registerInfo.writeInfo.useReadLines()) {
+      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responceInfo);
+
+      _writeTransferBuffer = _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern,
+          readLinesInfo.nLines, _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
+    }
+    else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
+      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responceInfo);
+
+      _readTransferBuffer[0] = _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern,
+          readBytesInfo.nBytesReadResponce, _registerInfo.writeInfo.cmdLineDelimiter);
+    }
   }
 
   /********************************************************************************************************************/
@@ -238,7 +248,18 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommandAndReadLines(_writeTransferBuffer, 0);
+    if(_registerInfo.writeInfo.useReadLines()) {
+      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responceInfo);
+
+      _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern, readLinesInfo.nLines,
+          _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
+    }
+    else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
+      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responceInfo);
+
+      _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern, readBytesInfo.nBytesReadResponce,
+          _registerInfo.writeInfo.cmdLineDelimiter);
+    }
     return false; // no data was lost
   }
 
