@@ -12,6 +12,18 @@
 #include <sstream>
 #include <string>
 
+// For use in preWrite
+template<typename UserType>
+std::string toTransportLayerDefault(const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+template<typename UserType>
+std::string toTransportLayerHexInt(const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+
+// For use in postRead
+template<typename UserType>
+UserType toUserTypeDefault(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+template<typename UserType>
+UserType toUserTypeHexInt(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+
 namespace ChimeraTK {
   template<typename UserType>
 
@@ -52,22 +64,34 @@ namespace ChimeraTK {
     std::string valueRegex;
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
+      _transportLayerTypeFromUserType = &toTransportLayerDefault;
+      _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
       valueRegex = "([0-9A-Fa-f]+)";
+      _transportLayerTypeFromUserType = &toTransportLayerHexInt;
+      _userTypeFromTransportLayerType = &toUserTypeHexInt;
     }
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::BIN_INT) {
       valueRegex = "(.*)";
     }
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::DEC_FLOAT) {
       valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      _transportLayerTypeFromUserType = &toTransportLayerDefault;
+      _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
     if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::STRING) {
       valueRegex = "(.*)";
+      _transportLayerTypeFromUserType = &toTransportLayerDefault;
+      _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
 
     if(_registerInfo.transportLayerType != CommandBasedBackendRegisterInfo::TransportLayerType::VOID) {
       assert(!valueRegex.empty());
+
+      // FIXME what to do here for the function pointers? They should never be called.
+      _transportLayerTypeFromUserType = &toTransportLayerDefault;
+      _userTypeFromTransportLayerType = &toUserTypeDefault;
     }
 
     if(!_registerInfo.isReadable()) {
@@ -152,12 +176,9 @@ namespace ChimeraTK {
             "\" in " + _registerInfo.registerPath);
       }
 
-      std::string hexIndicator =
-          (_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT ? "0x" :
-                                                                                                              "");
       for(size_t i = 0; i < _numberOfElements; ++i) {
         buffer_2D[0][i] =
-            userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
+            _userTypeFromTransportLayerType(valueMatch.str(i + _elementOffsetInRegister + 1), _registerInfo.readInfo);
       }
       this->_versionNumber = {};
     }
@@ -181,19 +202,8 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    if(_registerInfo.transportLayerType == CommandBasedBackendRegisterInfo::TransportLayerType::HEX_INT) {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        std::ostringstream oss;
-        oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
-        replacePatterns["x"].push_back(oss.str());
-      }
-    }
-    else {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        // FIXME: does not know about formating. TODO ticket 13534.
-        // May need leading zeros or other formatting to satisfy the hardware interface.
-        replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
-      }
+    for(size_t i = 0; i < _numberOfElements; ++i) {
+      replacePatterns["x"].push_back(_transportLayerTypeFromUserType(buffer_2D[0][i], _registerInfo.writeInfo));
     }
 
     // Form the write command.
@@ -233,3 +243,39 @@ namespace ChimeraTK {
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
 
 } // end namespace ChimeraTK
+
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
+
+namespace {
+  // FIXME: does not know about formating. TODO ticket 13534.
+  // May need leading zeros or other formatting to satisfy the hardware interface.
+  // Do this using _registerInfo.writeInfo.fixedSizeNumberWidthOpt in the function pointer implementation.
+
+  // For use in preWrite
+  template<typename UserType>
+  std::string toTransportLayerDefault(
+      const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+    return userTypeToUserType<std::string, UserType>(val);
+  }
+
+  template<typename UserType>
+  std::string toTransportLayerHexInt(
+      const UserType& val, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+    std::ostringstream oss;
+    oss << std::hex << userTypeToUserType<uint64_t, UserType>(val);
+    return oss.str();
+  }
+
+  // For use in postRead
+  template<typename UserType>
+  UserType toUserTypeDefault(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+    return userTypeToUserType<UserType, std::string>(str);
+  }
+
+  template<typename UserType>
+  UserType toUserTypeHexInt(const std::string& str, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+    return userTypeToUserType<UserType, std::string>("0x" + str);
+  }
+
+} // end anonymous namespace
