@@ -62,3 +62,10 @@ void toLowerCase(std::string& str) noexcept;
  * string is guarenteed to be exactly twice as long as the input string.
  */
 [[nodiscard]] std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept;
+
+/**
+ * @brief Case insensitive equality comparison of two strings.
+ * @returns true if and only if tolower(a) == tolower(b).
+ */
+[[nodiscard]] bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept;
+
