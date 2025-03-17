@@ -134,3 +134,12 @@ std::string hexStrFromBinaryStr(const std::string& binaryData) noexcept {
   }
   return hexString;
 }
+
+/**********************************************************************************************************************/
+
+bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept {
+  return std::equal(
+      a.begin(), a.end(), b.begin(), b.end(), [](char a, char b) { return std::tolower(a) == std::tolower(b); });
+}
+
+/**********************************************************************************************************************/
