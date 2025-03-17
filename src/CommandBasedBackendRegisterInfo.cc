@@ -249,22 +249,22 @@ static void throwIfInvalidCommandAndResponce(
 
   bool readable = readInfo.isActive();
   bool writeable = writeInfo.isActive();
-  bool hasReadResponce = not j.value(toStr(READ_RESP), "").empty();
-  bool hasWriteResponce = not j.value(toStr(WRITE_RESP), "").empty();
+  bool hasReadResponce = not readInfo.responsePattern.empty();
+  bool hasWriteResponce = not writeInfo.responsePattern.empty();
 
   if(not(readable or writeable)) {
-    throw ChimeraTK::logic_error("A non-empty " + toStr(READ_CMD) + " or " + toStr(WRITE_CMD) +
+    throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" + toStr(mapFileInteractionInfoKeys::COMMAND) +
         " tags is required, and neither are present for " + errorMessageDetail);
   }
 
   // Throw if there are responces without corresponding commands.
   if(hasReadResponce and (not readable)) {
     throw ChimeraTK::logic_error(
-        "A non-empty " + toStr(READ_RESP) + " without a non-empty " + toStr(READ_CMD) + " for " + errorMessageDetail);
+        "A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
   }
   if(hasWriteResponce and (not writeable)) {
     throw ChimeraTK::logic_error(
-        "A non-empty " + toStr(WRITE_RESP) + " without a non-empty " + toStr(WRITE_CMD) + " for " + errorMessageDetail);
+        "A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
   }
 }
 
@@ -284,7 +284,7 @@ void throwIfInvalidVoidType(
     }
 
     if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-      throw ChimeraTK::logic_error("Illegal inja template in " + toStr(WRITE_CMD) + " = \"" + writeInfo.commandPattern +
+      throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern +
           "\" for void-type for " + errorMessageDetail);
     }
   } // end if void type

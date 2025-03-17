@@ -15,17 +15,26 @@
 using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 using TransportLayerType = CommandBasedBackendRegisterInfo::TransportLayerType;
 
-// For use in preWrite
-template<typename UserType>
-std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo);
-template<typename UserType>
-std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo);
+/**
+ * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
+ * This facilitates code reuse once write responces are implemented.
+ * @param[in] type The TransportLayerType used to pick the numerical regex segment.
+ * @param[in] requiredElements How many elements to check against the regex mark_count
+ * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
+ * @throws std::regex_error
+ * @throws inja::ParserError
+ */
+std::regex getRegex(const TransportLayerType type, const size_t requiredElements, const std::string errorMessageDetail);
 
-// For use in postRead
+/** Return the functional for the given TransportLayerType for converting data from the transport layer format to
+ * UserType representation*/
 template<typename UserType>
-UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo);
+ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType);
+
+/** Return the functional for the given TransportLayerType for converting data from the to UserType representation to
+ * the transport layer format*/
 template<typename UserType>
-UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo);
+ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType);
 
 namespace ChimeraTK {
   template<typename UserType>
@@ -64,71 +73,15 @@ namespace ChimeraTK {
 
     this->_exceptionBackend = dev;
 
-    std::string valueRegex;
-    if(_registerInfo.transportLayerType == TransportLayerType::DEC_INT) {
-      valueRegex = "([+-]?[0-9]+)";
-      _transportLayerTypeFromUserType = &toTransportLayerDefault;
-      _userTypeFromTransportLayerType = &toUserTypeDefault;
-    }
-    if(_registerInfo.transportLayerType == TransportLayerType::HEX_INT) {
-      valueRegex = "([0-9A-Fa-f]+)";
-      _transportLayerTypeFromUserType = &toTransportLayerHexInt;
-      _userTypeFromTransportLayerType = &toUserTypeHexInt;
-    }
-    if(_registerInfo.transportLayerType == TransportLayerType::BIN_INT) {
-      valueRegex = "(.*)";
-      _transportLayerTypeFromUserType = &toTransportLayerBinInt;
-      _userTypeFromTransportLayerType = &toUserTypeBinInt;
-    }
-    if(_registerInfo.transportLayerType == TransportLayerType::DEC_FLOAT) {
-      valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
-      _transportLayerTypeFromUserType = &toTransportLayerDefault;
-      _userTypeFromTransportLayerType = &toUserTypeDefault;
-    }
-    if(_registerInfo.transportLayerType == TransportLayerType::STRING) {
-      valueRegex = "(.*)";
-      _transportLayerTypeFromUserType = &toTransportLayerDefault;
-      _userTypeFromTransportLayerType = &toUserTypeDefault;
+    if(_registerInfo.isWritable()) {
+      _transportLayerTypeFromUserType = getToTransportLayerFunction(_registerInfo.writeInfo.transportLayerType);
     }
 
-    if(_registerInfo.transportLayerType != TransportLayerType::VOID) {
-      assert(!valueRegex.empty());
-
-      // FIXME what to do here for the function pointers? They should never be called.
-      _transportLayerTypeFromUserType = &toTransportLayerDefault;
-      _userTypeFromTransportLayerType = &toUserTypeDefault;
-    }
-
-    if(!_registerInfo.isReadable()) {
-      return;
-    }
-
-    // Prepare the readResponseRegex.
-    inja::json replacePatterns;
-    replacePatterns["x"] = {};
-    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
-      // FIXME: does not know about formating. TODO ticket 13534.
-      replacePatterns["x"].push_back(valueRegex);
-    }
-
-    try {
-      auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
-      _readResponseRegex = regexText;
-    }
-    catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error(
-          "Regex error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
-    }
-    catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error(
-          "Inja parser error in readResponsePattern of " + _registerInfo.registerPath + ": " + e.what());
-    }
-    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
-    if(_readResponseRegex.mark_count() != _registerInfo.nElements) {
-      throw ChimeraTK::logic_error("Wrong number of capture groups (" +
-          std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
-          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
-          std::to_string(_registerInfo.nElements));
+    if(_registerInfo.isReadable()) {
+      _userTypeFromTransportLayerType = getToUserTypeFunction(_registerInfo.readInfo.transportLayerType);
+      _readResponseRegex = getRegex(_registerInfo.readInfo.transportLayerType,
+          _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
+          "read in " + _registerInfo.registerPath);
     }
 
   } // end constructor CommandBasedBackendRegisterAccessor
@@ -267,13 +220,64 @@ namespace ChimeraTK {
 
   // Magic from SupportedUserTypes.h
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
-
 } // end namespace ChimeraTK
 
 /**********************************************************************************************************************/
 /**********************************************************************************************************************/
 
 namespace {
+  std::regex getRegex(
+      const TransportLayerType type, const size_t requiredElements, const std::string errorMessageDetail) {
+    std::string valueRegex;
+    if(type == TransportLayerType::DEC_INT) {
+      valueRegex = "([+-]?[0-9]+)";
+    }
+    else if(type == TransportLayerType::HEX_INT) {
+      valueRegex = "([0-9A-Fa-f]+)";
+    }
+    else if(type == TransportLayerType::BIN_INT) {
+      valueRegex = "(.*)";
+    }
+    else if(type == TransportLayerType::DEC_FLOAT) {
+      valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+    }
+    else if(type == TransportLayerType::STRING) {
+      valueRegex = "(.*)";
+    }
+    else if(type != TransportLayerType::VOID) {
+      assert(!valueRegex.empty());
+    }
+
+    inja::json replacePatterns;
+    replacePatterns["x"] = {};
+    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns["x"].push_back(valueRegex);
+    }
+
+    std::regex returnRegex;
+    try {
+      auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
+      returnRegex = regexText;
+    }
+    catch(std::regex_error& e) {
+      throw ChimeraTK::logic_error("Regex error in ResponsePattern for " errorMessageDetail + ": " + e.what());
+    }
+    catch(inja::ParserError& e) {
+      throw ChimeraTK::logic_error("Inja parser error in ResponsePattern for " + errorMessageDetail + ": " + e.what());
+    }
+    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
+    if(returnRegex.mark_count() != requiredElements) {
+      throw ChimeraTK::logic_error("Wrong number of capture groups (" +
+          std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
+          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
+          std::to_string(_registerInfo.nElements));
+    }
+    return returnRegex;
+  } // end getRegex
+
+  /********************************************************************************************************************/
+
   // FIXME: does not know about formating. TODO ticket 13534.
   // May need leading zeros or other formatting to satisfy the hardware interface.
   // Do this using _registerInfo.writeInfo.fixedSizeNumberWidthOpt in the function pointer implementation.
@@ -319,4 +323,35 @@ namespace {
     }
     return maybeInt.value();
   }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+  ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
+    if(transportLayerType == TransportLayerType::HEX_INT) {
+      return &toUserTypeHexInt<UserType>;
+    }
+    else if(transportLayerType == TransportLayerType::BIN_INT) {
+      return &toUserTypeBinInt<UserType>;
+    }
+    else { // DEC_INT, DEC_FLOAT, STRING
+      return &toUserTypeDefault<UserType>;
+    }
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename UserType>
+      ToTransportLayerFunc < UserType >> getToTransportLayerFunction(TransportLayerType transportLayerType) {
+    if(transportLayerType == TransportLayerType::HEX_INT) {
+      return &toTransportLayerHexInt<UserType>
+    }
+    else if(transportLayerType == TransportLayerType::BIN_INT) {
+      return &toTransportLayerBinInt<UserType>;
+    }
+    else { // DEC_INT, DEC_FLOAT, STRING
+      return &toTransportLayerDefault<UserType>;
+    }
+  }
+
 } // end anonymous namespace

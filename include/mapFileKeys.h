@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "stringUtils.h"
 #include <unordered_map>
 
 #include <array>
@@ -24,12 +25,12 @@ enum class mapFileTopLevelKeys {
   SIZE // Keep this at the end so as to automatically be the count of keys.
 };
 
-constexpr std::array<std::string, mapFileTopLevelKeys::SIZE> topLevelKeyStrs = {
+static const std::array<std::string, static_cast<size_t>(mapFileTopLevelKeys::SIZE)> topLevelKeyStrs = {
     // Indexed by mapFileTopLevelKeys so keep them in the same order.
     "mapFileFormatVersion", "metadata", "registers"};
 
 inline std::string toStr(mapFileTopLevelKeys keyEnum) {
-  return topLevelKeyStrs[keyEnum];
+  return topLevelKeyStrs[static_cast<int>(keyEnum)];
 }
 
 /**********************************************************************************************************************/
@@ -46,7 +47,7 @@ static const std::array<std::string, static_cast<size_t>(mapFileMetadataKeys::SI
     "defaultRecoveryRegister", "delimiter"};
 
 inline std::string toStr(mapFileMetadataKeys keyEnum) {
-  return metadataKeyStrs[keyEnum];
+  return metadataKeyStrs[static_cast<int>(keyEnum)];
 }
 /**********************************************************************************************************************/
 
@@ -75,7 +76,7 @@ static const std::array<std::string, static_cast<size_t>(mapFileRegisterKeys::SI
 };
 
 inline std::string toStr(mapFileRegisterKeys keyEnum) {
-  return registerKeyStrs[keyEnum];
+  return registerKeyStrs[static_cast<int>(keyEnum)];
 }
 
 /**********************************************************************************************************************/
@@ -106,14 +107,19 @@ static const std::array<std::string, static_cast<size_t>(mapFileInteractionInfoK
     "respDelim",  // RESPONSE_DELIMITER,
     "fixedWidth"  // FIXED_SIZE_NUM_WIDTH,
 };
-inline std::string toStr(mapFileRegisterKeys keyEnum) {
-  return registerKeyStrs[keyEnum];
+inline std::string toStr(mapFileInteractionInfoKeys keyEnum) {
+  return registerKeyStrs[static_cast<int>(keyEnum)];
 }
 
 /**********************************************************************************************************************/
 
-/** Internal representation type to which we have to convert successfully.*/
-enum class TransportTransportLayerType {
+/**
+ * Internal representation type to which we have to convert successfully.
+ * To add a new type, you must update
+ * CommandBasedBackendRegisterInfo.cc: populate the data descriptor in the CommandBasedBackendRegisterInfo
+ * CommandBasedBackendRegisterAccessor.cc: update getRegex, getToUserTypeFunction, and getToTransportLayerFunction.
+ */
+enum class TransportLayerType {
   // must be in the same order
   DEC_INT = 0,
   HEX_INT,
@@ -125,7 +131,7 @@ enum class TransportTransportLayerType {
   SIZE // Keep this at the end so as to automatically be the count of keys.
 };
 
-constexpr std::array<std::string, static_cast<size_t>(TransportLayerType::SIZE)> registerTypeStrs = {
+static const std::array<std::string, static_cast<size_t>(TransportLayerType::SIZE)> registerTypeStrs = {
     // Indexed by TransportLayerType so keep them in the same order:
     "decInt",
     "hexInt",
