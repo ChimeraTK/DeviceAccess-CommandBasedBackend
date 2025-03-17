@@ -9,6 +9,7 @@
 #include <ChimeraTK/NDRegisterAccessor.h>
 #include <ChimeraTK/RegisterPath.h>
 
+#include <functional>
 #include <memory>
 #include <regex>
 
@@ -67,6 +68,11 @@ namespace ChimeraTK {
 
     std::vector<std::string> _readTransferBuffer;
     std::string _writeTransferBuffer;
+
+    const std::function<std::string(const UserType&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>
+        _transportLayerTypeFromUserType;
+    const std::function<UserType(const std::string&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>
+        _userTypeFromTransportLayerType;
 
     void doPreRead([[maybe_unused]] TransferType) override;
 
