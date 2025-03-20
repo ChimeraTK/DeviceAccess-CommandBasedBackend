@@ -61,8 +61,6 @@ namespace ChimeraTK {
      * for all common tasks and data validation.
      * regKey is the key (register path) whose value is j. This is needed information for debugging.
      */
-    std::cout << "register " + registerPath
-              << std::endl; // TODO, we can likely eliminate the regKey as a member and just use registerPath.
 
     // validate top-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
