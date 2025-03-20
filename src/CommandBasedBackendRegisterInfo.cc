@@ -272,7 +272,7 @@ static void throwIfInvalidCommandAndResponce(
 
 void throwIfInvalidVoidType(
     const InteractionInfo& writeInfo, const InteractionInfo& readInfo, std::string errorMessageDetail) {
-  if(writeInfo.transportLayerType == TransportLayerType::VOID) {
+  if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
     if(readInfo.isActive() or not writeInfo.isActive()) {
       throw ChimeraTK::logic_error(
           "Void type must be write-only but has a " + toStr(READ) + " key for " + errorMessageDetail);

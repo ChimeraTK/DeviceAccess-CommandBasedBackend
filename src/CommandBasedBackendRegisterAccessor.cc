@@ -74,12 +74,12 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     if(_registerInfo.isWritable()) {
-      _transportLayerTypeFromUserType = getToTransportLayerFunction(_registerInfo.writeInfo.transportLayerType);
+      _transportLayerTypeFromUserType = getToTransportLayerFunction(_registerInfo.writeInfo.getTransportLayerType());
     }
 
     if(_registerInfo.isReadable()) {
-      _userTypeFromTransportLayerType = getToUserTypeFunction(_registerInfo.readInfo.transportLayerType);
-      _readResponseRegex = getRegex(_registerInfo.readInfo.transportLayerType,
+      _userTypeFromTransportLayerType = getToUserTypeFunction(_registerInfo.readInfo.getTransportLayerType());
+      _readResponseRegex = getRegex(_registerInfo.readInfo.getTransportLayerType(),
           _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
           "read in " + _registerInfo.registerPath);
     }

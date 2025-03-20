@@ -22,7 +22,7 @@ namespace ChimeraTK {
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
     // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
     struct InteractionInfo {
-      TransportLayerType transportLayerType;
+      std::optional<TransportLayerType> transportLayerType;
       std::string commandPattern = "";
       std::string responsePattern = "";
       std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
@@ -52,6 +52,10 @@ namespace ChimeraTK {
       inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
       inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
       inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
+      inline TransportLayerType getTransportLayerType() {
+        assert transportLayerType.has_value();
+        return transportLayerType.value();
+      }
 
       // get ResponseLinesInfo if its there
       inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
