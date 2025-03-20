@@ -70,15 +70,15 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
     // N_ELEM,
-    nElements = caseInsensitiveGetValueOr(j, toStr(N_ELEM), static_cast<unsigned int>(1));
+    nElements = caseInsensitiveGetValueOr(j, toStr(mapFileRegisterKeys::N_ELEM), static_cast<unsigned int>(1));
     /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
-    auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(TYPE));
+    auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::TYPE));
     if(typeStrOption) { // If type is set at the top level
       std::string typeValue = typeStrOption->get<std::string>();
       auto typeEnumOption = typeStrToEnum(typeValue);
       if(not typeEnumOption) {
-        throw ChimeraTK::logic_error("Unknown value for " + toStr(TYPE) + " " + typeValue + " for register" + regKey);
+        throw ChimeraTK::logic_error("Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + regKey);
       }
       TransportLayerType eType = typeEnumOption->get<TransportLayerType>();
       readInfo.transportLayerType = eType;
@@ -89,16 +89,16 @@ namespace ChimeraTK {
     std::string cmdDelim = _serialDelimiter;
     std::string respDelim = _serialDelimiter;
     // DELIMITER
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(DELIMITER))) {
+    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::DELIMITER))) {
       cmdDelim = delimOption->get<std::string>();
       respDelim = cmdDelim;
     }
     // COMMAND_DELIMITER,
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(COMMAND_DELIMITER))) {
+    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::COMMAND_DELIMITER))) {
       cmdDelim = delimOption->get<std::string>();
     }
     // RESPONSE_DELIMITER, override setting of DELIMITER
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(RESPONSE_DELIMITER))) {
+    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::RESPONSE_DELIMITER))) {
       respDelim = delimOption->get<std::string>();
     }
 
@@ -110,20 +110,20 @@ namespace ChimeraTK {
     // NOTE: these delimiter settings may be overrided later by populateFromJson below.
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
-    auto sizeOption = caseInsensitiveGetValueOption(j, toStr(FIXED_SIZE_NUM_WIDTH));
+    auto sizeOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::FIXED_SIZE_NUM_WIDTH));
     readInfo.fixedSizeNumberWidthOpt = sizeOption;
     writeInfo.fixedSizeNumberWidthOpt = sizeOption;
     /*----------------------------------------------------------------------------------------------------------------*/
     // READ,
     // Override settings from the top level based on the "read" key's contents
 
-    if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(READ))) {
+    if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ))) {
       readInfo.populateFromJson(readOpt->get<json>(), "register " + regKey + " read");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // WRITE
     // Override settings from the top level based on the "write" key's contents
-    if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(WRITE))) {
+    if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE))) {
       writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -268,7 +268,7 @@ namespace ChimeraTK {
       }
 
       if(nElem != 1) {
-        throw ChimeraTK::logic_error("Void type must only have 1 element but has " + toStr(N_ELEM) + " = " + nElem +
+        throw ChimeraTK::logic_error("Void type must only have 1 element but has " + toStr(mapFileRegisterKeys::N_ELEM) + " = " + nElem +
             " for " + errorMessageDetail);
       }
 
