@@ -15,8 +15,8 @@ namespace ChimeraTK {
   static void throwIfInvalidCommandAndResponce(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
-  static void throwIfInvalidVoidType(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
+  static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
+      unsigned int nElem, const std::string& errorMessageDetail);
 
   // Morphs writeInfo and readInfo, throws logic_error
   static void ensureTransportLayerTypeAreSet(
@@ -34,7 +34,7 @@ namespace ChimeraTK {
 
     ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
 
-    throwIfInvalidVoidType(writeInfo, readInfo, nElements, errorMessageDetail);
+    throwIfInvalidVoidType(writeInfo, readInfo, getNumberOfElements(), errorMessageDetail);
 
     // Check that the data types are compatible and set dataDescriptor
     dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
@@ -60,6 +60,8 @@ namespace ChimeraTK {
      * for all common tasks and data validation.
      * regKey is the key (register path) whose value is j. This is needed information for debugging.
      */
+    std::cout << "register " + registerPath
+              << std::endl; // TODO, we can likely eliminate the regKey as a member and just use registerPath.
 
     // validate top-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
