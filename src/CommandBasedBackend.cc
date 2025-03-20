@@ -3,6 +3,7 @@
 
 #include "CommandBasedBackend.h"
 
+#include "jsonUtils.h"
 #include "mapFileKeys.h"
 #include "SerialCommandHandler.h"
 #include "stringUtils.h"
