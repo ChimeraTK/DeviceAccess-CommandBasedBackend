@@ -3,10 +3,10 @@
 #pragma once
 
 #include "mapFileKeys.h"
-#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/BackendRegisterInfoBase.h>
 #include <ChimeraTK/DataDescriptor.h>
+#include <nlohmann/json.hpp>
 
 #include <memory>
 #include <optional>
@@ -47,30 +47,31 @@ namespace ChimeraTK {
           responseInfo; // Default=ResponseLinesInfo
                         // responseInfo variant type order must match the SendCommandType enum values.
       /*--------------------------------------------------------------------------------------------------------------*/
-      InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
+      InteractionInfo() : responseInfo(ResponseLinesInfo{}) {} 
       inline bool isActive() const { return not commandPattern.empty(); }
       inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
       inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
       inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
-      inline TransportLayerType getTransportLayerType() {
-        assert transportLayerType.has_value();
-        return transportLayerType.value();
+      inline TransportLayerType getTransportLayerType(){
+          assert(transportLayerType.has_value());
+          return transportLayerType.value();
       }
 
       // get ResponseLinesInfo if its there
       inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
-        if(useReadLines()) {
-          return std::get<ResponseLinesInfo>(responseInfo);
-        }
-        return std::nullopt;
+          if(useReadLines() ){
+              return std::get<ResponseLinesInfo>(responseInfo);
+          }
+          return std::nullopt;
       }
 
       // get ResponceBytesInfo if its there
       inline std::optional<ResponceBytesInfo> getResponceBytesInfo() const {
-        if(isReadBytes()) {
-          return std::get<ResponceBytesInfo>(responseInfo);
-        }
-        return std::nullopt;
+          //return isReadBytes() ? std::get<ResponceBytesInfo>(responseInfo) : std::nullopt;
+          if(isReadBytes() ){
+              return  std::get<ResponceBytesInfo>(responseInfo);
+          }
+          return std::nullopt;
       }
       void populateFromJson(const json& j, std::string errorMessageDetail);
     };
@@ -104,7 +105,7 @@ namespace ChimeraTK {
     RegisterPath registerPath;
     InteractionInfo readInfo;
     InteractionInfo writeInfo;
-    std::string regKey; // FIXME TODO redundant with registerPath
+    std::string regKey; //FIXME TODO redundant with registerPath
 
     DataDescriptor dataDescriptor;
   }; // end CommandBasedBackendRegisterInfo
