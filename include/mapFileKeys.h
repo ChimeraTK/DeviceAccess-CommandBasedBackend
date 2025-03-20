@@ -9,6 +9,49 @@
 #include <optional>
 #include <string>
 
+/*
+ * Structure of the Map File JSON:
+ * {
+ *  toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION): 2,
+ *  toStr(mapFileTopLevelKeys::METADATA): {
+ *      toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER): <string>,
+ *      toStr(mapFileMetadataKeys::DELIMITER): <string>,
+ *  },
+ *  toStr(mapFileTopLevelKeys::REGISTERS: {
+ *      "registerPath1":{
+ *          toStr(mapFileRegisterKeys:: ...): <value>,
+ *          toStr(mapFileRegisterKeys::TYPE) : toStr(<TransportLayerType 1>),
+ *          toStr(mapFileRegisterKeys::WRITE):{
+ *              toStr(mapFileInteractionInfoKeys:: ...) : <value>,
+ *              [Writing TYPE is already set to TransportLayerType 1. Unless specified, items set at the Register level
+ * automatically set values at the InteractionInfo level]
+ *          },
+ *          toStr(mapFileRegisterKeys::READ):{
+ *              toStr(mapFileInteractionInfoKeys:: ...) : <value>
+ *              toStr(mapFileInteractionInfoKeys::TYPE) : toStr(<TransportLayerType 2>)
+ *              [TYPE is set to TransportLayerType 2 for reading. Values specified at the InteractionInfo level
+ * overriding those at the Register level.].
+ *
+ *          }
+ *      },
+ *      "registerPath2":{ ... },
+ *      "registerPath3":{ ... }
+ * }
+ *
+ * Line delimiters can be set at four levels:
+ * 1. The mapFileMetadataKeys::DELIMITER -- the default for all registers
+ * 2. The mapFileRegisterKeys::DELIMITER -- overrides the delimiter for that register for all four use cases: {write
+ * command, write responce, read command, read response}
+ * 3. mapFileInteractionInfoKeys::DELIMITER, whihc sets both the command and responce delimiter for that read or write
+ * interaction.
+ * 4.  mapFileInteractionInfoKeys::COMMAND_DELIMITER and mapFileInteractionInfoKeys::RESPONSE_DELIMITER, which override
+ * all other delimiters for that particular case.
+ *
+ *  Setting mapFileInteractionInfoKeys::N_RESPONSE_BYTES turns the interaction to binary mode, there is no responce
+ * delimiter, and the interaction's mapFileInteractionInfoKeys::COMMAND_DELIMITER defaults to "", overriding the
+ * metadata and register delimiter, unless DELIMITER or COMMAND_DELIMITER is explicitly set.
+ */
+/**********************************************************************************************************************/
 /**********************************************************************************************************************/
 
 const int requiredMapFileFormatVersion = 2;
