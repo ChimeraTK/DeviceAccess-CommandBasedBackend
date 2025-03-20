@@ -247,8 +247,8 @@ namespace ChimeraTK {
 
   /**********************************************************************************************************************/
 
-  static void throwIfInvalidVoidType(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail) {
+  static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
+      unsigned int nElem, const std::string& errorMessageDetail) {
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(readInfo.isActive() or not writeInfo.isActive()) {
         throw ChimeraTK::logic_error(
