@@ -52,10 +52,7 @@ namespace ChimeraTK {
       inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
       inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
       inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
-      inline TransportLayerType getTransportLayerType() {
-        assert(transportLayerType.has_value());
-        return transportLayerType.value();
-      }
+      inline TransportLayerType getTransportLayerType() const { return transportLayerType.value(); }
 
       // get ResponseLinesInfo if its there
       inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
