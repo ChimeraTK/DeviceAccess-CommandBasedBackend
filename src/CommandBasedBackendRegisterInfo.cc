@@ -42,16 +42,17 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
-      const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_,
+      InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_, const std::string& regKey_)
   : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
-    writeInfo(std::move(writeInfo_)) {
+    writeInfo(std::move(writeInfo_)), regKey(regKey_) {
     init();
   }
 
   /********************************************************************************************************************/
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey) {
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey_)
+  : registerPath(RegisterPath(regKey)), regKey(regKey_) {
     // regKey is the key (register path) whose value is j. This is needed information for debugging.
 
     throwIfHasInvalidJsonKeyCaseInsensitive(
@@ -147,7 +148,7 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
       responsePattern = opt->get<std::string>();
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
       std::string typeValue = opt->get<std::string>();
@@ -157,7 +158,7 @@ namespace ChimeraTK {
       }
       transportLayerType = typeEnumOption->get<TransportLayerType>();
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     bool explicitlySetToReadLines = false;
     // DELIMITER
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {

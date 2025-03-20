@@ -75,8 +75,8 @@ namespace ChimeraTK {
       void populateFromJson(const json& j, std::string errorMessageDetail);
     };
 
-    explicit CommandBasedBackendRegisterInfo(
-        const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_);
+    explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_, InteractionInfo readInfo_,
+        InteractionInfo writeInfo_, uint nElements_, const std::string& regKey_);
 
     explicit CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey);
 
@@ -104,6 +104,7 @@ namespace ChimeraTK {
     RegisterPath registerPath;
     InteractionInfo readInfo;
     InteractionInfo writeInfo;
+    std::string regKey; // FIXME TODO redundant with registerPath
 
     DataDescriptor dataDescriptor;
   }; // end CommandBasedBackendRegisterInfo
