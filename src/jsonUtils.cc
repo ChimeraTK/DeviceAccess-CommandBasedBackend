@@ -4,67 +4,23 @@
 #include "jsonUtils.h"
 
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 #include <optional>
 #include <string>
 
-/**********************************************************************************************************************/
+namespace ChimeraTK {
+  /********************************************************************************************************************/
 
-std::optional<json> caseInsensitiveGetValueOption(const json& j, const std::string& caseInsensitiveKeyString) {
-  for(auto& [jsonKey, value] : j.items()) {
-    if(caseInsensitiveStrCompare(jsonKey, caseInsensitiveKeyString)) {
-      return value;
-    }
-  }
-  return std::nullopt;
-}
-
-/**********************************************************************************************************************/
-
-template<typename T>
-T caseInsensitiveGetValueOr(const json& j, const std::string& caseInsensitiveKeyString, T defaultValue) {
-  if(auto optValue = caseInsensitiveGetValueOption(j, caseInsensitiveKeyString)) {
-    return optValue->get<T>();
-  }
-  return defaultValue;
-}
-
-/**********************************************************************************************************************/
-
-template<size_t N>
-void throwIfHasInvalidJsonKey(
-    const json& j, const std::array<std::string, N>& validKeys, const std::string& errorMessage) {
-  for(auto it = j.begin(); it != j.end(); ++it) {
-    bool stringIsNotInArray = true;
-    for(const std::string& i : validKeys) {
-      if(it.key() == i) {
-        stringIsNotInArray = false;
-        break;
+  std::optional<json> caseInsensitiveGetValueOption(
+      const json& j, const std::string& caseInsensitiveKeyString) noexcept {
+    for(auto& [jsonKey, value] : j.items()) {
+      if(caseInsensitiveStrCompare(jsonKey, caseInsensitiveKeyString)) {
+        return value;
       }
     }
-
-    if(stringIsNotInArray) {
-      throw ChimeraTK::logic_error(errorMessage + " " + it.key());
-    }
+    return std::nullopt;
   }
-}
 
-/**********************************************************************************************************************/
-
-template<size_t N>
-void throwIfHasInvalidJsonKeyCaseInsensitive(
-    const json& j, const std::array<std::string, N>& validKeys, const std::string& errorMessage) {
-  for(auto it = j.begin(); it != j.end(); ++it) {
-    bool stringIsNotInArray = true;
-    for(const std::string& i : validKeys) {
-      if(caseInsensitiveStrCompare(it.key(), i)) {
-        stringIsNotInArray = false;
-        break;
-      }
-    }
-
-    if(stringIsNotInArray) {
-      throw ChimeraTK::logic_error(errorMessage + " " + it.key());
-    }
-  }
-}
+  /********************************************************************************************************************/
+} // end namespace ChimeraTK
