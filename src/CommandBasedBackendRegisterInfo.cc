@@ -158,11 +158,12 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
-      if(auto typeEnumOption = typeStrToEnum(opt->get<std::string>())) {
+        std::string typeValue = opt->get<std::string>();
+      if(auto typeEnumOption = typeStrToEnum(typeValue) ) {
         transportLayerType = *typeEnumOption;
       }
       else {
-        throw ChimeraTK::logic_error("Unknown value for " + toStr(TYPE) + " " + typeValue + " for register" + regKey);
+        throw ChimeraTK::logic_error("Unknown value for " + toStr(mapFileInteractionInfoKeys::TYPE) + " " + typeValue + " for "+errorMessageDetail);
       }
     }
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -180,8 +181,7 @@ namespace ChimeraTK {
     }
 
     // RESPONSE_DELIMITER, override all other settings
-    auto responseOpt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER));
-    if(responseOpt) {
+    if( auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER))) {
       explicitlySetToReadLines = true;
       std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
     }
@@ -191,11 +191,11 @@ namespace ChimeraTK {
       explicitlySetToReadLines = true;
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).nLines = n;
+        std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).nLines = static_cast<size_t>(n);
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES) + " " +
-            n + " for " + errorMessageDetail);
+            std::to_string(n) + " for " + errorMessageDetail);
       }
     }
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -203,11 +203,11 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        responseInfo = ResponseBytesInfo{n};
+        responseInfo = ResponseBytesInfo{static_cast<size_t>(n)};
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES) + " " +
-            n + " for " + errorMessageDetail);
+            std::to_string(n) + " for " + errorMessageDetail);
       }
       if(explicitlySetToReadLines) {
         throw ChimeraTK::logic_error("Invalid mixture of readLines and ReadBytes for " + errorMessageDetail);
@@ -219,11 +219,11 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH))) {
       int n = std::stoi(opt->get<std::string>());
       if(n > 0) {
-        fixedSizeNumberWidthOpt = n;
+        fixedSizeNumberWidthOpt = static_cast<size_t>(n);
       }
       else {
         throw ChimeraTK::logic_error("Invalid non-positive " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) +
-            " " + n + " for " + errorMessageDetail);
+            " " + std::to_string(n) + " for " + errorMessageDetail);
       }
     }
   } // populateFromJson
@@ -264,12 +264,12 @@ namespace ChimeraTK {
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(readInfo.isActive() or not writeInfo.isActive()) {
         throw ChimeraTK::logic_error(
-            "Void type must be write-only but has a " + toStr(READ) + " key for " + errorMessageDetail);
+            "Void type must be write-only but has a " + toStr(mapFileRegisterKeys::READ) + " key for " + errorMessageDetail);
       }
 
       if(nElem != 1) {
         throw ChimeraTK::logic_error("Void type must only have 1 element but has " +
-            toStr(mapFileRegisterKeys::N_ELEM) + " = " + nElem + " for " + errorMessageDetail);
+            toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
       }
 
       if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
