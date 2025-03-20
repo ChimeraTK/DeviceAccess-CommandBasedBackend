@@ -12,7 +12,7 @@
 
 /**
  * The SerialCommandHandler class sets up a serial port and provides for read/write,
- * as well as sending commands and reading back responce using sendCommand.
+ * as well as sending commands and reading back response using sendCommand.
  */
 class SerialCommandHandler : public CommandHandler {
  public:

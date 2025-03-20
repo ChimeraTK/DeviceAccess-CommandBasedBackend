@@ -32,18 +32,18 @@ namespace ChimeraTK {
         size_t nLines = 0;
         std::string delimiter;
       };
-      struct ResponceBytesInfo {
+      struct ResponseBytesInfo {
         size_t nBytesReadResponse = 0;
       };
       enum SendCommandType {
-        /* These serve to label the indicies of the types in the responceInfo variant
+        /* These serve to label the indicies of the types in the responseInfo variant
          * so as to name sendCommand functions to be used in CommandBasedBackend.
          * So, the numeric value MUST match the index order of variants in responseInfo
          */
         SEND_COMMAND_AND_READ_LINES = 0,
         SEND_COMMAND_AND_READ_BYTES = 1
       };
-      std::variant<ResponseLinesInfo, ResponceBytesInfo>
+      std::variant<ResponseLinesInfo, ResponseBytesInfo>
           responseInfo; // Default=ResponseLinesInfo
                         // responseInfo variant type order must match the SendCommandType enum values.
       /*--------------------------------------------------------------------------------------------------------------*/
@@ -62,11 +62,11 @@ namespace ChimeraTK {
         return std::nullopt;
       }
 
-      // get ResponceBytesInfo if its there
-      inline std::optional<ResponceBytesInfo> getResponceBytesInfo() const {
-        // return isReadBytes() ? std::get<ResponceBytesInfo>(responseInfo) : std::nullopt;
+      // get ResponseBytesInfo if its there
+      inline std::optional<ResponseBytesInfo> getResponseBytesInfo() const {
+        // return isReadBytes() ? std::get<ResponseBytesInfo>(responseInfo) : std::nullopt;
         if(isReadBytes()) {
-          return std::get<ResponceBytesInfo>(responseInfo);
+          return std::get<ResponseBytesInfo>(responseInfo);
         }
         return std::nullopt;
       }
