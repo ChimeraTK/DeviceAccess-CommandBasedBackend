@@ -76,7 +76,8 @@ namespace ChimeraTK {
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_, InteractionInfo readInfo_,
         InteractionInfo writeInfo_, uint nElements_, const std::string& regKey_);
 
-    explicit CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey);
+    explicit CommandBasedBackendRegisterInfo(
+        const json& j, const std::string& regKey_, const std::string& defaultSerialDelimiter);
 
     void init();
 

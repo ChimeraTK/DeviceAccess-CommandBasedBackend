@@ -51,8 +51,8 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey_)
-  : registerPath(RegisterPath(regKey)), regKey(regKey_) {
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey_, const std::string& defaultSerialDelimiter)
+  : registerPath(RegisterPath(regKey_)), regKey(regKey_) {
     /*
      * Here we blindly extract data from the json here,
      * checking only that we don't have invalid json keys.
@@ -87,8 +87,8 @@ namespace ChimeraTK {
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // Set delimiters based on top-level information and metadata
-    std::string cmdDelim = _serialDelimiter;
-    std::string respDelim = _serialDelimiter;
+    std::string cmdDelim = defaultSerialDelimiter;
+    std::string respDelim = defaultSerialDelimiter;
     // DELIMITER
     if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::DELIMITER))) {
       cmdDelim = delimOption->get<std::string>();
