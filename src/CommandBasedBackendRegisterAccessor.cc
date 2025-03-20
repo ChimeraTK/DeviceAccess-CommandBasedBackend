@@ -17,7 +17,7 @@ using TransportLayerType = CommandBasedBackendRegisterInfo::TransportLayerType;
 
 /**
  * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
- * This facilitates code reuse once write responces are implemented.
+ * This facilitates code reuse once write responses are implemented.
  * @param[in] type The TransportLayerType used to pick the numerical regex segment.
  * @param[in] requiredElements How many elements to check against the regex mark_count
  * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
@@ -111,16 +111,16 @@ namespace ChimeraTK {
     auto readCommand = _registerInfo.readCommandPattern;
 
     if(_registerInfo.writeInfo.useReadLines()) {
-      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responceInfo);
+      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responseInfo);
 
       _writeTransferBuffer = _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern,
           readLinesInfo.nLines, _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
     }
     else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
-      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responceInfo);
+      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responseInfo);
 
       _readTransferBuffer[0] = _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern,
-          readBytesInfo.nBytesReadResponce, _registerInfo.writeInfo.cmdLineDelimiter);
+          readBytesInfo.nBytesReadResponse, _registerInfo.writeInfo.cmdLineDelimiter);
     }
   }
 
@@ -202,15 +202,15 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.writeInfo.useReadLines()) {
-      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responceInfo);
+      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responseInfo);
 
       _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern, readLinesInfo.nLines,
           _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
     }
     else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
-      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responceInfo);
+      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responseInfo);
 
-      _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern, readBytesInfo.nBytesReadResponce,
+      _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern, readBytesInfo.nBytesReadResponse,
           _registerInfo.writeInfo.cmdLineDelimiter);
     }
     return false; // no data was lost

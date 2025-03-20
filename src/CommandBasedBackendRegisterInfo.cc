@@ -12,7 +12,7 @@ namespace ChimeraTK {
 
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 
-  static void throwIfInvalidCommandAndResponce(
+  static void throwIfInvalidCommandAndResponse(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
@@ -30,7 +30,7 @@ namespace ChimeraTK {
     // Check the validity of the data in readInfo and writeInfo
     std::string errorMessageDetail = "register " + regKey;
 
-    throwIfInvalidCommandAndResponce(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
+    throwIfInvalidCommandAndResponse(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
 
     ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
 
@@ -104,10 +104,10 @@ namespace ChimeraTK {
     }
 
     readInfo.cmdLineDelimiter = cmdDelim;
-    std::get<ResponceLinesInfo>(readInfo.responseInfo).delimiter = respDelim;
+    std::get<InteractionInfo::ResponseLinesInfo>(readInfo.responseInfo).delimiter = respDelim;
 
     writeInfo.cmdLineDelimiter = cmdDelim;
-    std::get<ResponceLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
+    std::get<InteractionInfo::ResponseLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
     // NOTE: these delimiter settings may be overrided later by populateFromJson below.
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
@@ -128,7 +128,7 @@ namespace ChimeraTK {
       writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
-    // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
+    // FIXME: extract the number of lines in write response from pattern; Ticket 13531
 
     init(); // data validation
   }         // end constructor
@@ -170,7 +170,7 @@ namespace ChimeraTK {
     // DELIMITER
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
       cmdLineDelimiter = opt->get<std::string>();
-      std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
+      std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
       // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
     }
 
@@ -180,10 +180,10 @@ namespace ChimeraTK {
     }
 
     // RESPONSE_DELIMITER, override all other settings
-    auto responceOpt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER));
-    if(responceOpt) {
+    auto responseOpt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER));
+    if(responseOpt) {
       explicitlySetToReadLines = true;
-      std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
+      std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONCE_LINES,
@@ -191,7 +191,7 @@ namespace ChimeraTK {
       explicitlySetToReadLines = true;
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        std::get<ResponceLinesInfo>(responseInfo).nLines = n;
+        std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).nLines = n;
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES) + " " +
@@ -203,7 +203,7 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        responseInfo = ResponceBytesInfo{n};
+        responseInfo = ResponseBytesInfo{n};
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES) + " " +
@@ -231,14 +231,14 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static void throwIfInvalidCommandAndResponce(
+  static void throwIfInvalidCommandAndResponse(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if there isn't a read or write command, or invalid combinations
 
     bool readable = readInfo.isActive();
     bool writeable = writeInfo.isActive();
-    bool hasReadResponce = not readInfo.responsePattern.empty();
-    bool hasWriteResponce = not writeInfo.responsePattern.empty();
+    bool hasReadResponse = not readInfo.responsePattern.empty();
+    bool hasWriteResponse = not writeInfo.responsePattern.empty();
 
     if(not(readable or writeable)) {
       throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" +
@@ -246,12 +246,12 @@ namespace ChimeraTK {
           errorMessageDetail);
     }
 
-    // Throw if there are responces without corresponding commands.
-    if(hasReadResponce and (not readable)) {
+    // Throw if there are responses without corresponding commands.
+    if(hasReadResponse and (not readable)) {
       throw ChimeraTK::logic_error("A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
           " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
     }
-    if(hasWriteResponce and (not writeable)) {
+    if(hasWriteResponse and (not writeable)) {
       throw ChimeraTK::logic_error("A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
           " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
     }
