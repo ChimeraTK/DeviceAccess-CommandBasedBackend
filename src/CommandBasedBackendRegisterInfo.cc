@@ -59,13 +59,9 @@ namespace ChimeraTK {
         j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
     /*----------------------------------------------------------------------------------------------------------------*/
-
-    CommandBasedBackendRegisterInfo::InteractionInfo readInfo;
-    CommandBasedBackendRegisterInfo::InteractionInfo writeInfo;
-
     // SET CONTENT BASED ON TOP-LEVEL JSON
     // N_ELEM,
-    unsigned int nElem = caseInsensitiveGetValueOr(j, toStr(N_ELEM), static_cast<unsigned int>(1));
+    nElements = caseInsensitiveGetValueOr(j, toStr(N_ELEM), static_cast<unsigned int>(1));
     /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
     auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(TYPE));
@@ -111,22 +107,21 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // READ,
     // Override settings from the top level based on the "read" key's contents
-    auto readOpt = caseInsensitiveGetValueOption(j, toStr(READ));
-    if(readOpt) {
+
+    if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(READ))) {
       readInfo.populateFromJson(readOpt->get<json>(), "register " + regKey + " read");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // WRITE
-    //  Override settings from the top level based on the "write" key's contents
-    auto writeOpt = caseInsensitiveGetValueOption(j, toStr(WRITE));
-    if(writeOpt) {
+    // Override settings from the top level based on the "write" key's contents
+    if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(WRITE))) {
       writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
 
-    return CommandBasedBackendRegisterInfo(RegisterPath(regKey), readInfo, writeInfo, nElem);
-    // We may later add input for nChannels = j.value("nChan",1);
+    registerPath = RegisterPath(regKey); //TODO move to initalizer list
+    init(); // data validation
   } // end constructor
 
   /********************************************************************************************************************/
