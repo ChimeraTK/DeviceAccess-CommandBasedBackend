@@ -276,79 +276,80 @@ namespace ChimeraTK {
         throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
             " = \"" + writeInfo.commandPattern + "\" for void-type for " + errorMessageDetail);
       }
-    } // end if void type
+    }
+  } // end if void type
 
-    /******************************************************************************************************************/
+  /******************************************************************************************************************/
 
-    static DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
+  static DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
       if(type == TransportLayerType::DEC_INT) {
-        return DataType::int64;
+          return DataType::int64;
       }
       else if(type == TransportLayerType::HEX_INT) {
-        return DataType::uint64;
+          return DataType::uint64;
       }
       else if(type == TransportLayerType::BIN_INT) {
-        return DataType::uint64;
+          return DataType::uint64;
       }
       else if(type == TransportLayerType::DEC_FLOAT) {
-        return DataType::float64;
+          return DataType::float64;
       }
       else if(type == TransportLayerType::STRING) {
-        return DataType::string;
+          return DataType::string;
       }
       else if(type == TransportLayerType::VOID) {
-        return DataType::Void;
+          return DataType::Void;
       }
       // Either some new type was added but this list was not updated.
       // or we've been given a type from an uninitalized InteractionInfo
       throw ChimeraTK::logic_error("Type not recognized by getDataTypeFromTransportLayerType");
       return DataType::string;
-    }
+  }
 
-    /******************************************************************************************************************/
+  /******************************************************************************************************************/
 
-    static void ensureTransportLayerTypeAreSet(
-        InteractionInfo & writeInfo, InteractionInfo & readInfo, const std::string errorMessageDetail) {
+  static void ensureTransportLayerTypeAreSet(
+          InteractionInfo & writeInfo, InteractionInfo & readInfo, const std::string errorMessageDetail) {
       // Throw if type/transportLayerType is not set.
       if(not(writeInfo.transportLayerType.has_value() or readInfo.transportLayerType.has_value())) {
-        throw ChimeraTK::logic_error("type is required but is missing for " + errorMessageDetail);
+          throw ChimeraTK::logic_error("type is required but is missing for " + errorMessageDetail);
       }
       if(readInfo.isActive() and not readInfo.transportLayerType.has_value()) {
-        throw ChimeraTK::logic_error("type is required but is missing on read for " + errorMessageDetail);
+          throw ChimeraTK::logic_error("type is required but is missing on read for " + errorMessageDetail);
       }
       if(writeInfo.isActive() and not writeInfo.transportLayerType.has_value()) {
-        throw ChimeraTK::logic_error("type is required but is missing on write for " + errorMessageDetail);
+          throw ChimeraTK::logic_error("type is required but is missing on write for " + errorMessageDetail);
       }
 
       // If one is set but not the other, set the other. This is expected to happen when the one with no value is not
       // active such as in read-only and write-only situations.
       if(readInfo.transportLayerType.has_value() and not writeInfo.transportLayerType.has_value()) {
-        writeInfo.transportLayerType = readInfo.transportLayerType;
+          writeInfo.transportLayerType = readInfo.transportLayerType;
       }
       else if(writeInfo.transportLayerType.has_value() and not readInfo.transportLayerType.has_value()) {
-        readInfo.transportLayerType = writeInfo.transportLayerType;
+          readInfo.transportLayerType = writeInfo.transportLayerType;
       }
-    }
+  }
 
-    /******************************************************************************************************************/
+  /******************************************************************************************************************/
 
-    static DataType getDataType(
-        const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+  static DataType getDataType(
+          const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
       assert(writeInfo.isActive() or readInfo.isActive());
 
       if(writeInfo.isActive()) {
-        auto writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
+          auto writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
 
-        // If readable and writeable, but incompatible data types, throw.
-        if(readInfo.isActive() and
-            (writeDataType != getDataTypeFromTransportLayerType(readInfo.getTransportLayerType()))) {
-          throw ChimeraTK::logic_error("Read and Write have incompatible DataTypes for " + errorMessageDetail);
-        }
-        return writeDataType;
+          // If readable and writeable, but incompatible data types, throw.
+          if(readInfo.isActive() and
+                  (writeDataType != getDataTypeFromTransportLayerType(readInfo.getTransportLayerType()))) {
+              throw ChimeraTK::logic_error("Read and Write have incompatible DataTypes for " + errorMessageDetail);
+          }
+          return writeDataType;
       }
       else { // read-only
-        return getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
+          return getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
       }
-    }
+  }
 
-  } // namespace ChimeraTK
+} // namespace ChimeraTK
