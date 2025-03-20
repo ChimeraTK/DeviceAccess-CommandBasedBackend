@@ -148,7 +148,7 @@ namespace ChimeraTK {
     json j;
     file >> j;
 
-    throwIfHasInvalidJsonKey(j, topLevelKeyStrs, "Map file top level has unknown key");
+    throwIfHasInvalidJsonKeyCaseInsensitive(j, topLevelKeyStrs, "Map file top level has unknown key");
 
     if(auto mapFileFormatVersionOpt =
             caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION))) {
