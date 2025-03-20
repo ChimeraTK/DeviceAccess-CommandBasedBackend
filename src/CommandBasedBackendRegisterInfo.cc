@@ -76,13 +76,14 @@ namespace ChimeraTK {
     auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::TYPE));
     if(typeStrOption) { // If type is set at the top level
       std::string typeValue = typeStrOption->get<std::string>();
-      auto typeEnumOption = typeStrToEnum(typeValue);
-      if(not typeEnumOption) {
-        throw ChimeraTK::logic_error("Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + regKey);
+      if(auto typeEnumOption = typeStrToEnum(typeValue)) {
+        readInfo.transportLayerType = *typeEnumOption;
+        writeInfo.transportLayerType = *typeEnumOption;
       }
-      TransportLayerType eType = typeEnumOption->get<TransportLayerType>();
-      readInfo.transportLayerType = eType;
-      writeInfo.transportLayerType = eType;
+      else {
+        throw ChimeraTK::logic_error(
+            "Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + regKey);
+      }
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // Set delimiters based on top-level information and metadata
@@ -158,12 +159,12 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
-      std::string typeValue = opt->get<std::string>();
-      auto typeEnumOption = typeStrToEnum(typeValue);
-      if(not typeEnumOption) {
+      if(auto typeEnumOption = typeStrToEnum(opt->get<std::string>())) {
+        transportLayerType = *typeEnumOption;
+      }
+      else {
         throw ChimeraTK::logic_error("Unknown value for " + toStr(TYPE) + " " + typeValue + " for register" + regKey);
       }
-      transportLayerType = typeEnumOption->get<TransportLayerType>();
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     bool explicitlySetToReadLines = false;
