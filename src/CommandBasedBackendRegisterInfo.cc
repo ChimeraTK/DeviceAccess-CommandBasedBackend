@@ -56,6 +56,8 @@ namespace ChimeraTK {
 
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
+    /*----------------------------------------------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------------------------------------------*/
 
     CommandBasedBackendRegisterInfo::InteractionInfo readInfo;
     CommandBasedBackendRegisterInfo::InteractionInfo writeInfo;
@@ -63,7 +65,7 @@ namespace ChimeraTK {
     // SET CONTENT BASED ON TOP-LEVEL JSON
     // N_ELEM,
     unsigned int nElem = caseInsensitiveGetValueOr(j, toStr(N_ELEM), static_cast<unsigned int>(1));
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // TYPE
     auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(TYPE));
     if(typeStrOption) { // If type is set at the top level
@@ -76,7 +78,7 @@ namespace ChimeraTK {
       readInfo.transportLayerType = eType;
       writeInfo.transportLayerType = eType;
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // Set delimiters based on top-level information and metadata
     std::string cmdDelim = _serialDelimiter;
     std::string respDelim = _serialDelimiter;
@@ -100,26 +102,26 @@ namespace ChimeraTK {
     writeInfo.cmdLineDelimiter = cmdDelim;
     std::get<ResponceLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
     // NOTE: these delimiter settings may be overrided later by populateFromJson below.
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
     auto sizeOption = caseInsensitiveGetValueOption(j, toStr(FIXED_SIZE_NUM_WIDTH));
     readInfo.fixedSizeNumberWidthOpt = sizeOption;
     writeInfo.fixedSizeNumberWidthOpt = sizeOption;
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // READ,
     // Override settings from the top level based on the "read" key's contents
     auto readOpt = caseInsensitiveGetValueOption(j, toStr(READ));
     if(readOpt) {
       readInfo.populateFromJson(readOpt->get<json>(), "register " + regKey + " read");
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // WRITE
     //  Override settings from the top level based on the "write" key's contents
     auto writeOpt = caseInsensitiveGetValueOption(j, toStr(WRITE));
     if(writeOpt) {
       writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
 
     return CommandBasedBackendRegisterInfo(RegisterPath(regKey), readInfo, writeInfo, nElem);
@@ -132,7 +134,7 @@ namespace ChimeraTK {
       const json& j, std::string errorMessageDetail) {
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, interactionInfoKeyStrs, "Map file registry entry has unknown key for " + errorMessageDetail);
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // COMMAND
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND))) {
       commandPattern = opt->get<std::string>();
@@ -140,7 +142,7 @@ namespace ChimeraTK {
     else {
       return;
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // RESPESPONSE,
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
       responsePattern = opt->get<std::string>();
@@ -175,6 +177,7 @@ namespace ChimeraTK {
       explicitlySetToReadLines = true;
       std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
     }
+    /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONCE_LINES,
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES))) {
       explicitlySetToReadLines = true;
@@ -187,7 +190,7 @@ namespace ChimeraTK {
             n + " for " + errorMessageDetail);
       }
     }
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPOCNE_BYTES,
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
       int n = std::stoi(opt->get<std::string>());
@@ -203,6 +206,7 @@ namespace ChimeraTK {
       }
     }
 
+    /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH))) {
       int n = std::stoi(opt->get<std::string>());
@@ -216,8 +220,8 @@ namespace ChimeraTK {
     }
   } // populateFromJson
 
-  /**********************************************************************************************************************/
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static void throwIfInvalidCommandAndResponce(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
@@ -245,7 +249,7 @@ namespace ChimeraTK {
     }
   }
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
       unsigned int nElem, const std::string& errorMessageDetail) {
