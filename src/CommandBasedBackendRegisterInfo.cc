@@ -89,7 +89,8 @@ namespace ChimeraTK {
     readInfo.cmdLineDelimiter = cmdDelim;
     std::get<ResponceLinesInfo>(readInfo.responseInfo).delimiter = respDelim;
 
-    writeInfo.cmdLineDelimiter = cmdDelim std::get<ResponceLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
+    writeInfo.cmdLineDelimiter = cmdDelim;
+    std::get<ResponceLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
     // NOTE: these delimiter settings may be overrided later by populateFromJson below.
 
     // FIXED_SIZE_NUM_WIDTH,
@@ -159,84 +160,84 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND))) {
       commandPattern = opt->get<std::string>();
     }
-    else
+    else {
       return;
-  }
+    }
 
-  // RESPESPONSE,
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
-    responsePattern = opt->get<std::string>();
-  }
+    // RESPESPONSE,
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
+      responsePattern = opt->get<std::string>();
+    }
 
-  // TYPE
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
-    std::string typeValue = opt->get<std::string>();
-    auto typeEnumOption = typeStrToEnum(typeValue);
-    if(not typeEnumOption) {
-      throw ChimeraTK::logic_error("Unknown value for " + toStr(TYPE) + " " + typeValue + " for register" + regKey);
+    // TYPE
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
+      std::string typeValue = opt->get<std::string>();
+      auto typeEnumOption = typeStrToEnum(typeValue);
+      if(not typeEnumOption) {
+        throw ChimeraTK::logic_error("Unknown value for " + toStr(TYPE) + " " + typeValue + " for register" + regKey);
+      }
+      transportLayerType = typeEnumOption->get<TransportLayerType>();
     }
-    transportLayerType = typeEnumOption->get<TransportLayerType>();
-  }
 
-  bool explicitlySetToReadLines = false;
-  // DELIMITER
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
-    cmdLineDelimiter = opt->get<std::string>();
-    std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
-    // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
-  }
+    bool explicitlySetToReadLines = false;
+    // DELIMITER
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
+      cmdLineDelimiter = opt->get<std::string>();
+      std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
+      // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
+    }
 
-  // COMMAND_DELIMITER, override all other settings
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND_DELIMITER))) {
-    cmdLineDelimiter = opt->get<std::string>();
-  }
+    // COMMAND_DELIMITER, override all other settings
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND_DELIMITER))) {
+      cmdLineDelimiter = opt->get<std::string>();
+    }
 
-  // RESPONSE_DELIMITER, override all other settings
-  auto responceOpt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER));
-  if(responceOpt) {
-    explicitlySetToReadLines = true;
-    std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
-  }
-  // N_RESPONCE_LINES,
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES))) {
-    explicitlySetToReadLines = true;
-    int n = std::stoi(opt->get<std::string>());
-    if(n >= 0) {
-      std::get<ResponceLinesInfo>(responseInfo).nLines = n;
+    // RESPONSE_DELIMITER, override all other settings
+    auto responceOpt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER));
+    if(responceOpt) {
+      explicitlySetToReadLines = true;
+      std::get<ResponceLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
     }
-    else {
-      throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES) + " " + n +
-          " for " + errorMessageDetail);
+    // N_RESPONCE_LINES,
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES))) {
+      explicitlySetToReadLines = true;
+      int n = std::stoi(opt->get<std::string>());
+      if(n >= 0) {
+        std::get<ResponceLinesInfo>(responseInfo).nLines = n;
+      }
+      else {
+        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES) + " " +
+            n + " for " + errorMessageDetail);
+      }
     }
-  }
 
-  // N_RESPOCNE_BYTES,
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
-    int n = std::stoi(opt->get<std::string>());
-    if(n >= 0) {
-      responseInfo = ResponceBytesInfo{n};
+    // N_RESPOCNE_BYTES,
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
+      int n = std::stoi(opt->get<std::string>());
+      if(n >= 0) {
+        responseInfo = ResponceBytesInfo{n};
+      }
+      else {
+        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES) + " " +
+            n + " for " + errorMessageDetail);
+      }
+      if(explicitlySetToReadLines) {
+        throw ChimeraTK::logic_error("Invalid mixture of readLines and ReadBytes for " + errorMessageDetail);
+      }
     }
-    else {
-      throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES) + " " + n +
-          " for " + errorMessageDetail);
-    }
-    if(explicitlySetToReadLines) {
-      throw ChimeraTK::logic_error("Invalid mixture of readLines and ReadBytes for " + errorMessageDetail);
-    }
-  }
 
-  // FIXED_SIZE_NUM_WIDTH,
-  if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH))) {
-    int n = std::stoi(opt->get<std::string>());
-    if(n > 0) {
-      fixedSizeNumberWidthOpt = n;
+    // FIXED_SIZE_NUM_WIDTH,
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH))) {
+      int n = std::stoi(opt->get<std::string>());
+      if(n > 0) {
+        fixedSizeNumberWidthOpt = n;
+      }
+      else {
+        throw ChimeraTK::logic_error("Invalid non-positive " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) +
+            " " + n + " for " + errorMessageDetail);
+      }
     }
-    else {
-      throw ChimeraTK::logic_error("Invalid non-positive " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) +
-          " " + n + " for " + errorMessageDetail);
-    }
-  }
-} // namespace ChimeraTK
+  } // populateFromJson
 
 } // namespace ChimeraTK
 
@@ -253,18 +254,19 @@ static void throwIfInvalidCommandAndResponce(
   bool hasWriteResponce = not writeInfo.responsePattern.empty();
 
   if(not(readable or writeable)) {
-    throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" + toStr(mapFileInteractionInfoKeys::COMMAND) +
-        " tags is required, and neither are present for " + errorMessageDetail);
+    throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" +
+        toStr(mapFileInteractionInfoKeys::COMMAND) + " tags is required, and neither are present for " +
+        errorMessageDetail);
   }
 
   // Throw if there are responces without corresponding commands.
   if(hasReadResponce and (not readable)) {
-    throw ChimeraTK::logic_error(
-        "A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    throw ChimeraTK::logic_error("A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+        " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
   }
   if(hasWriteResponce and (not writeable)) {
-    throw ChimeraTK::logic_error(
-        "A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    throw ChimeraTK::logic_error("A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+        " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
   }
 }
 
@@ -284,7 +286,7 @@ void throwIfInvalidVoidType(
     }
 
     if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-      throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern +
-          "\" for void-type for " + errorMessageDetail);
+      throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
+          " = \"" + writeInfo.commandPattern + "\" for void-type for " + errorMessageDetail);
     }
   } // end if void type
