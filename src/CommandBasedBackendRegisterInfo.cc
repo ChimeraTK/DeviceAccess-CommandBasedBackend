@@ -13,7 +13,7 @@ namespace ChimeraTK {
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 
   static void throwIfInvalidCommandAndResponce(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   static void throwIfInvalidVoidType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
@@ -26,30 +26,28 @@ namespace ChimeraTK {
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /********************************************************************************************************************/
+  void CommandBasedBackendRegisterInfo::init() {
+    // Check the validity of the data in readInfo and writeInfo
+    std::string errorMessageDetail = "register " + regKey;
+
+    throwIfInvalidCommandAndResponce(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
+
+    ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
+
+    throwIfInvalidVoidType(writeInfo, readInfo, nElements, errorMessageDetail);
+
+    // Check that the data types are compatible and set dataDescriptor
+    dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
+  }
+
+  /********************************************************************************************************************/
+
   CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
       const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
   : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
     writeInfo(std::move(writeInfo_)) {
-    // Set dataDescriptor from type.
-    if(type == TransportLayerType::DEC_INT) {
-      dataDescriptor = DataDescriptor(DataType::int64);
-    }
-    else if(type == TransportLayerType::HEX_INT) {
-      dataDescriptor = DataDescriptor(DataType::uint64);
-    }
-    else if(type == TransportLayerType::BIN_INT) {
-      dataDescriptor = DataDescriptor(DataType::uint64);
-    }
-    else if(type == TransportLayerType::DEC_FLOAT) {
-      dataDescriptor = DataDescriptor(DataType::float64);
-    }
-    else if(type == TransportLayerType::STRING) {
-      dataDescriptor = DataDescriptor(DataType::string);
-    }
-    else if(type == TransportLayerType::VOID) {
-      dataDescriptor = DataDescriptor(DataType::Void);
-    }
-  } // end constructor
+    init();
+  }
 
   /********************************************************************************************************************/
 
@@ -121,15 +119,6 @@ namespace ChimeraTK {
     if(writeOpt) {
       writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
     }
-
-    // CHECK VALIDITY
-    throwIfInvalidCommandAndResponce(writeInfo, readInfo, "register " + regKey);
-
-    // Make sure type is set in the sub-json and
-    // sync transportLayerType between read and write if one is not set already.
-    ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
-
-    throwIfInvalidVoidType(writeInfo, readInfo, "register " + regKey);
 
     // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
 
