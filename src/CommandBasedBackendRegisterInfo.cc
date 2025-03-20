@@ -268,8 +268,8 @@ namespace ChimeraTK {
       }
 
       if(nElem != 1) {
-        throw ChimeraTK::logic_error("Void type must only have 1 element but has " + toStr(mapFileRegisterKeys::N_ELEM) + " = " + nElem +
-            " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error("Void type must only have 1 element but has " +
+            toStr(mapFileRegisterKeys::N_ELEM) + " = " + nElem + " for " + errorMessageDetail);
       }
 
       if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
