@@ -130,9 +130,8 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
 
-    registerPath = RegisterPath(regKey); // TODO move to initalizer list
-    init();                              // data validation
-  }                                      // end constructor
+    init(); // data validation
+  }         // end constructor
 
   /********************************************************************************************************************/
 
