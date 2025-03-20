@@ -73,7 +73,7 @@ namespace ChimeraTK {
 
     this->_exceptionBackend = dev;
 
-    if(_registerInfo.isWritable()) {
+    if(_registerInfo.isWriteable()) {
       _transportLayerTypeFromUserType = getToTransportLayerFunction(_registerInfo.writeInfo.getTransportLayerType());
     }
 
