@@ -9,10 +9,10 @@
 #include <utility>
 
 static void throwIfInvalidCommandAndResponce(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, std::string errorMessageDetail);
+    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
 
 static void throwIfInvalidVoidType(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, std::string errorMessageDetail);
+    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
 
 namespace ChimeraTK {
 
@@ -244,7 +244,7 @@ namespace ChimeraTK {
 /**********************************************************************************************************************/
 
 static void throwIfInvalidCommandAndResponce(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, std::string errorMessageDetail) {
+    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
   // Throw if there isn't a read or write command, or invalid combinations
 
   bool readable = readInfo.isActive();
@@ -271,7 +271,7 @@ static void throwIfInvalidCommandAndResponce(
 /**********************************************************************************************************************/
 
 void throwIfInvalidVoidType(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, std::string errorMessageDetail) {
+    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail) {
   if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
     if(readInfo.isActive() or not writeInfo.isActive()) {
       throw ChimeraTK::logic_error(
