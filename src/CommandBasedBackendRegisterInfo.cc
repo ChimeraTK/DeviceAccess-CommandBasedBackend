@@ -8,13 +8,13 @@
 
 #include <utility>
 
-static void throwIfInvalidCommandAndResponce(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
-
-static void throwIfInvalidVoidType(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
-
 namespace ChimeraTK {
+
+  static void throwIfInvalidCommandAndResponce(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
+
+  static void throwIfInvalidVoidType(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail);
 
   CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
       const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
@@ -239,54 +239,54 @@ namespace ChimeraTK {
     }
   } // populateFromJson
 
-} // namespace ChimeraTK
+  /**********************************************************************************************************************/
+  /**********************************************************************************************************************/
 
-/**********************************************************************************************************************/
-/**********************************************************************************************************************/
+  static void throwIfInvalidCommandAndResponce(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+    // Throw if there isn't a read or write command, or invalid combinations
 
-static void throwIfInvalidCommandAndResponce(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
-  // Throw if there isn't a read or write command, or invalid combinations
+    bool readable = readInfo.isActive();
+    bool writeable = writeInfo.isActive();
+    bool hasReadResponce = not readInfo.responsePattern.empty();
+    bool hasWriteResponce = not writeInfo.responsePattern.empty();
 
-  bool readable = readInfo.isActive();
-  bool writeable = writeInfo.isActive();
-  bool hasReadResponce = not readInfo.responsePattern.empty();
-  bool hasWriteResponce = not writeInfo.responsePattern.empty();
-
-  if(not(readable or writeable)) {
-    throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" +
-        toStr(mapFileInteractionInfoKeys::COMMAND) + " tags is required, and neither are present for " +
-        errorMessageDetail);
-  }
-
-  // Throw if there are responces without corresponding commands.
-  if(hasReadResponce and (not readable)) {
-    throw ChimeraTK::logic_error("A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-        " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
-  }
-  if(hasWriteResponce and (not writeable)) {
-    throw ChimeraTK::logic_error("A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-        " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
-  }
-}
-
-/**********************************************************************************************************************/
-
-void throwIfInvalidVoidType(
-    const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail) {
-  if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
-    if(readInfo.isActive() or not writeInfo.isActive()) {
-      throw ChimeraTK::logic_error(
-          "Void type must be write-only but has a " + toStr(READ) + " key for " + errorMessageDetail);
+    if(not(readable or writeable)) {
+      throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" +
+          toStr(mapFileInteractionInfoKeys::COMMAND) + " tags is required, and neither are present for " +
+          errorMessageDetail);
     }
 
-    if(nElem != 1) {
-      throw ChimeraTK::logic_error(
-          "Void type must only have 1 element but has " + toStr(N_ELEM) + " = " + nElem + " for " + errorMessageDetail);
+    // Throw if there are responces without corresponding commands.
+    if(hasReadResponce and (not readable)) {
+      throw ChimeraTK::logic_error("A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+          " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
     }
+    if(hasWriteResponce and (not writeable)) {
+      throw ChimeraTK::logic_error("A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+          " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    }
+  }
 
-    if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-      throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
-          " = \"" + writeInfo.commandPattern + "\" for void-type for " + errorMessageDetail);
-    }
-  } // end if void type
+  /**********************************************************************************************************************/
+
+  void throwIfInvalidVoidType(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string errorMessageDetail) {
+    if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
+      if(readInfo.isActive() or not writeInfo.isActive()) {
+        throw ChimeraTK::logic_error(
+            "Void type must be write-only but has a " + toStr(READ) + " key for " + errorMessageDetail);
+      }
+
+      if(nElem != 1) {
+        throw ChimeraTK::logic_error("Void type must only have 1 element but has " + toStr(N_ELEM) + " = " + nElem +
+            " for " + errorMessageDetail);
+      }
+
+      if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
+        throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
+            " = \"" + writeInfo.commandPattern + "\" for void-type for " + errorMessageDetail);
+      }
+    } // end if void type
+
+  } // namespace ChimeraTK
