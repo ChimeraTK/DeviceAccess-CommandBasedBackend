@@ -53,8 +53,15 @@ namespace ChimeraTK {
 
   CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const json& j, const std::string& regKey_)
   : registerPath(RegisterPath(regKey)), regKey(regKey_) {
-    // regKey is the key (register path) whose value is j. This is needed information for debugging.
+    /*
+     * Here we blindly extract data from the json here,
+     * checking only that we don't have invalid json keys.
+     * Then we pass to the other constructor
+     * for all common tasks and data validation.
+     * regKey is the key (register path) whose value is j. This is needed information for debugging.
+     */
 
+    // validate top-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -120,14 +127,17 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write responce from pattern; Ticket 13531
 
-    registerPath = RegisterPath(regKey); //TODO move to initalizer list
-    init(); // data validation
-  } // end constructor
+    registerPath = RegisterPath(regKey); // TODO move to initalizer list
+    init();                              // data validation
+  }                                      // end constructor
 
   /********************************************************************************************************************/
 
   void CommandBasedBackendRegisterInfo::InteractionInfo::populateFromJson(
       const json& j, std::string errorMessageDetail) {
+    // This is not just a constructor because we want to fill in json
+
+    // validate json keys at this level
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, interactionInfoKeyStrs, "Map file registry entry has unknown key for " + errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
