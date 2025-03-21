@@ -286,13 +286,13 @@ namespace {
   // For use in preWrite
   template<typename UserType>
   std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo) {
-    return userTypeToUserType<std::string, UserType>(val);
+    return ChimeraTK::userTypeToUserType<std::string, UserType>(val);
   }
 
   template<typename UserType>
   std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo) {
     std::ostringstream oss;
-    oss << std::hex << userTypeToUserType<uint64_t, UserType>(val);
+    oss << std::hex << ChimeraTK::userTypeToUserType<uint64_t, UserType>(val);
     return oss.str();
   }
 
@@ -308,12 +308,12 @@ namespace {
   // For use in postRead
   template<typename UserType>
   UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo) {
-    return userTypeToUserType<UserType, std::string>(str);
+    return ChimeraTK::userTypeToUserType<UserType, std::string>(str);
   }
 
   template<typename UserType>
   UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo) {
-    return userTypeToUserType<UserType, std::string>("0x" + str);
+    return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str);
   }
 
   template<typename UserType>
