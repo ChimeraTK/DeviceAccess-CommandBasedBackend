@@ -108,7 +108,7 @@ namespace ChimeraTK {
     }
 
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
-    auto readCommand = _registerInfo.readCommandPattern;
+    auto readCommand = _registerInfo.readInfo.commandPattern;
 
     if(_registerInfo.writeInfo.useReadLines()) {
       auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responseInfo);
@@ -176,11 +176,11 @@ namespace ChimeraTK {
 
     // Form the write command.
     try {
-      _writeTransferBuffer = inja::render(_registerInfo.writeCommandPattern, replacePatterns);
+      _writeTransferBuffer = inja::render(_registerInfo.writeInfo.commandPattern, replacePatterns);
     }
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
-          "Inja parser error in writeCommandPattern of " + _registerInfo.registerPath + ": " + e.what());
+          "Inja parser error in write commandPattern of " + _registerInfo.registerPath + ": " + e.what());
     }
 
     // remember this register as the last used one if the register is readable
@@ -257,20 +257,21 @@ namespace {
 
     std::regex returnRegex;
     try {
-      auto regexText = inja::render(_registerInfo.readResponsePattern, replacePatterns);
+      auto regexText = inja::render(_registerInfo.readInfo.responsePattern, replacePatterns);
       returnRegex = regexText;
     }
     catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error("Regex error in ResponsePattern for " errorMessageDetail + ": " + e.what());
+      throw ChimeraTK::logic_error("Regex error in read responsePattern for " errorMessageDetail + ": " + e.what());
     }
     catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error("Inja parser error in ResponsePattern for " + errorMessageDetail + ": " + e.what());
+      throw ChimeraTK::logic_error(
+          "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
     }
     // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
     if(returnRegex.mark_count() != requiredElements) {
       throw ChimeraTK::logic_error("Wrong number of capture groups (" +
-          std::to_string(_readResponseRegex.mark_count()) + ") in readResponsePattern \"" +
-          _registerInfo.readResponsePattern + "\" of " + _registerInfo.registerPath + ", required " +
+          std::to_string(_readResponseRegex.mark_count()) + ") in read responsePattern \"" +
+          _registerInfo.readInfo.responsePattern + "\" of " + _registerInfo.registerPath + ", required " +
           std::to_string(_registerInfo.nElements));
     }
     return returnRegex;
