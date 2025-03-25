@@ -20,7 +20,6 @@ namespace ChimeraTK {
     Holds info all about the command you're sending, but not about the device you're sending it to.
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
-    // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
     class InteractionInfo {
      protected:
       struct ResponseLinesInfo {
