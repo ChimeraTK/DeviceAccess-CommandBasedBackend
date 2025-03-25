@@ -39,6 +39,8 @@ ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType tr
 namespace ChimeraTK {
   template<typename UserType>
 
+  /********************************************************************************************************************/
+
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
@@ -217,13 +219,11 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   // Magic from SupportedUserTypes.h
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
 } // end namespace ChimeraTK
-
-/**********************************************************************************************************************/
-/**********************************************************************************************************************/
 
 namespace {
   std::regex getRegex(
@@ -278,16 +278,19 @@ namespace {
   } // end getRegex
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
+  // For use in preWrite
 
   // FIXME: does not know about formating. TODO ticket 13534.
   // May need leading zeros or other formatting to satisfy the hardware interface.
   // Do this using _registerInfo.writeInfo.fixedSizeNumberWidthOpt in the function pointer implementation.
 
-  // For use in preWrite
   template<typename UserType>
   std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<std::string, UserType>(val);
   }
+
+  /********************************************************************************************************************/
 
   template<typename UserType>
   std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo) {
@@ -295,6 +298,8 @@ namespace {
     oss << std::hex << ChimeraTK::userTypeToUserType<uint64_t, UserType>(val);
     return oss.str();
   }
+
+  /********************************************************************************************************************/
 
   template<typename UserType>
   std::string toTransportLayerBinInt(const UserType& val, const InteractionInfo& iInfo) {
@@ -305,16 +310,22 @@ namespace {
     return maybeStr.value;
   }
 
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
   // For use in postRead
   template<typename UserType>
   UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<UserType, std::string>(str);
   }
 
+  /********************************************************************************************************************/
+
   template<typename UserType>
   UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str);
   }
+
+  /********************************************************************************************************************/
 
   template<typename UserType>
   UserType toUserTypeBinInt(const std::string& str, const InteractionInfo& iInfo) {

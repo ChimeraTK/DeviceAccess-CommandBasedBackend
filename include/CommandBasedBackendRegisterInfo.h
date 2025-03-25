@@ -72,6 +72,8 @@ namespace ChimeraTK {
       }
       void populateFromJson(const json& j, std::string errorMessageDetail);
     };
+    /*----------------------------------------------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------------------------------------------*/
 
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {}, InteractionInfo readInfo_ = {},
         InteractionInfo writeInfo_ = {}, uint nElements_ = 1, const std::string& regKey_ = "");

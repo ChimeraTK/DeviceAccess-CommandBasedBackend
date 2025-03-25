@@ -25,6 +25,7 @@ namespace ChimeraTK {
 
   class CommandBasedBackend;
 
+  /********************************************************************************************************************/
   /**
    * Implementation of the NDRegisterAccessor for CommandBasedBackend for scalar and 1D registers.
    */
