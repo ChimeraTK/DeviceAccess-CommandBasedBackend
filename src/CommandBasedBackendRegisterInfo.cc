@@ -186,27 +186,27 @@ namespace ChimeraTK {
       std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
     }
     /*----------------------------------------------------------------------------------------------------------------*/
-    // N_RESPONCE_LINES,
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES))) {
+    // N_RESPONSE_LINES,
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONSE_LINES))) {
       explicitlySetToReadLines = true;
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
         std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).nLines = static_cast<size_t>(n);
       }
       else {
-        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONCE_LINES) + " " +
+        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_LINES) + " " +
             std::to_string(n) + " for " + errorMessageDetail);
       }
     }
     /*----------------------------------------------------------------------------------------------------------------*/
-    // N_RESPOCNE_BYTES,
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES))) {
+    // N_RESPONSE_BYTES, set to Binary mode
+    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES))) {
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
         responseInfo = ResponseBytesInfo{static_cast<size_t>(n)};
       }
       else {
-        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPOCNE_BYTES) + " " +
+        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES) + " " +
             std::to_string(n) + " for " + errorMessageDetail);
       }
       if(explicitlySetToReadLines) {
