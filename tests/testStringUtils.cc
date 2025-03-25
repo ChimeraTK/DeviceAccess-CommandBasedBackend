@@ -94,27 +94,40 @@ BOOST_AUTO_TEST_CASE(testHexConversionOdd) {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
+  std::string res;
+
   // Test natural width conversion
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(5).value_or(""), /*==*/"\x05");
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(-2).value_or(""), /*==*/"\xFE");
+  res = binaryStrFromInt(static_cast<int32_t>(5)).value_or("");
+  BOOST_CHECK_EQUAL(res, "\x05");
+
+  res = binaryStrFromInt(static_cast<int32_t>(-2)).value_or("");
+  BOOST_CHECK_EQUAL(res, "\xFE");
 
   // Test natural width. int32 won't fit in 3 byts, but its ok.
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(5, 3).value_or(""), /*==*/"\x00\x00\x05");
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(-2, 3).value_or(""), /*==*/"\xFF\xFF\xFE");
+  res = binaryStrFromInt(static_cast<int32_t>(5), 3).value_or("");
+  BOOST_CHECK_EQUAL(res, "\x00\x00\x05");
+
+  res = binaryStrFromInt(static_cast<int32_t>(-2), 3).value_or("");
+  BOOST_CHECK_EQUAL(res, "\xFF\xFF\xFE");
 
   // Test left packing. Put an 8-bit number into a 10 byte string
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int8_t>(5, 10).value_or(""), /*==*/"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05");
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int8_t>(-2, 10).value_or(""), /*==*/"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE");
+  res = binaryStrFromInt(static_cast<int8_t>(5), 10).value_or("");
+  BOOST_CHECK_EQUAL(res, "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05");
+
+  res = binaryStrFromInt(static_cast<int8_t>(-2), 10).value_or("");
+  BOOST_CHECK_EQUAL(res, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE");
 
   // Test fixed width with EXPAND behavior, which is default when not overflowing
-  BOOST_CHECK_EQUAL(
-      binaryStrFromInt<int32_t>(0xABCDEF, 2, OverflowBehavior::EXPAND).value_or(""), /*==*/"\xAB\xCD\xEF");
+  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, OverflowBehavior::EXPAND).value_or("");
+  BOOST_CHECK_EQUAL(res, "\xAB\xCD\xEF");
 
   // Test fixed width with TRUNCATE behavior. Truncate to 2 bytes
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(0xABCDEF, 2, OverflowBehavior::TRUNCATE).value_or(""), /*==*/"\xCD\xEF");
+  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, OverflowBehavior::TRUNCATE).value_or("");
+  BOOST_CHECK_EQUAL(res, "\xCD\xEF");
 
   // Test fixed width with NULLOPT overflow behavior
-  BOOST_CHECK_EQUAL(binaryStrFromInt<int32_t>(300, 1, OverflowBehavior::NULLOPT).has_value(), /*==*/false);
+  bool hasValue = binaryStrFromInt(static_cast<int32_t>(300), 1, OverflowBehavior::NULLOPT).has_value();
+  BOOST_CHECK_EQUAL(hasValue, false);
 }
 
 /**********************************************************************************************************************/
