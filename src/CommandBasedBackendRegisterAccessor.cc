@@ -132,9 +132,15 @@ namespace ChimeraTK {
     if(updateDataBuffer) {
       // For technical reasons the response has been read line by line.
       // Combine them here back into a single response string.
-      std::string combinedReadString;
-      for(const auto& line : _readTransferBuffer) {
-        combinedReadString += line + _registerInfo.readDelimiter;
+      std::string combinedReadString = "";
+      if(_registerInfo.readInfo.usesReadLines()) {
+        std::string delim = *_registerInfo.readInfo.getResponseLinesDelimiter();
+        for(const auto& line : _readTransferBuffer) {
+          combinedReadString += line + delim;
+        }
+      }
+      else if(_registerInfo.readInfo.usesReadBytes()) {
+        combinedReadString = _readTransferBuffer[0];
       }
 
       std::smatch valueMatch;
