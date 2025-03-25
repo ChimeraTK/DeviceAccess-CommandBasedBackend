@@ -187,17 +187,20 @@ namespace ChimeraTK {
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     bool explicitlySetToReadLines = false;
+    bool explicitlySetCmdDelimiter = false;
     // DELIMITER
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
       std::string delimiter = opt->get<std::string>();
       cmdLineDelimiter = delimiter;
       setResponseDelimiter(delimiter);
+      explicitlySetCmdDelimiter = true;
       // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
     }
 
     // COMMAND_DELIMITER, override all other settings
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND_DELIMITER))) {
       cmdLineDelimiter = opt->get<std::string>();
+      explicitlySetCmdDelimiter = true;
     }
 
     // RESPONSE_DELIMITER, override all other settings
@@ -229,6 +232,13 @@ namespace ChimeraTK {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES) + " " +
             std::to_string(n) + " for " + errorMessageDetail);
       }
+
+      // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
+      // This overrides the metadata and Register level delimiter settings.
+      if(not explicitlySetCmdDelimiter) {
+        cmdLineDelimiter = "";
+      }
+
       if(explicitlySetToReadLines) {
         throw ChimeraTK::logic_error("Invalid mixture of readLines and ReadBytes for " + errorMessageDetail);
       }
