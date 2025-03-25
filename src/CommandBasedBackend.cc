@@ -174,7 +174,7 @@ namespace ChimeraTK {
 
     if(auto registerOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::REGISTERS))) {
       for(const auto& [key, value] : registerOpt->get<json>().items()) {
-        _backendCatalogue.addRegister(CommandBasedBackendRegisterInfo(value, key, _serialDelimiter));
+        _backendCatalogue.addRegister(CommandBasedBackendRegisterInfo(RegisterPath{key}, value, _serialDelimiter));
       }
     }
     else {
