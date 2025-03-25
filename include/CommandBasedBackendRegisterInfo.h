@@ -21,27 +21,14 @@ namespace ChimeraTK {
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
     // If updating this, also update registerTypeStrs in CommandBasedBackend.cc
-    struct InteractionInfo {
-      std::optional<TransportLayerType> transportLayerType;
-      std::string commandPattern = "";
-      std::string responsePattern = "";
-      std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
-      std::string cmdLineDelimiter;
-      /*--------------------------------------------------------------------------------------------------------------*/
+    class InteractionInfo {
+     protected:
       struct ResponseLinesInfo {
         size_t nLines = 1;
         std::string delimiter;
       };
       struct ResponseBytesInfo {
         size_t nBytesReadResponse = 1;
-      };
-      enum SendCommandType {
-        /* These serve to label the indicies of the types in the responseInfo variant
-         * so as to name sendCommand functions to be used in CommandBasedBackend.
-         * So, the numeric value MUST match the index order of variants in responseInfo
-         */
-        SEND_COMMAND_AND_READ_LINES = 0,
-        SEND_COMMAND_AND_READ_BYTES = 1
       };
       /*
        * responseInfo stores information relavent to line delimited reading when reading lines,
@@ -51,37 +38,55 @@ namespace ChimeraTK {
        * responseInfo variant type order indicies must match the SendCommandType enum values
        */
       std::variant<ResponseLinesInfo, ResponseBytesInfo> responseInfo;
+
+     public:
+      std::optional<TransportLayerType> transportLayerType;
+      std::string commandPattern = "";
+      std::string responsePattern = "";
+      std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
+      std::string cmdLineDelimiter;
+
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
+      void populateFromJson(const json& j, std::string errorMessageDetail);
       /*
        * If an InteractionInfo is not active, then it is disabled.
        * For example, if readInfo.isActive() is true, then the register is readable;
        * but if readInfo.isActive is false, then it is write-only.
        */
       inline bool isActive() const { return not commandPattern.empty(); }
-      inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
-      inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
-      inline bool isReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
+
       inline TransportLayerType getTransportLayerType() const { return transportLayerType.value(); }
+      /*
+       * These getters return the corresponding responceInfo member, if the corresponding
+       * SendCommandType is used, otherwise return nullopt.
+       */
+      std::optional<size_t> getResponseNLines() const;
+      std::optional<std::string> getResponseLinesDelimiter() const;
+      std::optional<size_t> getResponseBytes() const;
 
-      // get ResponseLinesInfo if its there
-      inline std::optional<ResponseLinesInfo> getResponseLinesInfo() const {
-        if(useReadLines()) {
-          return std::get<ResponseLinesInfo>(responseInfo);
-        }
-        return std::nullopt;
-      }
+      /*
+       * These set the struct members if responceInfo is already in the corresponding
+       * SendCommandType, otherwise they destructively set the SendCommandType,
+       * overwriting responseInfo, and then set the struct members.
+       */
+      void setResponseDelimiter(std::string delimiter);
+      void setResponseNLines(size_t nLines);
+      void setResponseBytes(size_t nBytes) { responseInfo = ResponseBytesInfo{nBytes}; }
 
-      // get ResponseBytesInfo if its there
-      inline std::optional<ResponseBytesInfo> getResponseBytesInfo() const {
-        // return isReadBytes() ? std::get<ResponseBytesInfo>(responseInfo) : std::nullopt;
-        if(isReadBytes()) {
-          return std::get<ResponseBytesInfo>(responseInfo);
-        }
-        return std::nullopt;
-      }
-      void populateFromJson(const json& j, std::string errorMessageDetail);
-    };
+      inline bool usesReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
+      inline bool usesReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
+      /*--------------------------------------------------------------------------------------------------------------*/
+     protected:
+      /*
+       * SendCommandType labels the indicies of the types in the responseInfo variant
+       * so as to name sendCommand functions to be used in CommandBasedBackend.
+       * The numeric value MUST match the index order of variants in responseInfo
+       */
+      enum SendCommandType { SEND_COMMAND_AND_READ_LINES = 0, SEND_COMMAND_AND_READ_BYTES = 1 };
+      inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
+    }; // end InteractionInfo
+
     /*----------------------------------------------------------------------------------------------------------------*/
     /*----------------------------------------------------------------------------------------------------------------*/
 
