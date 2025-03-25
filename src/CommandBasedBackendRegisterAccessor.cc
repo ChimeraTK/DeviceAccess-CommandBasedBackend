@@ -12,17 +12,6 @@
 #include <sstream>
 #include <string>
 
-/**
- * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
- * This facilitates code reuse once write responses are implemented.
- * @param[in] type The TransportLayerType used to pick the numerical regex segment.
- * @param[in] requiredElements How many elements to check against the regex mark_count
- * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
- * @throws std::regex_error
- * @throws inja::ParserError
- */
-std::regex getRegex(const TransportLayerType type, const size_t requiredElements, const std::string errorMessageDetail);
-
 namespace ChimeraTK {
 
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
@@ -33,6 +22,18 @@ namespace ChimeraTK {
    * @returns the string regex pattern
    */
   static std::string getRegexStringForType(const TransportLayerType type);
+
+  /**
+   * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
+   * This facilitates code reuse once write responses are implemented.
+   * @param[in] InteractionInfo
+   * @param[in] requiredElements How many elements to check against the regex mark_count
+   * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
+   * @throws std::regex_error
+   * @throws inja::ParserError
+   */
+  static std::regex getRegex(
+      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail);
 
   /** Return the functional for the given TransportLayerType for converting data from the transport layer format to
    * UserType representation*/
@@ -88,7 +89,7 @@ namespace ChimeraTK {
 
     if(_registerInfo.isReadable()) {
       _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
-      _readResponseRegex = getRegex(_registerInfo.readInfo.getTransportLayerType(),
+      _readResponseRegex = getRegex(_registerInfo.readInfo,
           _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
           "read in " + _registerInfo.registerPath);
     }
@@ -228,14 +229,8 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  // Magic from SupportedUserTypes.h
-  INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
-} // end namespace ChimeraTK
-
-namespace {
-  std::regex getRegex(
-      const TransportLayerType type, const size_t requiredElements, const std::string errorMessageDetail) {
-    std::string valueRegex;
+  static std::string getRegexStringForType(const TransportLayerType type) {
+    std::string valueRegex = "";
     if(type == TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
     }
@@ -254,32 +249,39 @@ namespace {
     else if(type != TransportLayerType::VOID) {
       assert(!valueRegex.empty());
     }
+    return valueRegex;
+  }
+
+  /********************************************************************************************************************/
+
+  static std::regex getRegex(
+      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail) {
+    std::string valueRegex = getRegexStringForType(info.transportLayerType.value());
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
-    for(size_t i = 0; i < _registerInfo.nElements; ++i) {
+    for(size_t i = 0; i < requiredElements; ++i) {
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns["x"].push_back(valueRegex);
     }
 
     std::regex returnRegex;
     try {
-      auto regexText = inja::render(_registerInfo.readInfo.responsePattern, replacePatterns);
+      auto regexText = inja::render(info.responsePattern, replacePatterns);
       returnRegex = regexText;
     }
     catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error("Regex error in read responsePattern for " errorMessageDetail + ": " + e.what());
+      throw ChimeraTK::logic_error("Regex error in read responsePattern for " + errorMessageDetail + ": " + e.what());
     }
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
           "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
     }
-    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
+    // Alignment between the mark_count and requiredElements can be enforced by using non-capture groups: (?:   )
     if(returnRegex.mark_count() != requiredElements) {
-      throw ChimeraTK::logic_error("Wrong number of capture groups (" +
-          std::to_string(_readResponseRegex.mark_count()) + ") in read responsePattern \"" +
-          _registerInfo.readInfo.responsePattern + "\" of " + _registerInfo.registerPath + ", required " +
-          std::to_string(_registerInfo.nElements));
+      throw ChimeraTK::logic_error("Wrong number of capture groups " + std::to_string(returnRegex.mark_count()) + "(" +
+          std::to_string(requiredElements) + " required) in responsePattern \"" + info.responsePattern + "\" for " +
+          errorMessageDetail);
     }
     return returnRegex;
   } // end getRegex
@@ -372,4 +374,7 @@ namespace {
     }
   }
 
-} // end anonymous namespace
+  /********************************************************************************************************************/
+  // Magic from SupportedUserTypes.h
+  INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
+} // end namespace ChimeraTK
