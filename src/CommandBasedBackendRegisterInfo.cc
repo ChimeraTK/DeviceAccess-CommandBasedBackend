@@ -12,33 +12,53 @@ namespace ChimeraTK {
 
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 
+  /**
+   * @brief Enforces This enforces having a valid combination of read and write commands and responses
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If there isn't a read or write command, or responses without commands.
+   */
   static void throwIfInvalidCommandAndResponse(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
+  /**
+   * @brief Enforcement logic for void-type registers
+   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
+   * @throws ChimeraTK::logic_error If there are settings incompatible with void type.
+   */
   static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
       unsigned int nElem, const std::string& errorMessageDetail);
 
-  // Morphs writeInfo and readInfo, throws logic_error
+  /**
+   * @brief Enforces that a type is set, and syncronizes types if only one is set.
+   * After this, both the writeInfo and readInfo are garenteed to have thier transportLayerType set.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If no type has been set.
+   */
   static void ensureTransportLayerTypeAreSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string errorMessageDetail);
 
+  /**
+   * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
+   * setting the DataDescriptor.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if the readInfo and writeInfo have incompatible data types.
+   */
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /********************************************************************************************************************/
+
   void CommandBasedBackendRegisterInfo::init() {
-    // Check the validity of the data in readInfo and writeInfo
     std::string errorMessageDetail = "register " + registerPath;
-
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Validite data in readInfo and writeInfo
     throwIfInvalidCommandAndResponse(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
-
     ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
-
     throwIfInvalidVoidType(writeInfo, readInfo, getNumberOfElements(), errorMessageDetail);
-
+    /*----------------------------------------------------------------------------------------------------------------*/
     // Check that the data types are compatible and set dataDescriptor
     dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
-  }
+  } // end init
 
   /********************************************************************************************************************/
 
@@ -61,7 +81,7 @@ namespace ChimeraTK {
      * for all common tasks and data validation.
      */
 
-    // validate top-level json keys
+    // Validate retister-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, registerKeyStrs, "Map file registry entry " + registerPath + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -233,8 +253,6 @@ namespace ChimeraTK {
 
   static void throwIfInvalidCommandAndResponse(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
-    // Throw if there isn't a read or write command, or invalid combinations
-
     bool readable = readInfo.isActive();
     bool writeable = writeInfo.isActive();
     bool hasReadResponse = not readInfo.responsePattern.empty();
