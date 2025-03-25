@@ -120,18 +120,7 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     auto readCommand = _registerInfo.readInfo.commandPattern;
 
-    if(_registerInfo.writeInfo.useReadLines()) {
-      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responseInfo);
-
-      _writeTransferBuffer = _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern,
-          readLinesInfo.nLines, _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
-    }
-    else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
-      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responseInfo);
-
-      _readTransferBuffer[0] = _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern,
-          readBytesInfo.nBytesReadResponse, _registerInfo.writeInfo.cmdLineDelimiter);
-    }
+    _readTransferBuffer = _backend->sendCommandAndRead(readCommand, _registerInfo.readInfo);
   }
 
   /********************************************************************************************************************/
@@ -211,18 +200,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    if(_registerInfo.writeInfo.useReadLines()) {
-      auto readLinesInfo = std::get<ReadLinesInfo>(_registerInfo.writeInfo.responseInfo);
-
-      _backend->sendCommandAndReadLines(_registerInfo.writeInfo.commandPattern, readLinesInfo.nLines,
-          _registerInfo.writeInfo.cmdLineDelimiter, readLinesInfo.delimiter);
-    }
-    else /*if(_registerInfo.writeInfo.isReadBytes())*/ {
-      auto readBytesInfo = std::get<ReadBytesInfo>(_registerInfo.writeInfo.responseInfo);
-
-      _backend->sendCommandAndReadBytes(_registerInfo.writeInfo.commandPattern, readBytesInfo.nBytesReadResponse,
-          _registerInfo.writeInfo.cmdLineDelimiter);
-    }
+    _backend->sendCommandAndRead(_registerInfo.writeInfo.commandPattern, _registerInfo.writeInfo);
     return false; // no data was lost
   }
 

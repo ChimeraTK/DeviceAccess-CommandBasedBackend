@@ -41,6 +41,17 @@ namespace ChimeraTK {
     void close() override;
 
     /**
+     * @brief Send a single command through and receive a vector of responses.
+     * This takes care of the details of whether or reading lines or bytes.
+     * @param[in] command Is the exact string sent. This may differ from iInfo.commandPattern due to the use of inja templates.
+     * @returns a vector of responces, corresponding to lines if we're reading lines. If we're reading bytes, the return
+     * vector will have length 1.
+     * @throws ChimeraTK::runtime_error if any line of reply doesn't come before a timeout for that line.
+     */
+    std::vector<std::string> sendCommandAndRead(
+        const std::string cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+
+    /**
      * @brief Send a single command through and receive a vector (of length nLinesToRead) responses.
      * @param[in] cmd The command sent to the device.
      * @param[in] nLinesToRead The required number of lines in reply to sending command cmd.  If 0, then no read is attempted.
