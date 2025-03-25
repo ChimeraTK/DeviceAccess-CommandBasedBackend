@@ -28,7 +28,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   void CommandBasedBackendRegisterInfo::init() {
     // Check the validity of the data in readInfo and writeInfo
-    std::string errorMessageDetail = "register " + regKey;
+    std::string errorMessageDetail = "register " + registerPath;
 
     throwIfInvalidCommandAndResponse(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
 
@@ -42,29 +42,28 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_,
-      InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_, const std::string& regKey_)
+  CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
+      const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
   : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
-    writeInfo(std::move(writeInfo_)), regKey(regKey_) {
+    writeInfo(std::move(writeInfo_)) {
     init();
   }
 
   /********************************************************************************************************************/
 
   CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
-      const json& j, const std::string& regKey_, const std::string& defaultSerialDelimiter)
-  : registerPath(RegisterPath(regKey_)), regKey(regKey_) {
+      const RegisterPath& registerPath_, const json& j, const std::string& defaultSerialDelimiter)
+  : registerPath(registerPath_) {
     /*
      * Here we blindly extract data from the json here,
      * checking only that we don't have invalid json keys.
      * Then we pass to the other constructor
      * for all common tasks and data validation.
-     * regKey is the key (register path) whose value is j. This is needed information for debugging.
      */
 
     // validate top-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
-        j, registerKeyStrs, "Map file registry entry " + regKey + " has unknown key");
+        j, registerKeyStrs, "Map file registry entry " + registerPath + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
@@ -81,7 +80,7 @@ namespace ChimeraTK {
       }
       else {
         throw ChimeraTK::logic_error(
-            "Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + regKey);
+            "Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + registerPath);
       }
     }
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -118,13 +117,13 @@ namespace ChimeraTK {
     // Override settings from the top level based on the "read" key's contents
 
     if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ))) {
-      readInfo.populateFromJson(readOpt->get<json>(), "register " + regKey + " read");
+      readInfo.populateFromJson(readOpt->get<json>(), "register " + registerPath + " read");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // WRITE
     // Override settings from the top level based on the "write" key's contents
     if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE))) {
-      writeInfo.populateFromJson(writeOpt->get<json>(), "register " + regKey + " write");
+      writeInfo.populateFromJson(writeOpt->get<json>(), "register " + registerPath + " write");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write response from pattern; Ticket 13531

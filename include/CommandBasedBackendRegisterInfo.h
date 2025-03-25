@@ -76,10 +76,10 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
 
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {}, InteractionInfo readInfo_ = {},
-        InteractionInfo writeInfo_ = {}, uint nElements_ = 1, const std::string& regKey_ = "");
+        InteractionInfo writeInfo_ = {}, uint nElements_ = 1);
 
     explicit CommandBasedBackendRegisterInfo(
-        const json& j, const std::string& regKey_, const std::string& defaultSerialDelimiter);
+        const RegisterPath& registerPath_, const json& j, const std::string& defaultSerialDelimiter);
 
     void init();
 
@@ -102,10 +102,9 @@ namespace ChimeraTK {
 
     unsigned int nChannels{1};
     unsigned int nElements{1};
-    RegisterPath registerPath;
+    RegisterPath registerPath; // can be converted to string
     InteractionInfo readInfo;
     InteractionInfo writeInfo;
-    std::string regKey; // FIXME TODO redundant with registerPath
 
     DataDescriptor dataDescriptor;
   }; // end CommandBasedBackendRegisterInfo
