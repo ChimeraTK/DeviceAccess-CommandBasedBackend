@@ -5,6 +5,10 @@
 #include "stringUtils.h"
 #include <unordered_map>
 
+#include <ChimeraTK/BackendRegisterCatalogue.h>
+
+#include <boost/bimap.hpp>
+
 #include <array>
 #include <optional>
 #include <string>
@@ -57,45 +61,108 @@
 const int requiredMapFileFormatVersion = 2;
 
 /**********************************************************************************************************************/
-// TODO refactor this to use maps rather than arrays. Maybe undordered_map, maybe bimap
-//   Will have to modify throwIfHasInvalidJsonKeyCaseInsensitive
+
+/*
+ * The point of these getMapForEnum functions is to avoid the oppertunity for bugs from mismatching enums and maps. With
+ * them, the pairing only has to be correct in one place--in the getEnumMap function. Then, the enum class names are the
+ * only specifiers of JSON structure..
+ */
+template<typename EnumType>
+inline const std::unordered_map<EnumType, std::string> getMapForEnum();
+
+// Strictly speaking we don't need templates for this, but templating improves extensibility and style consistency.
+template<typename EnumType>
+inline const boost::bimap<EnumType, std::string> getBimapForEnum();
+
+/**********************************************************************************************************************/
+// Static functions for internal use only
+
+/*
+ * For making boost::bimap literals.
+ */
+template<typename L, typename R>
+static boost::bimap<L, R> _makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
+  return boost::bimap<L, R>(list.begin(), list.end());
+}
+
+/*
+ * Takes a bimap<enums,string>, and a string, and returns an optional to the enum at bimap[str],
+ * That optional is the enum if str is in the bimap, and nullopt if not.
+ * The string-lookup is case insensitive
+ */
+template<typename EnumType>
+static std::optional<EnumType> getEnumOptFromStrBimapCaseInsensitive(
+    std::string str, const boost::bimap<EnumType, std::string> bmap) noexcept {
+  toLowerCase(str);
+  for(const auto& pair : bmap.left) {
+    if(caseInsensitiveStrCompare(str, pair.second)) {
+      return pair.first;
+    }
+  }
+  return std::nullopt; // Return empty optional if no match is found
+}
+
+/**********************************************************************************************************************/
+
+/*
+ * For each of the enum classes below, we can fetch the corresponding json key string using toStr(enum).
+ */
+template<typename EnumType>
+inline std::string toStr(EnumType keyEnum) {
+  auto map = getMapForEnum<EnumType>();
+  auto it = map.find(keyEnum);
+  if(it != map.end()) {
+    return it->second;
+  }
+  else {
+    throw ChimeraTK::logic_error("Unable to convert enum " + std::to_string(static_cast<int>(keyEnum)) + " to string.");
+  }
+}
+
+/**********************************************************************************************************************/
 
 enum class mapFileTopLevelKeys {
-  MAP_FILE_FORMAT_VERSION = 0,
+  MAP_FILE_FORMAT_VERSION,
   METADATA,
   REGISTERS,
-  // Add other keys here.
-  SIZE // Keep this at the end so as to automatically be the count of keys.
 };
 
-static const std::array<std::string, static_cast<size_t>(mapFileTopLevelKeys::SIZE)> topLevelKeyStrs = {
-    // Indexed by mapFileTopLevelKeys so keep them in the same order.
-    "mapFileFormatVersion", "metadata", "registers"};
-
-inline std::string toStr(mapFileTopLevelKeys keyEnum) {
-  return topLevelKeyStrs[static_cast<int>(keyEnum)];
+// Associate json key strings with mapFileTopLevelKeys enums.
+template<>
+inline const std::unordered_map<mapFileTopLevelKeys, std::string> getMapForEnum<mapFileTopLevelKeys>() {
+  static const std::unordered_map<mapFileTopLevelKeys, std::string> uMap = {
+      // clang-format off
+        {mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION, "mapFileFormatVersion"}, 
+        {mapFileTopLevelKeys::METADATA, "metadata"},
+        {mapFileTopLevelKeys::REGISTERS, "registers"}
+      // clang-format on
+  };
+  return uMap;
 }
 
 /**********************************************************************************************************************/
 
 enum class mapFileMetadataKeys {
-  DEFAULT_RECOVERY_REGISTER = 0,
+  DEFAULT_RECOVERY_REGISTER,
   DELIMITER,
-  // Add other keys here.
-  SIZE // Keep this at the end so as to automatically be the count of keys.
 };
 
-static const std::array<std::string, static_cast<size_t>(mapFileMetadataKeys::SIZE)> metadataKeyStrs = {
-    // Indexed by mapFileMetadataKeys so keep them in the same order.
-    "defaultRecoveryRegister", "delimiter"};
-
-inline std::string toStr(mapFileMetadataKeys keyEnum) {
-  return metadataKeyStrs[static_cast<int>(keyEnum)];
+// Associate json key strings with mapFileMetadataKeys enums.
+template<>
+inline const std::unordered_map<mapFileMetadataKeys, std::string> getMapForEnum<mapFileMetadataKeys>() {
+  static const std::unordered_map<mapFileMetadataKeys, std::string> uMap = {
+      // clang-format off
+        {mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER, "defaultRecoveryRegister"},
+        {mapFileMetadataKeys::DELIMITER, "delimiter"}
+      // clang-format on
+  };
+  return uMap;
 }
+
 /**********************************************************************************************************************/
 
 enum class mapFileRegisterKeys {
-  WRITE = 0,
+  WRITE,
   READ,
   TYPE,
   N_ELEM,
@@ -103,29 +170,30 @@ enum class mapFileRegisterKeys {
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
   FIXED_SIZE_NUM_WIDTH,
-  // Add other keys here.
-  SIZE // Keep this at the end so as to automatically be the count of keys.
-};
-static const std::array<std::string, static_cast<size_t>(mapFileRegisterKeys::SIZE)> registerKeyStrs = {
-    // Indexed by mapFileRegisterKeys so keep them in the same order.
-    "write",     // WRITE
-    "read",      // READ,
-    "type",      // TYPE,
-    "nElem",     // N_ELEM,
-    "delimiter", // DELIMITER,
-    "cmdDelim",  // COMMAND_DELIMITER,
-    "respDelim", // RESPONSE_DELIMITER,
-    "fixedWidth" // FIXED_SIZE_NUM_WIDTH,
 };
 
-inline std::string toStr(mapFileRegisterKeys keyEnum) {
-  return registerKeyStrs[static_cast<int>(keyEnum)];
+// Associate json key strings with mapFileRegisterKeys enums.
+template<>
+inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFileRegisterKeys>() {
+  static const std::unordered_map<mapFileRegisterKeys, std::string> uMap = {
+      // clang-format off
+        {mapFileRegisterKeys::WRITE, "write"}, 
+        {mapFileRegisterKeys::READ, "read"}, 
+        {mapFileRegisterKeys::TYPE, "type"},
+        {mapFileRegisterKeys::N_ELEM, "nElem"}, 
+        {mapFileRegisterKeys::DELIMITER, "delimiter"},
+        {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"}, 
+        {mapFileRegisterKeys::RESPONSE_DELIMITER, "respDelim"},
+        {mapFileRegisterKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+      // clang-format on
+  };
+  return uMap;
 }
 
 /**********************************************************************************************************************/
 
 enum class mapFileInteractionInfoKeys {
-  COMMAND = 0,
+  COMMAND,
   RESPESPONSE,
   TYPE,
   N_RESPONSE_BYTES,
@@ -134,68 +202,101 @@ enum class mapFileInteractionInfoKeys {
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
   FIXED_SIZE_NUM_WIDTH,
-  // TODO add checksum
-  //  Add other keys here.
-  SIZE // Keep this at the end so as to automatically be the count of keys.
 };
-static const std::array<std::string, static_cast<size_t>(mapFileInteractionInfoKeys::SIZE)> interactionInfoKeyStrs = {
-    // Indexed by mapFileInteractionInfoKeys so keep them in the same order.
-    "cmd",        // COMMAND
-    "resp",       // RESPESPONSE,
-    "type",       // TYPE,
-    "nRespBytes", // N_RESPOCNE_BYTES,
-    "nRespLines", // N_RESPONCE_LINES,
-    "delimiter",  // DELIMITER,
-    "cmdDelim",   // COMMAND_DELIMITER,
-    "respDelim",  // RESPONSE_DELIMITER,
-    "fixedWidth"  // FIXED_SIZE_NUM_WIDTH,
-};
-inline std::string toStr(mapFileInteractionInfoKeys keyEnum) {
-  return registerKeyStrs[static_cast<int>(keyEnum)];
-}
 
+// Associate json key strings with mapFileInteractionInfoKeys enums.
+template<>
+inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum<mapFileInteractionInfoKeys>() {
+  static const std::unordered_map<mapFileInteractionInfoKeys, std::string> uMap = {
+      // clang-format off
+        {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
+        {mapFileInteractionInfoKeys::RESPESPONSE, "resp"},
+        {mapFileInteractionInfoKeys::TYPE, "type"}, 
+        {mapFileInteractionInfoKeys::N_RESPONSE_BYTES, "nRespBytes"},
+        {mapFileInteractionInfoKeys::N_RESPONSE_LINES, "nRespLines"}, 
+        {mapFileInteractionInfoKeys::DELIMITER, "delimiter"},
+        {mapFileInteractionInfoKeys::COMMAND_DELIMITER, "cmdDelim"},
+        {mapFileInteractionInfoKeys::RESPONSE_DELIMITER, "respDelim"},
+        {mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+      // clang-format on
+  };
+  return uMap;
+}
 /**********************************************************************************************************************/
 
-/**
- * Internal representation type to which we have to convert successfully.
- * To add a new type, you must update
- * CommandBasedBackendRegisterInfo.cc: populate the data descriptor in the CommandBasedBackendRegisterInfo
- * CommandBasedBackendRegisterAccessor.cc: update getRegex, getToUserTypeFunction, and getToTransportLayerFunction.
- */
+/** Internal representation type to which we have to convert successfully.*/
 enum class TransportLayerType {
-  // must be in the same order
-  DEC_INT = 0,
+  DEC_INT,
   HEX_INT,
   BIN_INT,
   DEC_FLOAT,
   STRING,
   VOID,
-  // Add other keys here.
-  SIZE // Keep this at the end so as to automatically be the count of keys.
 };
 
-static const std::array<std::string, static_cast<size_t>(TransportLayerType::SIZE)> registerTypeStrs = {
-    // Indexed by TransportLayerType so keep them in the same order:
-    "decInt",
-    "hexInt",
-    "binInt",
-    "decFloat",
-    "string",
-    "void",
-};
-
-inline std::string toStr(TransportLayerType eType) {
-  return registerTypeStrs[static_cast<int>(eType)];
+template<>
+inline const boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
+  static const auto bmap = _makeBimap<TransportLayerType, std::string>({
+      // clang-format off
+            {TransportLayerType::DEC_INT, "decInt"},
+            {TransportLayerType::HEX_INT, "hexInt"},
+            {TransportLayerType::BIN_INT, "binInt"},
+            {TransportLayerType::DEC_FLOAT, "decFloat"},
+            {TransportLayerType::STRING, "string"},
+            {TransportLayerType::VOID, "void"},
+      // clang-format on
+  });
+  return bmap;
 }
 
-[[nodiscard]] std::optional<TransportLayerType> typeStrToEnum(std::string typeStr) noexcept {
-  toLowerCase(typeStr);
-  for(size_t iType = 0; iType < registerTypeStrs.size(); ++iType) {
-    if(caseInsensitiveStrCompare(typeStr, registerTypeStrs[iType])) {
-      return static_cast<TransportLayerType>(iType);
+template<>
+inline std::string toStr<TransportLayerType>(TransportLayerType keyEnum) {
+  auto bimap = getBimapForEnum<TransportLayerType>();
+  auto it = bimap.left.find(keyEnum);
+  if(it != bimap.left.end()) {
+    return it->second; // Safe access
+  }
+  else {
+    throw ChimeraTK::logic_error("Unable to convert TransportLayerType enum " +
+        std::to_string(static_cast<int>(keyEnum)) + " to string; Check getBimapForEnum.");
+  }
+}
+
+// get a std::optional<TransportLayerType> from a string using
+// strToEnumOpt<TransportLayerType>(std::string typeString)
+
+namespace ChimeraTK {
+  static const std::unordered_map<TransportLayerType, DataType> TransportLayerTypeToDataTypeMap = {
+      // clang-format off
+            {TransportLayerType::DEC_INT, DataType::int64},
+            {TransportLayerType::HEX_INT, DataType::uint64},
+            {TransportLayerType::BIN_INT, DataType::uint64},
+            {TransportLayerType::DEC_FLOAT, DataType::float64},
+            {TransportLayerType::STRING, DataType::string},
+            {TransportLayerType::VOID, DataType::Void}
+      // clang-format on
+  };
+
+  /**
+   * @brief Fetches data types corresponding to the TransportLayerType type.
+   * @throws ChimeraTK::logic_error if the type is not recognized.
+   */
+  inline DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
+    auto it = TransportLayerTypeToDataTypeMap.find(type);
+    if(it != TransportLayerTypeToDataTypeMap.end()) {
+      return it->second;
+    }
+    else {
+      throw ChimeraTK::logic_error("Type " + toStr(type) + " is not in TransportLayerTypeToDataTypeMap.");
     }
   }
-  return std::nullopt; // Return empty optional if no match is found
+} // namespace ChimeraTK
+
+/**********************************************************************************************************************/
+
+template<typename EnumType>
+[[nodiscard]] std::optional<TransportLayerType> strToEnumOpt(const std::string& str) noexcept {
+  return getEnumOptFromStrBimapCaseInsensitive(str, getBimapForEnum<EnumType>());
 }
 
 /**********************************************************************************************************************/

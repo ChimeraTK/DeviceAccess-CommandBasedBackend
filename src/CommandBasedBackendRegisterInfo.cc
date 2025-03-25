@@ -83,7 +83,7 @@ namespace ChimeraTK {
 
     // Validate retister-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
-        j, registerKeyStrs, "Map file registry entry " + registerPath + " has unknown key");
+        j, getMapForEnum<mapFileRegisterKeys>(), "Map file registry entry " + registerPath + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
@@ -94,7 +94,7 @@ namespace ChimeraTK {
     auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::TYPE));
     if(typeStrOption) { // If type is set at the top level
       std::string typeValue = typeStrOption->get<std::string>();
-      if(auto typeEnumOption = typeStrToEnum(typeValue)) {
+      if(auto typeEnumOption = strToEnumOpt<TransportLayerType>(typeValue)) {
         readInfo.transportLayerType = *typeEnumOption;
         writeInfo.transportLayerType = *typeEnumOption;
       }
@@ -158,8 +158,8 @@ namespace ChimeraTK {
     // This is not just a constructor because we want to fill in json
 
     // Validate json keys at the InteractionInfo level
-    throwIfHasInvalidJsonKeyCaseInsensitive(
-        j, interactionInfoKeyStrs, "Map file registry entry has unknown key for " + errorMessageDetail);
+    throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileInteractionInfoKeys>(),
+        "Map file registry entry has unknown key for " + errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
     // COMMAND
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND))) {
@@ -177,7 +177,7 @@ namespace ChimeraTK {
     // TYPE
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
       std::string typeValue = opt->get<std::string>();
-      if(auto typeEnumOption = typeStrToEnum(typeValue)) {
+      if(auto typeEnumOption = strToEnumOpt<TransportLayerType>(typeValue)) {
         transportLayerType = *typeEnumOption;
       }
       else {
@@ -351,33 +351,6 @@ namespace ChimeraTK {
       }
     }
   } // end if void type
-
-  /********************************************************************************************************************/
-
-  static DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
-    if(type == TransportLayerType::DEC_INT) {
-      return DataType::int64;
-    }
-    else if(type == TransportLayerType::HEX_INT) {
-      return DataType::uint64;
-    }
-    else if(type == TransportLayerType::BIN_INT) {
-      return DataType::uint64;
-    }
-    else if(type == TransportLayerType::DEC_FLOAT) {
-      return DataType::float64;
-    }
-    else if(type == TransportLayerType::STRING) {
-      return DataType::string;
-    }
-    else if(type == TransportLayerType::VOID) {
-      return DataType::Void;
-    }
-    // Either some new type was added but this list was not updated.
-    // or we've been given a type from an uninitalized InteractionInfo
-    throw ChimeraTK::logic_error("Type not recognized by getDataTypeFromTransportLayerType");
-    return DataType::string;
-  }
 
   /********************************************************************************************************************/
 
