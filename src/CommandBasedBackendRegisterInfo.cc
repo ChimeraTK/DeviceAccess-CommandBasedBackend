@@ -122,10 +122,10 @@ namespace ChimeraTK {
     }
 
     readInfo.cmdLineDelimiter = cmdDelim;
-    std::get<InteractionInfo::ResponseLinesInfo>(readInfo.responseInfo).delimiter = respDelim;
+    readInfo.setResponseDelimiter(respDelim);
 
     writeInfo.cmdLineDelimiter = cmdDelim;
-    std::get<InteractionInfo::ResponseLinesInfo>(writeInfo.responseInfo).delimiter = respDelim;
+    writeInfo.setResponseDelimiter(respDelim);
     // NOTE: these delimiter settings may be overrided later by populateFromJson below.
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
@@ -154,11 +154,10 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void CommandBasedBackendRegisterInfo::InteractionInfo::populateFromJson(
-      const json& j, std::string errorMessageDetail) {
+  void InteractionInfo::populateFromJson(const json& j, std::string errorMessageDetail) {
     // This is not just a constructor because we want to fill in json
 
-    // validate json keys at this level
+    // Validate json keys at the InteractionInfo level
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, interactionInfoKeyStrs, "Map file registry entry has unknown key for " + errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -190,8 +189,9 @@ namespace ChimeraTK {
     bool explicitlySetToReadLines = false;
     // DELIMITER
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
-      cmdLineDelimiter = opt->get<std::string>();
-      std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
+      std::string delimiter = opt->get<std::string>();
+      cmdLineDelimiter = delimiter;
+      setResponseDelimiter(delimiter);
       // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
     }
 
@@ -203,7 +203,7 @@ namespace ChimeraTK {
     // RESPONSE_DELIMITER, override all other settings
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER))) {
       explicitlySetToReadLines = true;
-      std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).delimiter = opt->get<std::string>();
+      setResponseDelimiter(opt->get<std::string>());
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONSE_LINES,
@@ -211,7 +211,7 @@ namespace ChimeraTK {
       explicitlySetToReadLines = true;
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        std::get<InteractionInfo::ResponseLinesInfo>(responseInfo).nLines = static_cast<size_t>(n);
+        setResponseNLines(static_cast<size_t>(n));
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_LINES) + " " +
@@ -223,7 +223,7 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES))) {
       int n = std::stoi(opt->get<std::string>());
       if(n >= 0) {
-        responseInfo = ResponseBytesInfo{static_cast<size_t>(n)};
+        setResponseBytes(static_cast<size_t>(n));
       }
       else {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES) + " " +
@@ -247,6 +247,51 @@ namespace ChimeraTK {
       }
     }
   } // populateFromJson
+
+  /********************************************************************************************************************/
+
+  std::optional<size_t> InteractionInfo::getResponseNLines() const {
+    if(usesReadLines()) {
+      return std::get<ResponseLinesInfo>(responseInfo).nLines;
+    }
+    return std::nullopt;
+  }
+
+  /********************************************************************************************************************/
+
+  std::optional<std::string> InteractionInfo::getResponseLinesDelimiter() const {
+    if(usesReadLines()) {
+      return std::get<ResponseLinesInfo>(responseInfo).delimiter;
+    }
+    return std::nullopt;
+  }
+
+  /********************************************************************************************************************/
+
+  std::optional<size_t> InteractionInfo::getResponseBytes() const {
+    if(usesReadBytes()) {
+      return std::get<ResponseBytesInfo>(responseInfo).nBytesReadResponse;
+    }
+    return std::nullopt;
+  }
+
+  /********************************************************************************************************************/
+
+  void InteractionInfo::setResponseDelimiter(std::string delimiter) {
+    if(not usesReadLines()) {
+      responseInfo = ResponseLinesInfo{};
+    }
+    std::get<ResponseLinesInfo>(responseInfo).delimiter = delimiter;
+  }
+
+  /********************************************************************************************************************/
+
+  void InteractionInfo::setResponseNLines(size_t nLines) {
+    if(not usesReadLines()) {
+      responseInfo = ResponseLinesInfo{};
+    }
+    std::get<ResponseLinesInfo>(responseInfo).nLines = nLines;
+  }
 
   /********************************************************************************************************************/
   /********************************************************************************************************************/
