@@ -167,7 +167,8 @@ namespace ChimeraTK {
     json j;
     file >> j;
 
-    throwIfHasInvalidJsonKeyCaseInsensitive(j, topLevelKeyStrs, "Map file top level has unknown key");
+    throwIfHasInvalidJsonKeyCaseInsensitive(
+        j, getMapForEnum<mapFileTopLevelKeys>(), "Map file top level has unknown key");
 
     if(auto mapFileFormatVersionOpt =
             caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION))) {
@@ -186,6 +187,8 @@ namespace ChimeraTK {
       _defaultRecoveryRegister = RegisterPath(
           caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER), ""));
       _serialDelimiter = caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DELIMITER), "\r\n");
+      throwIfHasInvalidJsonKeyCaseInsensitive(
+          metaDataJson, getMapForEnum<mapFileMetadataKeys>(), "Map file metadata has unknown key");
     }
     else {
       throw ChimeraTK::logic_error("Missing keys " + toStr(mapFileTopLevelKeys::METADATA) + " in JSON data");
