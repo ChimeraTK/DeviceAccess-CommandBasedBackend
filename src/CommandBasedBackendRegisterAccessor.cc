@@ -12,9 +12,6 @@
 #include <sstream>
 #include <string>
 
-using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
-using TransportLayerType = CommandBasedBackendRegisterInfo::TransportLayerType;
-
 /**
  * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
  * This facilitates code reuse once write responses are implemented.
@@ -26,21 +23,30 @@ using TransportLayerType = CommandBasedBackendRegisterInfo::TransportLayerType;
  */
 std::regex getRegex(const TransportLayerType type, const size_t requiredElements, const std::string errorMessageDetail);
 
-/** Return the functional for the given TransportLayerType for converting data from the transport layer format to
- * UserType representation*/
-template<typename UserType>
-ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType);
-
-/** Return the functional for the given TransportLayerType for converting data from the to UserType representation to
- * the transport layer format*/
-template<typename UserType>
-ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType);
-
 namespace ChimeraTK {
+
+  using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
+
+  /**
+   * @brief Gets the regex pattern string corresponding to the type.
+   * @param[in] type The TransportLayerType used to pick the numerical regex segment.
+   * @returns the string regex pattern
+   */
+  static std::string getRegexStringForType(const TransportLayerType type);
+
+  /** Return the functional for the given TransportLayerType for converting data from the transport layer format to
+   * UserType representation*/
   template<typename UserType>
+  static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType);
+
+  /** Return the functional for the given TransportLayerType for converting data from the to UserType representation to
+   * the transport layer format*/
+  template<typename UserType>
+  static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType);
 
   /********************************************************************************************************************/
 
+  template<typename UserType>
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
@@ -76,11 +82,12 @@ namespace ChimeraTK {
     this->_exceptionBackend = dev;
 
     if(_registerInfo.isWriteable()) {
-      _transportLayerTypeFromUserType = getToTransportLayerFunction(_registerInfo.writeInfo.getTransportLayerType());
+      _transportLayerTypeFromUserType =
+          getToTransportLayerFunction<UserType>(_registerInfo.writeInfo.getTransportLayerType());
     }
 
     if(_registerInfo.isReadable()) {
-      _userTypeFromTransportLayerType = getToUserTypeFunction(_registerInfo.readInfo.getTransportLayerType());
+      _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
       _readResponseRegex = getRegex(_registerInfo.readInfo.getTransportLayerType(),
           _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
           "read in " + _registerInfo.registerPath);
@@ -286,14 +293,14 @@ namespace {
   // Do this using _registerInfo.writeInfo.fixedSizeNumberWidthOpt in the function pointer implementation.
 
   template<typename UserType>
-  std::string toTransportLayerDefault(const UserType& val, const InteractionInfo& iInfo) {
+  static std::string toTransportLayerDefault(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<std::string, UserType>(val);
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
-  std::string toTransportLayerHexInt(const UserType& val, const InteractionInfo& iInfo) {
+  static std::string toTransportLayerHexInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
     std::ostringstream oss;
     oss << std::hex << ChimeraTK::userTypeToUserType<uint64_t, UserType>(val);
     return oss.str();
@@ -302,44 +309,43 @@ namespace {
   /********************************************************************************************************************/
 
   template<typename UserType>
-  std::string toTransportLayerBinInt(const UserType& val, const InteractionInfo& iInfo) {
-    auto maybeStr = binaryStrFromInt<UserType>(val, _registerInfo.writeInfo.fixedSizeNumberWidthOpt);
-    if(not maybeStr) {
-      throw ChimerTK::runtime_error("Unable to fit value into the fixed_width write slot");
+  static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+    if(auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedSizeNumberWidthOpt)) {
+      return *maybeStr;
     }
-    return maybeStr.value;
+    throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
   }
 
   /********************************************************************************************************************/
   /********************************************************************************************************************/
   // For use in postRead
+
   template<typename UserType>
-  UserType toUserTypeDefault(const std::string& str, const InteractionInfo& iInfo) {
+  UserType toUserTypeDefault(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<UserType, std::string>(str);
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
-  UserType toUserTypeHexInt(const std::string& str, const InteractionInfo& iInfo) {
+  static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str);
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
-  UserType toUserTypeBinInt(const std::string& str, const InteractionInfo& iInfo) {
-    auto maybeInt = intFromBinaryStr<UserType>(str, _registerInfo.readInfo.fixedSizeNumberWidthOpt);
-    if(not maybeInt) {
-      throw ChimerTK::runtime_error("Unable to fit the read value into UserType.");
+  static UserType toUserTypeBinInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    if(auto maybeInt = intFromBinaryStr<UserType>(str)) {
+      return *maybeInt;
     }
-    return maybeInt.value();
+    throw ChimeraTK::runtime_error("Unable to fit the read value into UserType.");
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
-  ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
+  static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
     if(transportLayerType == TransportLayerType::HEX_INT) {
       return &toUserTypeHexInt<UserType>;
     }
@@ -354,9 +360,9 @@ namespace {
   /********************************************************************************************************************/
 
   template<typename UserType>
-      ToTransportLayerFunc < UserType >> getToTransportLayerFunction(TransportLayerType transportLayerType) {
+  static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType) {
     if(transportLayerType == TransportLayerType::HEX_INT) {
-      return &toTransportLayerHexInt<UserType>
+      return &toTransportLayerHexInt<UserType>;
     }
     else if(transportLayerType == TransportLayerType::BIN_INT) {
       return &toTransportLayerBinInt<UserType>;
