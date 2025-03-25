@@ -17,7 +17,7 @@
  *      toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER): <string>,
  *      toStr(mapFileMetadataKeys::DELIMITER): <string>,
  *  },
- *  toStr(mapFileTopLevelKeys::REGISTERS: {
+ *  toStr(mapFileTopLevelKeys::REGISTERS): {
  *      "registerPath1":{
  *          toStr(mapFileRegisterKeys:: ...): <value>,
  *          toStr(mapFileRegisterKeys::TYPE) : toStr(<TransportLayerType 1>),

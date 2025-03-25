@@ -43,11 +43,21 @@ namespace ChimeraTK {
         SEND_COMMAND_AND_READ_LINES = 0,
         SEND_COMMAND_AND_READ_BYTES = 1
       };
-      std::variant<ResponseLinesInfo, ResponseBytesInfo>
-          responseInfo; // Default=ResponseLinesInfo
-                        // responseInfo variant type order must match the SendCommandType enum values.
+      /*
+       * responseInfo stores information relavent to line delimited reading when reading lines,
+       * or information about fixed byte reading when reading bytes.
+       * For readability, interact with it through the getters and setters.
+       * Default=ResponseLinesInfo
+       * responseInfo variant type order indicies must match the SendCommandType enum values
+       */
+      std::variant<ResponseLinesInfo, ResponseBytesInfo> responseInfo;
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
+      /*
+       * If an InteractionInfo is not active, then it is disabled.
+       * For example, if readInfo.isActive() is true, then the register is readable;
+       * but if readInfo.isActive is false, then it is write-only.
+       */
       inline bool isActive() const { return not commandPattern.empty(); }
       inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
       inline bool useReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
@@ -75,12 +85,20 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     /*----------------------------------------------------------------------------------------------------------------*/
 
+    // Must have the option of 0 arguments
     explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {}, InteractionInfo readInfo_ = {},
         InteractionInfo writeInfo_ = {}, uint nElements_ = 1);
 
+    /**
+     * @brief Create and populate a CommandBasedBackendRegisterInfo directly from json.
+     * @param[in] defaultSerialDelimiter Sets the serial delimiters in case no delimiter is mentioned in the json.
+     */
     explicit CommandBasedBackendRegisterInfo(
         const RegisterPath& registerPath_, const json& j, const std::string& defaultSerialDelimiter);
 
+    /**
+     * @brief Init must be run at the end of each constructor. It sets the dataDescriptor and validates the data.
+     */
     void init();
 
     ~CommandBasedBackendRegisterInfo() override = default;
