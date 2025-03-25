@@ -29,11 +29,11 @@ namespace ChimeraTK {
       std::string cmdLineDelimiter;
       /*--------------------------------------------------------------------------------------------------------------*/
       struct ResponseLinesInfo {
-        size_t nLines = 0;
+        size_t nLines = 1;
         std::string delimiter;
       };
       struct ResponseBytesInfo {
-        size_t nBytesReadResponse = 0;
+        size_t nBytesReadResponse = 1;
       };
       enum SendCommandType {
         /* These serve to label the indicies of the types in the responseInfo variant
