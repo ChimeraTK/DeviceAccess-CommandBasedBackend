@@ -133,6 +133,7 @@ namespace ChimeraTK {
   }         // end constructor
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   void CommandBasedBackendRegisterInfo::InteractionInfo::populateFromJson(
       const json& j, std::string errorMessageDetail) {
@@ -279,7 +280,7 @@ namespace ChimeraTK {
     }
   } // end if void type
 
-  /******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
     if(type == TransportLayerType::DEC_INT) {
@@ -306,7 +307,7 @@ namespace ChimeraTK {
     return DataType::string;
   }
 
-  /******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static void ensureTransportLayerTypeAreSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string errorMessageDetail) {
@@ -331,7 +332,7 @@ namespace ChimeraTK {
     }
   }
 
-  /******************************************************************************************************************/
+  /********************************************************************************************************************/
 
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
