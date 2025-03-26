@@ -6,6 +6,7 @@
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
 
+#include <optional>
 #include <utility>
 
 namespace ChimeraTK {
@@ -46,6 +47,48 @@ namespace ChimeraTK {
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
+  /**
+   * @brief Sets iInfo.nElements from JSON, if present, or else sets it to 1.
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if nElements is set <= 0 in the JSON.
+   */
+  static void setNElementsFromJson(
+      CommandBasedBackendRegisterInfo& rInfo, const json& j, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Sets the iInfo.TransportLayerType from JSON, if present, with type checking.
+   * This must be a template to accomdate keys at the register level and the interaction level.
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if the type in the JSON is invalid.
+   */
+  template<typename EnumType>
+  static void setTypeFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Sets the InteractionInfo's line delimiters, number of lines, and number of bytes, from the JSON,
+   * This must be a template to accomdate keys at the register level and the interaction level.
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] defaultDelimOpt Is a the default serial delimiter, such as that coming from the dmap file.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if the delimiters, nLines, and nBytes are in an invalid combination
+   */
+  template<typename EnumType>
+  static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
+      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Sets iInfo.fixedSizeNumberWidthOpt from JSON.
+   * This must be a template to accomdate keys at the register level and the interaction level.
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if the JSON lists a value <= 0.
+   */
+  template<typename EnumType>
+  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+
+  /********************************************************************************************************************/
   /********************************************************************************************************************/
 
   void CommandBasedBackendRegisterInfo::init() {
@@ -75,75 +118,44 @@ namespace ChimeraTK {
       const RegisterPath& registerPath_, const json& j, const std::string& defaultSerialDelimiter)
   : registerPath(registerPath_) {
     /*
-     * Here we blindly extract data from the json here,
-     * checking only that we don't have invalid json keys.
-     * Then we pass to the other constructor
-     * for all common tasks and data validation.
+     * Here we extract data from the json,
+     * Checking only that we don't have invalid json keys or unpassable negative numbers.
+     * Then call init() for data validation and tasks common to all constructors.
      */
+    std::string errorMessageDetail = "register " + registerPath;
 
     // Validate retister-level json keys
     throwIfHasInvalidJsonKeyCaseInsensitive(
-        j, getMapForEnum<mapFileRegisterKeys>(), "Map file registry entry " + registerPath + " has unknown key");
-    /*----------------------------------------------------------------------------------------------------------------*/
+        j, getMapForEnum<mapFileRegisterKeys>(), "Map file " + errorMessageDetail + " has unknown key");
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
+
     // N_ELEM,
-    nElements = caseInsensitiveGetValueOr(j, toStr(mapFileRegisterKeys::N_ELEM), static_cast<unsigned int>(1));
-    /*----------------------------------------------------------------------------------------------------------------*/
+    setNElementsFromJson(*this, j, errorMessageDetail);
+
     // TYPE
-    auto typeStrOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::TYPE));
-    if(typeStrOption) { // If type is set at the top level
-      std::string typeValue = typeStrOption->get<std::string>();
-      if(auto typeEnumOption = strToEnumOpt<TransportLayerType>(typeValue)) {
-        readInfo.transportLayerType = *typeEnumOption;
-        writeInfo.transportLayerType = *typeEnumOption;
-      }
-      else {
-        throw ChimeraTK::logic_error(
-            "Unknown value for " + toStr(mapFileRegisterKeys::TYPE) + " " + typeValue + " for register" + registerPath);
-      }
-    }
-    /*----------------------------------------------------------------------------------------------------------------*/
-    // Set delimiters based on top-level information and metadata
-    std::string cmdDelim = defaultSerialDelimiter;
-    std::string respDelim = defaultSerialDelimiter;
-    // DELIMITER
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::DELIMITER))) {
-      cmdDelim = delimOption->get<std::string>();
-      respDelim = cmdDelim;
-    }
-    // COMMAND_DELIMITER,
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::COMMAND_DELIMITER))) {
-      cmdDelim = delimOption->get<std::string>();
-    }
-    // RESPONSE_DELIMITER, override setting of DELIMITER
-    if(auto delimOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::RESPONSE_DELIMITER))) {
-      respDelim = delimOption->get<std::string>();
-    }
+    setTypeFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
+    setTypeFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
-    readInfo.cmdLineDelimiter = cmdDelim;
-    readInfo.setResponseDelimiter(respDelim);
+    // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
+    setEndingsFromJson<mapFileRegisterKeys>(readInfo, j, defaultSerialDelimiter, errorMessageDetail);
+    setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter, errorMessageDetail);
+    // NOTE: These delimiter settings may be overrided by populateFromJson below.
 
-    writeInfo.cmdLineDelimiter = cmdDelim;
-    writeInfo.setResponseDelimiter(respDelim);
-    // NOTE: these delimiter settings may be overrided later by populateFromJson below.
-    /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
-    auto sizeOption = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::FIXED_SIZE_NUM_WIDTH));
-    readInfo.fixedSizeNumberWidthOpt = sizeOption;
-    writeInfo.fixedSizeNumberWidthOpt = sizeOption;
-    /*----------------------------------------------------------------------------------------------------------------*/
+    setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
+    setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+
     // READ,
     // Override settings from the top level based on the "read" key's contents
-
     if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ))) {
-      readInfo.populateFromJson(readOpt->get<json>(), "register " + registerPath + " read");
+      readInfo.populateFromJson(readOpt->get<json>(), errorMessageDetail + " read");
     }
-    /*----------------------------------------------------------------------------------------------------------------*/
+
     // WRITE
     // Override settings from the top level based on the "write" key's contents
     if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE))) {
-      writeInfo.populateFromJson(writeOpt->get<json>(), "register " + registerPath + " write");
+      writeInfo.populateFromJson(writeOpt->get<json>(), errorMessageDetail + " write");
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write response from pattern; Ticket 13531
@@ -154,108 +166,36 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void InteractionInfo::populateFromJson(const json& j, std::string errorMessageDetail) {
+  void InteractionInfo::populateFromJson(const json& j, const std::string& errorMessageDetail) {
     // This is not just a constructor because we want to fill in json
 
     // Validate json keys at the InteractionInfo level
     throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileInteractionInfoKeys>(),
-        "Map file registry entry has unknown key for " + errorMessageDetail);
-    /*----------------------------------------------------------------------------------------------------------------*/
+        "Map file Interaction has unknown key for " + errorMessageDetail);
+
     // COMMAND
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND))) {
       commandPattern = opt->get<std::string>();
-    }
-    else {
+    } // Resist the temptation for an early return here; we may later decide to change the definition
+      // of an active interaction to involve type
+
+    // TYPE
+    setTypeFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+
+    if(not isActive()) {
       return;
     }
-    /*----------------------------------------------------------------------------------------------------------------*/
+
     // RESPESPONSE,
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
       responsePattern = opt->get<std::string>();
     }
-    /*----------------------------------------------------------------------------------------------------------------*/
-    // TYPE
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::TYPE))) {
-      std::string typeValue = opt->get<std::string>();
-      if(auto typeEnumOption = strToEnumOpt<TransportLayerType>(typeValue)) {
-        transportLayerType = *typeEnumOption;
-      }
-      else {
-        throw ChimeraTK::logic_error("Unknown value for " + toStr(mapFileInteractionInfoKeys::TYPE) + " " + typeValue +
-            " for " + errorMessageDetail);
-      }
-    }
-    /*----------------------------------------------------------------------------------------------------------------*/
-    bool explicitlySetToReadLines = false;
-    bool explicitlySetCmdDelimiter = false;
-    // DELIMITER
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::DELIMITER))) {
-      std::string delimiter = opt->get<std::string>();
-      cmdLineDelimiter = delimiter;
-      setResponseDelimiter(delimiter);
-      explicitlySetCmdDelimiter = true;
-      // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
-    }
 
-    // COMMAND_DELIMITER, override all other settings
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND_DELIMITER))) {
-      cmdLineDelimiter = opt->get<std::string>();
-      explicitlySetCmdDelimiter = true;
-    }
+    // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
+    setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, errorMessageDetail);
 
-    // RESPONSE_DELIMITER, override all other settings
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPONSE_DELIMITER))) {
-      explicitlySetToReadLines = true;
-      setResponseDelimiter(opt->get<std::string>());
-    }
-    /*----------------------------------------------------------------------------------------------------------------*/
-    // N_RESPONSE_LINES,
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONSE_LINES))) {
-      explicitlySetToReadLines = true;
-      int n = std::stoi(opt->get<std::string>());
-      if(n >= 0) {
-        setResponseNLines(static_cast<size_t>(n));
-      }
-      else {
-        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_LINES) + " " +
-            std::to_string(n) + " for " + errorMessageDetail);
-      }
-    }
-    /*----------------------------------------------------------------------------------------------------------------*/
-    // N_RESPONSE_BYTES, set to Binary mode
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES))) {
-      int n = std::stoi(opt->get<std::string>());
-      if(n >= 0) {
-        setResponseBytes(static_cast<size_t>(n));
-      }
-      else {
-        throw ChimeraTK::logic_error("Invalid negative " + toStr(mapFileInteractionInfoKeys::N_RESPONSE_BYTES) + " " +
-            std::to_string(n) + " for " + errorMessageDetail);
-      }
-
-      // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
-      // This overrides the metadata and Register level delimiter settings.
-      if(not explicitlySetCmdDelimiter) {
-        cmdLineDelimiter = "";
-      }
-
-      if(explicitlySetToReadLines) {
-        throw ChimeraTK::logic_error("Invalid mixture of readLines and ReadBytes for " + errorMessageDetail);
-      }
-    }
-
-    /*----------------------------------------------------------------------------------------------------------------*/
     // FIXED_SIZE_NUM_WIDTH,
-    if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH))) {
-      int n = std::stoi(opt->get<std::string>());
-      if(n > 0) {
-        fixedSizeNumberWidthOpt = static_cast<size_t>(n);
-      }
-      else {
-        throw ChimeraTK::logic_error("Invalid non-positive " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) +
-            " " + std::to_string(n) + " for " + errorMessageDetail);
-      }
-    }
+    setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
   } // populateFromJson
 
   /********************************************************************************************************************/
@@ -397,5 +337,128 @@ namespace ChimeraTK {
       return getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
     }
   }
+
+  /********************************************************************************************************************/
+
+  static void setNElementsFromJson(
+      CommandBasedBackendRegisterInfo& rInfo, const json& j, const std::string& errorMessageDetail) {
+    std::string keyStr = toStr(mapFileRegisterKeys::N_ELEM);
+    long nElementsUnprotected = caseInsensitiveGetValueOr(j, keyStr, static_cast<long>(1));
+    if(nElementsUnprotected < 1) {
+      throw ChimeraTK::logic_error(
+          "Invalid non-positive " + keyStr + " " + std::to_string(nElementsUnprotected) + " for " + errorMessageDetail);
+    }
+    rInfo.nElements = static_cast<unsigned int>(nElementsUnprotected);
+  } // end setNElementsFromJson
+
+  /********************************************************************************************************************/
+
+  template<typename EnumType>
+  static void setTypeFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+    std::string keyStr = toStr(EnumType::TYPE);
+    std::optional<std::string> typeStrOpt = caseInsensitiveGetValueOption(j, keyStr);
+    if(typeStrOpt) {
+      std::optional<TransportLayerType> typeEnumOpt = strToEnumOpt<TransportLayerType>(*typeStrOpt);
+      if(typeEnumOpt) {
+        iInfo.transportLayerType = *typeEnumOpt;
+      }
+      else {
+        throw ChimeraTK::logic_error("Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
+      }
+    }
+  } // end setTypeFromJson
+
+  /********************************************************************************************************************/
+
+  template<typename EnumType>
+  static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
+      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail) {
+    bool explicitlySetToReadLines = false;
+    bool explicitlySetCmdDelimiter = false;
+    std::string keyStr;
+    /*----------------------------------------------------------------------------------------------------------------*/
+    if(defaultDelimOpt) {
+      iInfo.cmdLineDelimiter = *defaultDelimOpt;
+      iInfo.setResponseDelimiter(*defaultDelimOpt);
+    }
+    // DELIMITER
+    keyStr = toStr(EnumType::DELIMITER);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      explicitlySetCmdDelimiter = true;
+      // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
+      iInfo.cmdLineDelimiter = *opt;
+      iInfo.setResponseDelimiter(*opt);
+    }
+
+    // COMMAND_DELIMITER, override all other settings
+    keyStr = toStr(EnumType::COMMAND_DELIMITER);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      explicitlySetCmdDelimiter = true;
+      iInfo.cmdLineDelimiter = *opt;
+    }
+
+    // RESPONSE_DELIMITER, override all other settings
+    keyStr = toStr(EnumType::RESPONSE_DELIMITER);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      explicitlySetToReadLines = true;
+      iInfo.setResponseDelimiter(*opt);
+    }
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // N_RESPONSE_LINES,
+    keyStr = toStr(EnumType::N_RESPONSE_LINES);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      explicitlySetToReadLines = true;
+      int n = std::stoi(opt->get<std::string>());
+      if(n >= 0) {
+        iInfo.setResponseNLines(static_cast<size_t>(n));
+      }
+      else {
+        throw ChimeraTK::logic_error("Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " + std::to_string(n) +
+            " for " + errorMessageDetail);
+      }
+    }
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // N_RESPONSE_BYTES, Set to Binary Mode, destroying the previous delimiter and nLines settings
+    keyStr = toStr(EnumType::N_RESPONSE_BYTES);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      int n = std::stoi(opt->get<std::string>());
+      if(n >= 0) {
+        iInfo.setResponseBytes(static_cast<size_t>(n));
+      }
+      else {
+        throw ChimeraTK::logic_error(
+            "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
+      }
+
+      // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
+      // This overrides the metadata and Register level delimiter settings.
+      if(not explicitlySetCmdDelimiter) {
+        iInfo.cmdLineDelimiter = "";
+      }
+
+      if(explicitlySetToReadLines) {
+        throw ChimeraTK::logic_error("Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
+      }
+    }
+  } // end setEndingsFromJson
+
+  /********************************************************************************************************************/
+
+  template<typename EnumType>
+  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+    std::string keyStr = toStr(EnumType::FIXED_SIZE_NUM_WIDTH);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      int n = std::stoi(opt->get<std::string>());
+      if(n > 0) {
+        iInfo.fixedSizeNumberWidthOpt = static_cast<size_t>(n);
+      }
+      else {
+        throw ChimeraTK::logic_error(
+            "Invalid non-positive " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
+      }
+    }
+  } // end setFixedWidthFromJson
+
+  /********************************************************************************************************************/
 
 } // namespace ChimeraTK
