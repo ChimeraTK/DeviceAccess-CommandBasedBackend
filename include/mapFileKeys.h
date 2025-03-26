@@ -164,8 +164,10 @@ inline const std::unordered_map<mapFileMetadataKeys, std::string> getMapForEnum<
 enum class mapFileRegisterKeys {
   WRITE,
   READ,
-  TYPE,
   N_ELEM,
+  TYPE, // TYPE and below need to be in common with mapFileInteractionInfoKeys
+  N_RESPONSE_BYTES,
+  N_RESPONSE_LINES,
   DELIMITER,
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
@@ -179,8 +181,10 @@ inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<
       // clang-format off
         {mapFileRegisterKeys::WRITE, "write"}, 
         {mapFileRegisterKeys::READ, "read"}, 
-        {mapFileRegisterKeys::TYPE, "type"},
         {mapFileRegisterKeys::N_ELEM, "nElem"}, 
+        {mapFileRegisterKeys::TYPE, "type"}, //TYPE and below need to be in common with mapFileInteractionInfoKeys
+        {mapFileRegisterKeys::N_RESPONSE_BYTES, "nRespBytes"},
+        {mapFileRegisterKeys::N_RESPONSE_LINES, "nRespLines"}, 
         {mapFileRegisterKeys::DELIMITER, "delimiter"},
         {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"}, 
         {mapFileRegisterKeys::RESPONSE_DELIMITER, "respDelim"},
@@ -195,7 +199,7 @@ inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<
 enum class mapFileInteractionInfoKeys {
   COMMAND,
   RESPESPONSE,
-  TYPE,
+  TYPE, // TYPE and below need to be in common with mapFileRegisterKeys
   N_RESPONSE_BYTES,
   N_RESPONSE_LINES,
   DELIMITER,
@@ -211,7 +215,7 @@ inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapF
       // clang-format off
         {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
         {mapFileInteractionInfoKeys::RESPESPONSE, "resp"},
-        {mapFileInteractionInfoKeys::TYPE, "type"}, 
+        {mapFileInteractionInfoKeys::TYPE, "type"}, //TYPE and below need to be in common with mapFileRegisterKeys
         {mapFileInteractionInfoKeys::N_RESPONSE_BYTES, "nRespBytes"},
         {mapFileInteractionInfoKeys::N_RESPONSE_LINES, "nRespLines"}, 
         {mapFileInteractionInfoKeys::DELIMITER, "delimiter"},
