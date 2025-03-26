@@ -176,7 +176,7 @@ std::optional<std::string> binaryStrFromInt(
   size_t naturalWidth =
       getIntNaturalWidth<intType>(payload); // how many chars long should payload be with no leading 0's.
   size_t strWidth = naturalWidth;
-  ;
+
   if(fixedWidth.has_value()) {
     strWidth = fixedWidth.value();
 
