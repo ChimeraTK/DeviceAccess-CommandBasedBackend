@@ -36,7 +36,7 @@ namespace ChimeraTK {
    * @throws ChimeraTK::logic_error If no type has been set.
    */
   static void ensureTransportLayerTypeAreSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string errorMessageDetail);
+      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
    * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
@@ -295,7 +295,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static void ensureTransportLayerTypeAreSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string errorMessageDetail) {
+      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if type/transportLayerType is not set.
     if(not(writeInfo.transportLayerType.has_value() or readInfo.transportLayerType.has_value())) {
       throw ChimeraTK::logic_error("type is required but is missing for " + errorMessageDetail);
@@ -324,7 +324,7 @@ namespace ChimeraTK {
     assert(writeInfo.isActive() or readInfo.isActive());
 
     if(writeInfo.isActive()) {
-      auto writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
+      DataType writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
 
       // If readable and writeable, but incompatible data types, throw.
       if(readInfo.isActive() and
