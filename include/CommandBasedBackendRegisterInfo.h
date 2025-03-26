@@ -47,7 +47,10 @@ namespace ChimeraTK {
 
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
-      void populateFromJson(const json& j, std::string errorMessageDetail);
+
+      // Set the entire InteractionInfo from json.
+      void populateFromJson(const json& j, const std::string& errorMessageDetail);
+
       /*
        * If an InteractionInfo is not active, then it is disabled.
        * For example, if readInfo.isActive() is true, then the register is readable;
