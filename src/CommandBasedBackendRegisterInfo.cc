@@ -14,29 +14,45 @@ namespace ChimeraTK {
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 
   /**
-   * @brief Enforces This enforces having a valid combination of read and write commands and responses
+   * @brief This enforces that the register is either readable, writeable, or both.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If there isn't a read or write command, or responses without commands.
+   * @throws ChimeraTK::logic_error
    */
-  static void throwIfInvalidCommandAndResponse(
+  // static void throwIfInvalidCommandAndResponse(
+
+  static void throwIfBadActivation(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
-   * @brief Enforcement logic for void-type registers
-   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
-   * @throws ChimeraTK::logic_error If there are settings incompatible with void type.
+   * @brief This checks for the obvious error of having a command response patterns without corresponding command patterns.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error
    */
-  static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
-      unsigned int nElem, const std::string& errorMessageDetail);
+  static void throwIfBadCommandAndResponsePatterns(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
-   * @brief Enforces that a type is set, and syncronizes types if only one is set.
-   * After this, both the writeInfo and readInfo are garenteed to have thier transportLayerType set.
+   * @brief Validates nElements, particularly its interaction with VOID type.
+   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
+   * @throws ChimeraTK::logic_error If nElements is incompatible with void type.
+   */
+  static void throwIfBadNElements(
+      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Throws unless at least one of the two interaction Infos has a type set.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error If no type has been set.
    */
-  static void ensureTransportLayerTypeAreSet(
+  static void throwIfTransportLayerTypeAreNotSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
+
+  /**
+   * @brief If one InteractionInfo is missing its TransportLayerType, the type is copied from the other InteractionInfo
+   * The InteractionInfo is expected to lack a transport type if it is never activated, but the type is needed
+   * Doing this synchronization simplifies later logic, such as throwIfBadNElements.
+   */
+  static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) noexcept;
 
   /**
    * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
@@ -95,9 +111,11 @@ namespace ChimeraTK {
     std::string errorMessageDetail = "register " + registerPath;
     /*----------------------------------------------------------------------------------------------------------------*/
     // Validite data in readInfo and writeInfo
-    throwIfInvalidCommandAndResponse(writeInfo, readInfo, errorMessageDetail); // ensures readable or writeable.
-    ensureTransportLayerTypeAreSet(writeInfo, readInfo, errorMessageDetail);
-    throwIfInvalidVoidType(writeInfo, readInfo, getNumberOfElements(), errorMessageDetail);
+    throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
+    throwIfTransportLayerTypeAreNotSet(writeInfo, readInfo, errorMessageDetail);
+    synchronizeTransportLayerTypes(writeInfo, readInfo);
+    throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
+    throwIfBadNElements(writeInfo, getNumberOfElements(), errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
     // Check that the data types are compatible and set dataDescriptor
     dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
@@ -248,55 +266,70 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static void throwIfInvalidCommandAndResponse(
+  static void throwIfBadActivation(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     bool readable = readInfo.isActive();
     bool writeable = writeInfo.isActive();
-    bool hasReadResponse = not readInfo.responsePattern.empty();
-    bool hasWriteResponse = not writeInfo.responsePattern.empty();
 
     if(not(readable or writeable)) {
-      throw ChimeraTK::logic_error("A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) + " or write" +
-          toStr(mapFileInteractionInfoKeys::COMMAND) + " tags is required, and neither are present for " +
-          errorMessageDetail);
+      throw ChimeraTK::logic_error("throwIfBadActivation: A non-empty read:" +
+          toStr(mapFileInteractionInfoKeys::COMMAND) + " or write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
+          " tags is required, and neither are present for " + errorMessageDetail);
     }
 
-    // Throw if there are responses without corresponding commands.
-    if(hasReadResponse and (not readable)) {
-      throw ChimeraTK::logic_error("A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-          " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
+      if(readInfo.isActive() or not writeInfo.isActive()) {
+        throw ChimeraTK::logic_error("throwIfBadActivation: Void type must be write-only but has a " +
+            toStr(mapFileRegisterKeys::READ) + " key for " + errorMessageDetail);
+      }
     }
-    if(hasWriteResponse and (not writeable)) {
-      throw ChimeraTK::logic_error("A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-          " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
-    }
-  }
+  } // end throwIfBadActivation
 
   /********************************************************************************************************************/
 
-  static void throwIfInvalidVoidType(const InteractionInfo& writeInfo, const InteractionInfo& readInfo,
-      unsigned int nElem, const std::string& errorMessageDetail) {
+  static void throwIfBadCommandAndResponsePatterns(
+      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+    bool lacksReadCommand = readInfo.commandPattern.empty();
+    bool lacksWriteCommand = writeInfo.commandPattern.empty();
+    bool hasReadResponse = not readInfo.responsePattern.empty();
+    bool hasWriteResponse = not writeInfo.responsePattern.empty();
+    // Throw if there are responses without corresponding commands.
+    if(hasReadResponse and lacksReadCommand) {
+      throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: A non-empty read " +
+          toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty read " +
+          toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    }
+
+    if(hasWriteResponse and lacksWriteCommand) {
+      throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: A non-empty write " +
+          toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty write " +
+          toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+    }
+
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
-      if(readInfo.isActive() or not writeInfo.isActive()) {
-        throw ChimeraTK::logic_error("Void type must be write-only but has a " + toStr(mapFileRegisterKeys::READ) +
-            " key for " + errorMessageDetail);
-      }
-
-      if(nElem != 1) {
-        throw ChimeraTK::logic_error("Void type must only have 1 element but has " +
-            toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
-      }
-
       if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-        throw ChimeraTK::logic_error("Illegal inja template in write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
-            " = \"" + writeInfo.commandPattern + "\" for void-type for " + errorMessageDetail);
+        throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: Illegal inja template in write " +
+            toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern + "\" for void-type for " +
+            errorMessageDetail);
+      }
+    }
+  } // end throwIfBadCommandAndResponsePatterns
+
+  /********************************************************************************************************************/
+
+  static void throwIfBadNElements(
+      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail) {
+    if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
+      if(nElem != 1) {
+        throw ChimeraTK::logic_error("throwIfBadNElements: Void type must only have 1 element but has " +
+            toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
       }
     }
   } // end if void type
 
   /********************************************************************************************************************/
 
-  static void ensureTransportLayerTypeAreSet(
+  static void throwIfTransportLayerTypeAreNotSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if type/transportLayerType is not set.
     if(not(writeInfo.transportLayerType.has_value() or readInfo.transportLayerType.has_value())) {
@@ -308,9 +341,11 @@ namespace ChimeraTK {
     if(writeInfo.isActive() and not writeInfo.transportLayerType.has_value()) {
       throw ChimeraTK::logic_error("type is required but is missing on write for " + errorMessageDetail);
     }
+  }
 
-    // If one is set but not the other, set the other. This is expected to happen when the one with no value is not
-    // active such as in read-only and write-only situations.
+  /********************************************************************************************************************/
+
+  static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) noexcept {
     if(readInfo.transportLayerType.has_value() and not writeInfo.transportLayerType.has_value()) {
       writeInfo.transportLayerType = readInfo.transportLayerType;
     }
