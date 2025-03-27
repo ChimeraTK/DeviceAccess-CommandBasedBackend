@@ -300,10 +300,11 @@ namespace ChimeraTK {
   // Won't try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
-    if(auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedSizeNumberWidthOpt)) {
-      return *maybeStr;
+    auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedSizeNumberWidthOpt);
+    if(not maybeStr) {
+      throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
     }
-    throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
+    return *maybeStr;
   }
 
   /********************************************************************************************************************/
@@ -327,10 +328,11 @@ namespace ChimeraTK {
   // Won't try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static UserType toUserTypeBinInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
-    if(auto maybeInt = intFromBinaryStr<UserType>(str)) {
-      return *maybeInt;
+    auto maybeInt = intFromBinaryStr<UserType>(str);
+    if(not maybeInt) {
+      throw ChimeraTK::runtime_error("Unable to fit the read value into UserType.");
     }
-    throw ChimeraTK::runtime_error("Unable to fit the read value into UserType.");
+    return *maybeInt;
   }
 
   /********************************************************************************************************************/

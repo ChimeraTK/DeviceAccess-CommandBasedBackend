@@ -44,18 +44,16 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   void CommandBasedBackend::open() {
-    switch(_commandBasedBackendType) {
-      case CommandBasedBackendType::SERIAL:
-        _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
-        break;
-      case CommandBasedBackendType::ETHERNET:
-        _commandHandler =
-            std::make_unique<TcpCommandHandler>(_instance, _port, _serialDelimiter, _timeoutInMilliseconds);
-        break;
-      default:
-        // Then this is not part of the proper interface. Throw a std::logic_error as
-        // intermediate debugging solution.
-        throw std::logic_error("CommandBasedBackend: FIXME: Unsupported type");
+    if(_commandBasedBackendType == CommandBasedBackendType::SERIAL) {
+      _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
+    }
+    else if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
+      _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _serialDelimiter, _timeoutInMilliseconds);
+    }
+    else {
+      // Then this is not part of the proper interface. Throw a std::logic_error as
+      // intermediate debugging solution.
+      throw std::logic_error("CommandBasedBackend: FIXME: Unsupported type");
     }
 
     // Try to read from the last register that has been used.
@@ -170,39 +168,44 @@ namespace ChimeraTK {
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, getMapForEnum<mapFileTopLevelKeys>(), "Map file top level has unknown key");
 
-    if(auto mapFileFormatVersionOpt =
-            caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION))) {
-      int mapFileFormatVersion = mapFileFormatVersionOpt->get<int>();
-      if(mapFileFormatVersion != requiredMapFileFormatVersion) {
-        throw ChimeraTK::logic_error("Incorrect map file format version " + std::to_string(mapFileFormatVersion) +
-            ", version " + std::to_string(requiredMapFileFormatVersion) + " required.");
-      }
-    }
-    else {
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // MAP_FILE_FORMAT_VERSION
+    auto mapFileFormatVersionOpt =
+        caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION));
+
+    if(not mapFileFormatVersionOpt) {
       throw ChimeraTK::logic_error("Missing mapFileFormatVersion key in metadata");
     }
+    int mapFileFormatVersion = mapFileFormatVersionOpt->get<int>();
 
-    if(auto metaDataJsonOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::METADATA))) {
-      const json& metaDataJson = metaDataJsonOpt->get<json>();
-      _defaultRecoveryRegister = RegisterPath(
-          caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER), ""));
-      _serialDelimiter = caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DELIMITER), "\r\n");
-      throwIfHasInvalidJsonKeyCaseInsensitive(
-          metaDataJson, getMapForEnum<mapFileMetadataKeys>(), "Map file metadata has unknown key");
+    if(mapFileFormatVersion != requiredMapFileFormatVersion) {
+      throw ChimeraTK::logic_error("Incorrect map file format version " + std::to_string(mapFileFormatVersion) +
+          ", version " + std::to_string(requiredMapFileFormatVersion) + " required.");
     }
-    else {
+
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // METADATA
+    auto metaDataJsonOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::METADATA));
+    if(not metaDataJsonOpt) {
       throw ChimeraTK::logic_error("Missing keys " + toStr(mapFileTopLevelKeys::METADATA) + " in JSON data");
     }
-
-    if(auto registerOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::REGISTERS))) {
-      for(const auto& [key, value] : registerOpt->get<json>().items()) {
-        _backendCatalogue.addRegister(CommandBasedBackendRegisterInfo(RegisterPath{key}, value, _serialDelimiter));
-      }
-    }
-    else {
+    const json& metaDataJson = metaDataJsonOpt.value();
+    _defaultRecoveryRegister = RegisterPath(
+        caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER), ""));
+    _serialDelimiter = caseInsensitiveGetValueOr(metaDataJson, toStr(mapFileMetadataKeys::DELIMITER), "\r\n");
+    throwIfHasInvalidJsonKeyCaseInsensitive(
+        metaDataJson, getMapForEnum<mapFileMetadataKeys>(), "Map file metadata has unknown key");
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // REGISTERS
+    auto registerOpt = caseInsensitiveGetValueOption(j, toStr(mapFileTopLevelKeys::REGISTERS));
+    if(not registerOpt) {
       throw ChimeraTK::logic_error("Missing keys " + toStr(mapFileTopLevelKeys::REGISTERS) + " in JSON data");
     }
-  }
+
+    for(const auto& [key, value] : registerOpt.value().items()) {
+      _backendCatalogue.addRegister(CommandBasedBackendRegisterInfo(RegisterPath{key}, value, _serialDelimiter));
+    }
+  } // end parseJsonAndPopulateCatalogue
 
   /********************************************************************************************************************/
 

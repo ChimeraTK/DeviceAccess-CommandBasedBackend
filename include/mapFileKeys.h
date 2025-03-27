@@ -111,12 +111,10 @@ template<typename EnumType>
 inline std::string toStr(EnumType keyEnum) {
   auto map = getMapForEnum<EnumType>();
   auto it = map.find(keyEnum);
-  if(it != map.end()) {
-    return it->second;
-  }
-  else {
+  if(it == map.end()) {
     throw ChimeraTK::logic_error("Unable to convert enum " + std::to_string(static_cast<int>(keyEnum)) + " to string.");
   }
+  return it->second;
 }
 
 /**********************************************************************************************************************/
@@ -257,13 +255,11 @@ template<>
 inline std::string toStr<TransportLayerType>(TransportLayerType keyEnum) {
   auto bimap = getBimapForEnum<TransportLayerType>();
   auto it = bimap.left.find(keyEnum);
-  if(it != bimap.left.end()) {
-    return it->second; // Safe access
-  }
-  else {
+  if(it == bimap.left.end()) {
     throw ChimeraTK::logic_error("Unable to convert TransportLayerType enum " +
         std::to_string(static_cast<int>(keyEnum)) + " to string; Check getBimapForEnum.");
   }
+  return it->second; // Safe access
 }
 
 // get a std::optional<TransportLayerType> from a string using
@@ -287,12 +283,10 @@ namespace ChimeraTK {
    */
   inline DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
     auto it = TransportLayerTypeToDataTypeMap.find(type);
-    if(it != TransportLayerTypeToDataTypeMap.end()) {
-      return it->second;
-    }
-    else {
+    if(it == TransportLayerTypeToDataTypeMap.end()) {
       throw ChimeraTK::logic_error("Type " + toStr(type) + " is not in TransportLayerTypeToDataTypeMap.");
     }
+    return it->second;
   }
 } // namespace ChimeraTK
 
