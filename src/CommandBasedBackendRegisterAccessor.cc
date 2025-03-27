@@ -7,6 +7,7 @@
 #include "CommandBasedBackendRegisterInfo.h"
 #include "stringUtils.h"
 #include <inja/inja.hpp>
+#include <type_traits>
 
 #include <regex>
 #include <sstream>
@@ -273,6 +274,8 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
   // For use in preWrite
+  template<typename T>
+  using enableIfIntegral = std::enable_if_t<std::is_integral<T>::value || std::is_same_v<T, ChimeraTK::Boolean>>;
 
   // FIXME: does not know about formating. TODO ticket 13534.
   // May need leading zeros or other formatting to satisfy the hardware interface.
@@ -294,7 +297,8 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  template<typename UserType>
+  // Won't try to compile this if UserType is not an integer type.
+  template<typename UserType, typename = enableIfIntegral<UserType>>
   static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
     if(auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedSizeNumberWidthOpt)) {
       return *maybeStr;
@@ -320,7 +324,8 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  template<typename UserType>
+  // Won't try to compile this if UserType is not an integer type.
+  template<typename UserType, typename = enableIfIntegral<UserType>>
   static UserType toUserTypeBinInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     if(auto maybeInt = intFromBinaryStr<UserType>(str)) {
       return *maybeInt;
@@ -332,11 +337,14 @@ namespace ChimeraTK {
 
   template<typename UserType>
   static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
+    if constexpr(std::is_integral_v<UserType>) {
+      // toUserTypeBinInt is only defined if UserType is an integer type, so guard it.
+      if(transportLayerType == TransportLayerType::BIN_INT) {
+        return &toUserTypeBinInt<UserType>;
+      }
+    }
     if(transportLayerType == TransportLayerType::HEX_INT) {
       return &toUserTypeHexInt<UserType>;
-    }
-    else if(transportLayerType == TransportLayerType::BIN_INT) {
-      return &toUserTypeBinInt<UserType>;
     }
     else { // DEC_INT, DEC_FLOAT, STRING
       return &toUserTypeDefault<UserType>;
@@ -347,11 +355,14 @@ namespace ChimeraTK {
 
   template<typename UserType>
   static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType) {
+    if constexpr(std::is_integral_v<UserType>) {
+      // toTransportLayerBinInt is only defined if UserType is an integer type, so guard it.
+      if(transportLayerType == TransportLayerType::BIN_INT) {
+        return &toTransportLayerBinInt<UserType>;
+      }
+    }
     if(transportLayerType == TransportLayerType::HEX_INT) {
       return &toTransportLayerHexInt<UserType>;
-    }
-    else if(transportLayerType == TransportLayerType::BIN_INT) {
-      return &toTransportLayerBinInt<UserType>;
     }
     else { // DEC_INT, DEC_FLOAT, STRING
       return &toTransportLayerDefault<UserType>;
