@@ -327,14 +327,17 @@ namespace ChimeraTK {
       DataType writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
 
       // If readable and writeable, but incompatible data types, throw.
-      if(readInfo.isActive() and
-          (writeDataType != getDataTypeFromTransportLayerType(readInfo.getTransportLayerType()))) {
-        throw ChimeraTK::logic_error("Read and Write have incompatible DataTypes for " + errorMessageDetail);
+      if(readInfo.isActive()) {
+        DataType readDataType = getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
+        if(writeDataType != readDataType) {
+          throw ChimeraTK::logic_error("Read and Write have incompatible DataTypes for " + errorMessageDetail);
+        }
       }
       return writeDataType;
     }
-    else { // read-only
-      return getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
+    else { // read-only, readInfo must be active.
+      DataType readDataType = getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
+      return readDataType;
     }
   }
 
@@ -359,12 +362,10 @@ namespace ChimeraTK {
     std::optional<std::string> typeStrOpt = caseInsensitiveGetValueOption(j, keyStr);
     if(typeStrOpt) {
       std::optional<TransportLayerType> typeEnumOpt = strToEnumOpt<TransportLayerType>(*typeStrOpt);
-      if(typeEnumOpt) {
-        iInfo.transportLayerType = *typeEnumOpt;
-      }
-      else {
+      if(not typeEnumOpt) {
         throw ChimeraTK::logic_error("Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
       }
+      iInfo.transportLayerType = *typeEnumOpt;
     }
   } // end setTypeFromJson
 
@@ -409,35 +410,31 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       explicitlySetToReadLines = true;
       int n = std::stoi(opt->get<std::string>());
-      if(n >= 0) {
-        iInfo.setResponseNLines(static_cast<size_t>(n));
-      }
-      else {
+      if(n < 0) {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " + std::to_string(n) +
             " for " + errorMessageDetail);
       }
+      iInfo.setResponseNLines(static_cast<size_t>(n));
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONSE_BYTES, Set to Binary Mode, destroying the previous delimiter and nLines settings
     keyStr = toStr(EnumType::N_RESPONSE_BYTES);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
-      int n = std::stoi(opt->get<std::string>());
-      if(n >= 0) {
-        iInfo.setResponseBytes(static_cast<size_t>(n));
+      if(explicitlySetToReadLines) {
+        throw ChimeraTK::logic_error("Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
       }
-      else {
+
+      int n = std::stoi(opt->get<std::string>());
+      if(n < 0) {
         throw ChimeraTK::logic_error(
             "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
       }
+      iInfo.setResponseBytes(static_cast<size_t>(n));
 
       // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
       // This overrides the metadata and Register level delimiter settings.
       if(not explicitlySetCmdDelimiter) {
         iInfo.cmdLineDelimiter = "";
-      }
-
-      if(explicitlySetToReadLines) {
-        throw ChimeraTK::logic_error("Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
       }
     }
   } // end setEndingsFromJson
@@ -449,13 +446,11 @@ namespace ChimeraTK {
     std::string keyStr = toStr(EnumType::FIXED_SIZE_NUM_WIDTH);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       int n = std::stoi(opt->get<std::string>());
-      if(n > 0) {
-        iInfo.fixedSizeNumberWidthOpt = static_cast<size_t>(n);
-      }
-      else {
+      if(n <= 0) {
         throw ChimeraTK::logic_error(
             "Invalid non-positive " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
       }
+      iInfo.fixedSizeNumberWidthOpt = static_cast<size_t>(n);
     }
   } // end setFixedWidthFromJson
 
