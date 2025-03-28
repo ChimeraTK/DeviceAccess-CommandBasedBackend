@@ -93,6 +93,13 @@ BOOST_AUTO_TEST_CASE(testHexConversionOdd) {
 
 /**********************************************************************************************************************/
 
+BOOST_AUTO_TEST_CASE(caseInsensitiveStrCompare_tests) {
+  BOOST_TEST(caseInsensitiveStrCompare("things", "tHiNgS") == true);
+  BOOST_TEST(caseInsensitiveStrCompare("things", "stufff") == false);
+}
+
+/**********************************************************************************************************************/
+
 BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
   std::string res;
 
