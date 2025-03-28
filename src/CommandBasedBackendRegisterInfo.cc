@@ -18,8 +18,6 @@ namespace ChimeraTK {
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error
    */
-  // static void throwIfInvalidCommandAndResponse(
-
   static void throwIfBadActivation(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 

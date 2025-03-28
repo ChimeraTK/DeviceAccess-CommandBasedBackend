@@ -89,9 +89,12 @@ namespace ChimeraTK {
 
     if(_registerInfo.isReadable()) {
       _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
-      _readResponseRegex = getResponseRegex(_registerInfo.readInfo,
-          _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
-          "read in " + _registerInfo.registerPath);
+
+      // We seek registerInfo.getNumberOfElements() matches in the response regex,
+      // which may be more than the number of elements in the the register (_numberOfElements), due to a non-zero
+      // _elementOffsetInRegister.
+      _readResponseRegex = getResponseRegex(
+          _registerInfo.readInfo, registerInfo.getNumberOfElements(), "read in " + _registerInfo.registerPath);
     }
 
   } // end constructor CommandBasedBackendRegisterAccessor
