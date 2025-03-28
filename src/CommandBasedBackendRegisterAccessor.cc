@@ -18,11 +18,10 @@ namespace ChimeraTK {
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
 
   /**
-   * @brief Gets the regex pattern string corresponding to the type.
-   * @param[in] type The TransportLayerType used to pick the numerical regex segment.
+   * @brief Gets the regex pattern string for this InteractionInfo
    * @returns the string regex pattern
    */
-  static std::string getRegexStringForType(const TransportLayerType type);
+  static std::string getRegexString(const InteractionInfo& info);
 
   /**
    * @brief: Fetches the appropriate regex given the TransportLayerType, and handles errors
@@ -33,7 +32,7 @@ namespace ChimeraTK {
    * @throws std::regex_error
    * @throws inja::ParserError
    */
-  static std::regex getRegex(
+  static std::regex getResponseRegex(
       const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail);
 
   /** Return the functional for the given TransportLayerType for converting data from the transport layer format to
@@ -90,7 +89,7 @@ namespace ChimeraTK {
 
     if(_registerInfo.isReadable()) {
       _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
-      _readResponseRegex = getRegex(_registerInfo.readInfo,
+      _readResponseRegex = getResponseRegex(_registerInfo.readInfo,
           _registerInfo.nElements, // TODO Why match to registerInfo::nElements rather than _numberOfElements?
           "read in " + _registerInfo.registerPath);
     }
@@ -214,7 +213,9 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static std::string getRegexStringForType(const TransportLayerType type) {
+  static std::string getRegexString(const InteractionInfo& info) {
+    TransportLayerType type = info.getTransportLayerType();
+
     std::string valueRegex = "";
     if(type == TransportLayerType::DEC_INT) {
       valueRegex = "([+-]?[0-9]+)";
@@ -239,9 +240,9 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static std::regex getRegex(
+  static std::regex getResponseRegex(
       const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail) {
-    std::string valueRegex = getRegexStringForType(info.transportLayerType.value());
+    std::string valueRegex = getRegexString(info);
 
     inja::json replacePatterns;
     replacePatterns["x"] = {};
@@ -269,7 +270,7 @@ namespace ChimeraTK {
           errorMessageDetail);
     }
     return returnRegex;
-  } // end getRegex
+  } // end getResponseRegex
 
   /********************************************************************************************************************/
   /********************************************************************************************************************/
