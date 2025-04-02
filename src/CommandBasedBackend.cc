@@ -156,7 +156,32 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  void throwIfMapFileContainsNullCharacters(const std::string& mapFileName) {
+    // Returns true if the map file contains the strings \0 or \x00
+    // This is needed since nhlohman::JSON cannot completely load strings containing them.
+    std::ifstream file(mapFileName);
+    if(!file.is_open()) {
+      return;
+    }
+
+    std::string line;
+    while(std::getline(file, line)) {
+      if(line.find("\\0") != std::string::npos || line.find("\\x00") != std::string::npos) {
+        file.close();
+        throw ChimeraTK::logic_error("Map file contains illegal null characters \\0 or \\x00. Replace these with the "
+                                     "inja symbol {{zero}}. File " +
+            mapFileName + " line starting with " + line);
+      }
+    }
+
+    file.close();
+  }
+
+  /********************************************************************************************************************/
+
   void CommandBasedBackend::parseJsonAndPopulateCatalogue(const std::string& mapFileName) {
+    throwIfMapFileContainsNullCharacters(mapFileName);
+
     std::ifstream file(mapFileName);
     if(!file.is_open()) {
       throw ChimeraTK::logic_error("Could not open the map file " + mapFileName);
