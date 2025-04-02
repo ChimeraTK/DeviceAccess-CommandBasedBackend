@@ -262,6 +262,12 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+  void InteractionInfo::setTransportLayerType(TransportLayerType& type) noexcept {
+    transportLayerType = type;
+    _isBinary = ((type == TransportLayerType::BIN_INT) or (type == TransportLayerType::BIN_FLOAT));
+  }
+
+  /********************************************************************************************************************/
   /********************************************************************************************************************/
 
   static void throwIfBadActivation(
@@ -330,25 +336,31 @@ namespace ChimeraTK {
   static void throwIfTransportLayerTypeAreNotSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if type/transportLayerType is not set.
-    if(not(writeInfo.transportLayerType.has_value() or readInfo.transportLayerType.has_value())) {
-      throw ChimeraTK::logic_error("type is required but is missing for " + errorMessageDetail);
+    if(not(writeInfo.hasTransportLayerType() or readInfo.hasTransportLayerType())) {
+      throw ChimeraTK::logic_error(
+          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing for " + errorMessageDetail);
     }
-    if(readInfo.isActive() and not readInfo.transportLayerType.has_value()) {
-      throw ChimeraTK::logic_error("type is required but is missing on read for " + errorMessageDetail);
+    if(readInfo.isActive() and not readInfo.hasTransportLayerType()) {
+      throw ChimeraTK::logic_error(
+          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing on read for " + errorMessageDetail);
     }
-    if(writeInfo.isActive() and not writeInfo.transportLayerType.has_value()) {
-      throw ChimeraTK::logic_error("type is required but is missing on write for " + errorMessageDetail);
+    if(writeInfo.isActive() and not writeInfo.hasTransportLayerType()) {
+      throw ChimeraTK::logic_error(
+          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing on write for " + errorMessageDetail);
     }
   }
 
   /********************************************************************************************************************/
 
   static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) noexcept {
-    if(readInfo.transportLayerType.has_value() and not writeInfo.transportLayerType.has_value()) {
-      writeInfo.transportLayerType = readInfo.transportLayerType;
+    if(readInfo.hasTransportLayerType() and not writeInfo.hasTransportLayerType()) {
+      TransportLayerType type = readInfo.getTransportLayerType();
+      writeInfo.setTransportLayerType(type);
     }
-    else if(writeInfo.transportLayerType.has_value() and not readInfo.transportLayerType.has_value()) {
-      readInfo.transportLayerType = writeInfo.transportLayerType;
+    else if(writeInfo.hasTransportLayerType() and not readInfo.hasTransportLayerType()) {
+      TransportLayerType type = writeInfo.getTransportLayerType();
+      readInfo.setTransportLayerType(type);
+    }
     }
   }
 
@@ -400,7 +412,7 @@ namespace ChimeraTK {
       if(not typeEnumOpt) {
         throw ChimeraTK::logic_error("Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
       }
-      iInfo.transportLayerType = *typeEnumOpt;
+      iInfo.setTransportLayerType(*typeEnumOpt);
     }
   } // end setTypeFromJson
 

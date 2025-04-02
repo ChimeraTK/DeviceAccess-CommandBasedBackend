@@ -37,9 +37,9 @@ namespace ChimeraTK {
        * responseInfo variant type order indicies must match the SendCommandType enum values
        */
       std::variant<ResponseLinesInfo, ResponseBytesInfo> responseInfo;
+      std::optional<TransportLayerType> transportLayerType = std::nullopt;
 
      public:
-      std::optional<TransportLayerType> transportLayerType;
       std::string commandPattern = "";
       std::string responsePattern = "";
       std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
@@ -60,6 +60,7 @@ namespace ChimeraTK {
        * but if readInfo.isActive is false, then it is write-only.
        */
       inline bool isActive() const { return not commandPattern.empty(); }
+      inline bool isBinary() const { return _isBinary; }
 
       inline TransportLayerType getTransportLayerType() const {
         if(not hasTransportLayerType()) {
@@ -83,11 +84,14 @@ namespace ChimeraTK {
       void setResponseDelimiter(std::string delimiter);
       void setResponseNLines(size_t nLines);
       void setResponseBytes(size_t nBytes) { responseInfo = ResponseBytesInfo{nBytes}; }
+      void setTransportLayerType(TransportLayerType& type) noexcept;
 
       inline bool usesReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
       inline bool usesReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
+      inline bool hasTransportLayerType() const { return transportLayerType.has_value(); }
       /*--------------------------------------------------------------------------------------------------------------*/
      protected:
+      bool _isBinary = false;
       /*
        * SendCommandType labels the indicies of the types in the responseInfo variant
        * so as to name sendCommand functions to be used in CommandBasedBackend.
