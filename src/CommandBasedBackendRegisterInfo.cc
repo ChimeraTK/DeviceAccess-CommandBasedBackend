@@ -55,7 +55,7 @@ namespace ChimeraTK {
 
   /**
    * @brief Validates fractionalBitsOpt, and its interactions.
-   * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedSizeNumberWidthOpt, and signed.
+   * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedRegexCharacterWidthOpt, and signed.
    * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
    * @param[in] iInfo The InteractionInfo to validate.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
@@ -64,14 +64,14 @@ namespace ChimeraTK {
   static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
 
   /**
-   * @brief Validates fixedSizeNumberWidthOpt, particularly its interaction with the transportLayerType.
+   * @brief Validates fixedRegexCharacterWidthOpt, particularly its interaction with the transportLayerType.
    * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
-   * Ensures that fixedSizeNumberWidthOpt is set if iInfo.isBinary().
+   * Ensures that fixedRegexCharacterWidthOpt is set if iInfo.isBinary().
    * @param[in] iInfo The InteractionInfo to validate.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If fixedSizeNumberWidthOpt is invalid for the type.
+   * @throws ChimeraTK::logic_error If fixedRegexCharacterWidthOpt is invalid for the type.
    */
-  static void throwIfBadWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+  static void throwIfBadFixedWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
 
   /**
    * @brief Validates the signed property, making sure its a valid property for the TransportLayerType.
@@ -131,7 +131,7 @@ namespace ChimeraTK {
       const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail);
 
   /**
-   * @brief Sets iInfo.fixedSizeNumberWidthOpt from JSON.
+   * @brief Sets iInfo.fixedRegexCharacterWidthOpt from JSON.
    * This must be a template to accomdate keys at the register level and the interaction level.
    * @param[in] j nlohmann::json from the map file
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
@@ -176,8 +176,8 @@ namespace ChimeraTK {
     synchronizeTransportLayerTypes(writeInfo, readInfo);
     throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
     throwIfBadNElements(writeInfo, getNumberOfElements(), errorMessageDetail);
-    throwIfBadWidth(writeInfo, errorMessageDetailWrite);
-    throwIfBadWidth(readInfo, errorMessageDetailRead);
+    throwIfBadFixedWidth(writeInfo, errorMessageDetailWrite);
+    throwIfBadFixedWidth(readInfo, errorMessageDetailRead);
     throwIfBadFractionalBits(writeInfo, errorMessageDetailWrite);
     throwIfBadFractionalBits(readInfo, errorMessageDetailRead);
     throwIfBadSigned(writeInfo, errorMessageDetailWrite);
@@ -453,7 +453,7 @@ namespace ChimeraTK {
     if(not iInfo.fractionalBitsOpt) {
       return;
     }
-    if(not iInfo.fixedSizeNumberWidthOpt) {
+    if(not iInfo.fixedRegexCharacterWidthOpt) {
       throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
           " is set but " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " is not set for " +
           errorMessageDetail);
@@ -465,7 +465,7 @@ namespace ChimeraTK {
     }
     // case: fractionalBits is too big
     // TODO confirm these formulas .. can fractional bits really not exceed the size of the container?
-    size_t width = *(iInfo.fixedSizeNumberWidthOpt);
+    size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
     if(iInfo.isSigned) {
       if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value() + 1)) {
         throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
@@ -484,36 +484,37 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
+  static void throwIfBadFixedWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
     std::string bitWidthTag = toStr(mapFileRegisterKeys::BIT_WIDTH);
     std::string charWidthTag = toStr(mapFileRegisterKeys::CHARACTER_WIDTH);
     std::string eitherWidthTag = bitWidthTag + " or " + charWidthTag;
-    if(not iInfo.fixedSizeNumberWidthOpt) {
+    if(not iInfo.fixedRegexCharacterWidthOpt) {
       if(iInfo.isBinary()) {
         throw ChimeraTK::logic_error(
-            "throwIfBadWidth: " + bitWidthTag + " must be set for binary type for " + errorMessageDetail);
+            "throwIfBadFixedWidth: " + bitWidthTag + " must be set for binary type for " + errorMessageDetail);
       }
       return;
     }
-    size_t regexCharacterWidth = *(iInfo.fixedSizeNumberWidthOpt);
+    size_t regexCharacterWidth = *(iInfo.fixedRegexCharacterWidthOpt);
     TransportLayerType type = iInfo.getTransportLayerType();
 
     // VOID
     if(type == TransportLayerType::VOID) {
-      throw ChimeraTK::logic_error("throwIfBadWidth: " + eitherWidthTag + " is set for " + toStr(type) + "=" +
+      throw ChimeraTK::logic_error("throwIfBadFixedWidth: " + eitherWidthTag + " is set for " + toStr(type) + "=" +
           toStr(TransportLayerType::VOID) + " for " + errorMessageDetail);
     }
 
     if(regexCharacterWidth == 0) {
-      throw ChimeraTK::logic_error("throwIfBadWidth: Invalid zero " + eitherWidthTag + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(
+          "throwIfBadFixedWidth: Invalid zero " + eitherWidthTag + " for " + errorMessageDetail);
     }
 
     // FLOAT
     if(type == TransportLayerType::BIN_FLOAT or type == TransportLayerType::DEC_FLOAT) {
-      std::array<size_t, 3> validWidths = {16, 8, 4}; // stack only
+      std::array<size_t, 3> validWidths = {16, 8, 4}; // widths are in nibbles.
 
       if(std::find(validWidths.begin(), validWidths.end(), regexCharacterWidth) == validWidths.end()) {
-        throw ChimeraTK::logic_error("throwIfBadWidth: Invalid " + bitWidthTag + " " +
+        throw ChimeraTK::logic_error("throwIfBadFixedWidth: Invalid " + bitWidthTag + " " +
             std::to_string(4 * regexCharacterWidth) + " bits for type " + toStr(type) + " for " + errorMessageDetail);
       }
     }
@@ -524,7 +525,7 @@ namespace ChimeraTK {
        */
       size_t maxWidth = iInfo.isSigned ? 19 : 20;
       if(regexCharacterWidth > maxWidth) {
-        throw ChimeraTK::logic_error("throwIfBadWidth: Invalid " + charWidthTag + " " +
+        throw ChimeraTK::logic_error("throwIfBadFixedWidth: Invalid " + charWidthTag + " " +
             std::to_string(regexCharacterWidth) + " digits for type " + toStr(type) + " for " + errorMessageDetail +
             ". That cannot be fit into 64 bits. Allowed range is 1-" + std::to_string(maxWidth));
       }
@@ -533,12 +534,12 @@ namespace ChimeraTK {
     else if((type == TransportLayerType::HEX_INT) or (type == TransportLayerType::BIN_INT)) {
       // Here regexCharacterWidth means the number of hexideicimal characters (nibbles) for the transport layer representation.
       if(regexCharacterWidth > 16 /*16 nibbles = 64 bits*/) {
-        throw ChimeraTK::logic_error("throwIfBadWidth Invalid " + bitWidthTag + " " +
+        throw ChimeraTK::logic_error("throwIfBadFixedWidth Invalid " + bitWidthTag + " " +
             std::to_string(4 * regexCharacterWidth) + " bits for type " + toStr(type) + " for " + errorMessageDetail +
             ". That cannot be fit into 64 bits. Allowed range is 1-16.");
       }
     }
-  } // end throwIfBadWidth
+  } // end throwIfBadFixedWidth
 
   /********************************************************************************************************************/
 
@@ -706,9 +707,11 @@ namespace ChimeraTK {
     std::string charWidthKeyStr = toStr(EnumType::CHARACTER_WIDTH);
     auto bitWidthOpt = caseInsensitiveGetValueOption(j, bitWidthKeyStr);
     auto charWidthOpt = caseInsensitiveGetValueOption(j, charWidthKeyStr);
+
     if(not bitWidthOpt and not charWidthOpt) {
       return;
     }
+
     if(bitWidthOpt and charWidthOpt) {
       throw ChimeraTK::logic_error("Error in setFixedWidthFromJson: " + bitWidthKeyStr + " and " + charWidthKeyStr +
           " cannot both be set. See: " + errorMessageDetail);
@@ -716,7 +719,7 @@ namespace ChimeraTK {
 
     int nRegexChars;
     auto type = iInfo.getTransportLayerType();
-    if(bitWidthOpt) {
+    if(bitWidthOpt) {                                         // BIT_WIDTH
       int nBits = std::stoi(bitWidthOpt->get<std::string>()); // take in
       if(nBits <= 0) {
         throw ChimeraTK::logic_error(
@@ -733,7 +736,7 @@ namespace ChimeraTK {
       }
       nRegexChars = nBits / 4;
     }
-    else if(charWidthOpt) {
+    else if(charWidthOpt) { // CHARACTER_WIDTH
       if((type == TransportLayerType::VOID) or (type == TransportLayerType::BIN_INT) or
           (type == TransportLayerType::BIN_FLOAT) or (type == TransportLayerType::DEC_FLOAT)) {
         throw ChimeraTK::logic_error("Invalid combination of " + charWidthKeyStr + " and " + toStr(EnumType::TYPE) +
@@ -747,7 +750,7 @@ namespace ChimeraTK {
       // Screen types
     }
 
-    iInfo.fixedSizeNumberWidthOpt = static_cast<size_t>(nRegexChars);
+    iInfo.fixedRegexCharacterWidthOpt = static_cast<size_t>(nRegexChars);
   } // end setFixedWidthFromJson
 
   /********************************************************************************************************************/
