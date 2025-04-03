@@ -249,11 +249,11 @@ template<>
 inline const boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
   static const auto bmap = _makeBimap<TransportLayerType, std::string>({
       // clang-format off
-            {TransportLayerType::DEC_INT, "decInt"},
-            {TransportLayerType::HEX_INT, "hexInt"},
-            {TransportLayerType::BIN_INT, "binInt"},
-            {TransportLayerType::DEC_FLOAT, "decFloat"},
+            {TransportLayerType::DEC_INT, "dec"},
+            {TransportLayerType::HEX_INT, "hex"},
+            {TransportLayerType::BIN_INT, "fixed"},
             {TransportLayerType::BIN_FLOAT, "ieee754"},
+            {TransportLayerType::DEC_FLOAT, "float"},
             {TransportLayerType::STRING, "string"},
             {TransportLayerType::VOID, "void"},
       // clang-format on
