@@ -169,7 +169,8 @@ enum class mapFileRegisterKeys {
   DELIMITER,
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
-  FIXED_SIZE_NUM_WIDTH,
+  CHARACTER_WIDTH,
+  BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
 };
@@ -188,7 +189,8 @@ inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<
         {mapFileRegisterKeys::DELIMITER, "delimiter"},
         {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"}, 
         {mapFileRegisterKeys::RESPONSE_DELIMITER, "respDelim"},
-        {mapFileRegisterKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+        {mapFileRegisterKeys::CHARACTER_WIDTH, "characterWidth"}, 
+        {mapFileRegisterKeys::BIT_WIDTH, "bitWidth"}, 
         {mapFileRegisterKeys::FRACTIONAL_BITS, "fractionalBits"},
         {mapFileRegisterKeys::SIGNED, "signed"},
       // clang-format on
@@ -207,7 +209,8 @@ enum class mapFileInteractionInfoKeys {
   DELIMITER,
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
-  FIXED_SIZE_NUM_WIDTH,
+  CHARACTER_WIDTH,
+  BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
 };
@@ -224,8 +227,9 @@ inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapF
         {mapFileInteractionInfoKeys::N_RESPONSE_LINES, "nRespLines"}, 
         {mapFileInteractionInfoKeys::DELIMITER, "delimiter"},
         {mapFileInteractionInfoKeys::COMMAND_DELIMITER, "cmdDelim"},
-        {mapFileInteractionInfoKeys::RESPONSE_DELIMITER, "respDelim"},
-        {mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+        {mapFileInteractionInfoKeys::CHARACTER_WIDTH, "characterWidth"},
+        {mapFileInteractionInfoKeys::BIT_WIDTH, "bitWidth"},
+        {mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH, "width"},
         {mapFileInteractionInfoKeys::FRACTIONAL_BITS, "fractionalBits"},
         {mapFileInteractionInfoKeys::SIGNED, "signed"},
       // clang-format on
