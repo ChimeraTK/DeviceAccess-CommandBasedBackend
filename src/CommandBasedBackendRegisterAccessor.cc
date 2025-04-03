@@ -220,23 +220,42 @@ namespace ChimeraTK {
     TransportLayerType type = info.getTransportLayerType();
 
     std::string valueRegex = "";
-    if(type == TransportLayerType::DEC_INT) {
-      valueRegex = "([+-]?[0-9]+)";
+    if(info.fixedSizeNumberWidthOpt) { // a fixedSizeNumberWidth is specified
+      std::string width = std::to_string(*(info.fixedSizeNumberWidthOpt));
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]{" + width + "})";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]{" + width + "})";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.{" + width + "})";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
     }
-    else if(type == TransportLayerType::HEX_INT) {
-      valueRegex = "([0-9A-Fa-f]+)";
-    }
-    else if(type == TransportLayerType::BIN_INT) {
-      valueRegex = "(.*)";
-    }
-    else if(type == TransportLayerType::DEC_FLOAT) {
-      valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
-    }
-    else if(type == TransportLayerType::STRING) {
-      valueRegex = "(.*)";
-    }
-    else if(type != TransportLayerType::VOID) {
-      assert(!valueRegex.empty());
+    else { // no fixedSizeNumberWidth is specified
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]+)";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]+)";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.*)";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
     }
     return valueRegex;
   }
