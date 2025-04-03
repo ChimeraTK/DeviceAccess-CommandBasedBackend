@@ -64,18 +64,18 @@ namespace ChimeraTK {
        * These getters return the corresponding responceInfo member, if the corresponding
        * SendCommandType is used, otherwise return nullopt.
        */
-      std::optional<size_t> getResponseNLines() const;
-      std::optional<std::string> getResponseLinesDelimiter() const;
-      std::optional<size_t> getResponseBytes() const;
+      std::optional<size_t> getResponseNLines() const noexcept;
+      std::optional<std::string> getResponseLinesDelimiter() const noexcept;
+      std::optional<size_t> getResponseBytes() const noexcept;
 
       /*
        * These set the struct members if responceInfo is already in the corresponding
        * SendCommandType, otherwise they destructively set the SendCommandType,
        * overwriting responseInfo, and then set the struct members.
        */
-      void setResponseDelimiter(std::string delimiter);
-      void setResponseNLines(size_t nLines);
-      void setResponseBytes(size_t nBytes) { responseInfo = ResponseBytesInfo{nBytes}; }
+      void setResponseDelimiter(std::string delimiter) noexcept;
+      void setResponseNLines(size_t nLines) noexcept;
+      void setResponseBytes(size_t nBytes) noexcept { responseInfo = ResponseBytesInfo{nBytes}; }
       void setTransportLayerType(TransportLayerType& type) noexcept;
 
       inline bool usesReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
