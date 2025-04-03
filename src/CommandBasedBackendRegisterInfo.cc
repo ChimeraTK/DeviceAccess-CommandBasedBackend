@@ -31,21 +31,6 @@ namespace ChimeraTK {
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
-   * @brief Validates nElements, particularly its interaction with VOID type.
-   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
-   * @throws ChimeraTK::logic_error If nElements is incompatible with void type.
-   */
-  static void throwIfBadNElements(
-      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail);
-
-  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  // Type must be set before running this.
-  static void throwIfBadWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  /**
    * @brief Throws unless at least one of the two interaction Infos has a type set.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error If no type has been set.
@@ -59,6 +44,43 @@ namespace ChimeraTK {
    * Doing this synchronization simplifies later logic, such as throwIfBadNElements.
    */
   static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) noexcept;
+
+  /**
+   * @brief Validates nElements, particularly its interaction with VOID type.
+   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
+   * @throws ChimeraTK::logic_error If nElements is incompatible with void type.
+   */
+  static void throwIfBadNElements(
+      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Validates fractionalBitsOpt, and its interactions.
+   * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedSizeNumberWidthOpt, and signed.
+   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * @param[in] iInfo The InteractionInfo to validate.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If fractionalBitsOpt or its interactions is invalid.
+   */
+  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Validates fixedSizeNumberWidthOpt, particularly its interaction with the transportLayerType.
+   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * Ensures that fixedSizeNumberWidthOpt is set if iInfo.isBinary().
+   * @param[in] iInfo The InteractionInfo to validate.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If fixedSizeNumberWidthOpt is invalid for the type.
+   */
+  static void throwIfBadWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Validates the signed property, making sure its a valid property for the TransportLayerType.
+   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * @param[in] iInfo The InteractionInfo to validate.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If the signed property is invalid for the type.
+   */
+  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
 
   // merges the two data types into the larger of the two containers, returns null_opt if they're incompatible.
   static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
@@ -214,7 +236,7 @@ namespace ChimeraTK {
     setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter, errorMessageDetail);
     // NOTE: These delimiter settings may be overrided by populateFromJson below.
 
-    // FIXED_SIZE_NUM_WIDTH,
+    // BIT_WIDTH, CHARACTER_WIDTH
     setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
     setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
@@ -276,7 +298,7 @@ namespace ChimeraTK {
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
     setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, errorMessageDetail);
 
-    // FIXED_SIZE_NUM_WIDTH,
+    // BIT_WIDTH, CHARACTER_WIDTH
     setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
 
     // FRACTIONAL_BITS
