@@ -454,29 +454,27 @@ namespace ChimeraTK {
       return;
     }
     if(not iInfo.fixedRegexCharacterWidthOpt) {
-      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
-          " is set but " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " is not set for " +
-          errorMessageDetail);
+      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
+          " is set but " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " is not set for " + errorMessageDetail);
     }
     if(iInfo.getTransportLayerType() != TransportLayerType::BIN_FLOAT) {
-      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
-          " is set for incompatible " + toStr(mapFileInteractionInfoKeys::TYPE) + " " +
-          toStr(TransportLayerType::BIN_FLOAT) + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
+          " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(TransportLayerType::BIN_FLOAT) +
+          " for " + errorMessageDetail);
     }
     // case: fractionalBits is too big
     // TODO confirm these formulas .. can fractional bits really not exceed the size of the container?
     size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
     if(iInfo.isSigned) {
       if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value() + 1)) {
-        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
-            " exceeds the " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " minus the sign bit for " +
-            errorMessageDetail);
+        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
+            " exceeds the " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " minus the sign bit for " + errorMessageDetail);
       }
     }
     else {
       if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value())) {
-        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
-            " exceeds the " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
+            " exceeds the " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " for " + errorMessageDetail);
       }
     }
     // TODO if fractionalBits is super negative, throw
@@ -550,7 +548,7 @@ namespace ChimeraTK {
     TransportLayerType type = iInfo.getTransportLayerType();
 
     if(type == TransportLayerType::VOID or type == TransportLayerType::STRING) {
-      throw ChimeraTK::logic_error("throwIfBadSigned: " + toStr(mapFileInteractionInfoKeys::TYPE) + " " + toStr(type) +
+      throw ChimeraTK::logic_error("throwIfBadSigned: " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) +
           "is signed for " + errorMessageDetail);
     }
   }
@@ -795,6 +793,6 @@ namespace ChimeraTK {
     }
   } // end setSignedFromJson
 
-  /**********************************************************************************************************************/
+  /********************************************************************************************************************/
 
 } // namespace ChimeraTK
