@@ -220,8 +220,8 @@ namespace ChimeraTK {
     TransportLayerType type = info.getTransportLayerType();
 
     std::string valueRegex = "";
-    if(info.fixedSizeNumberWidthOpt) { // a fixedSizeNumberWidth is specified
-      std::string width = std::to_string(*(info.fixedSizeNumberWidthOpt));
+    if(info.fixedRegexCharacterWidthOpt) { // a fixedSizeNumberWidth is specified
+      std::string width = std::to_string(*(info.fixedRegexCharacterWidthOpt));
       if(type == TransportLayerType::DEC_INT) {
         valueRegex = "([+-]?[0-9]{" + width + "})";
       }
@@ -302,7 +302,7 @@ namespace ChimeraTK {
 
   // FIXME: does not know about formating. TODO ticket 13534.
   // May need leading zeros or other formatting to satisfy the hardware interface.
-  // Do this using _registerInfo.writeInfo.fixedSizeNumberWidthOpt in the function pointer implementation.
+  // Do this using _registerInfo.writeInfo.fixedRegexCharacterWidthOpt in the function pointer implementation.
 
   template<typename UserType>
   static std::string toTransportLayerDefault(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
@@ -323,7 +323,7 @@ namespace ChimeraTK {
   // Won't try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
-    auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedSizeNumberWidthOpt);
+    auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedRegexCharacterWidthOpt);
     if(not maybeStr) {
       throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
     }
