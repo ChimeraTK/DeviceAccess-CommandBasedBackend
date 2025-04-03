@@ -231,6 +231,7 @@ enum class TransportLayerType {
   DEC_INT,
   HEX_INT,
   BIN_INT,
+  BIN_FLOAT,
   DEC_FLOAT,
   STRING,
   VOID,
@@ -244,6 +245,7 @@ inline const boost::bimap<TransportLayerType, std::string> getBimapForEnum<Trans
             {TransportLayerType::HEX_INT, "hexInt"},
             {TransportLayerType::BIN_INT, "binInt"},
             {TransportLayerType::DEC_FLOAT, "decFloat"},
+            {TransportLayerType::BIN_FLOAT, "ieee754"},
             {TransportLayerType::STRING, "string"},
             {TransportLayerType::VOID, "void"},
       // clang-format on
@@ -271,6 +273,7 @@ namespace ChimeraTK {
             {TransportLayerType::DEC_INT, DataType::int64},
             {TransportLayerType::HEX_INT, DataType::uint64},
             {TransportLayerType::BIN_INT, DataType::uint64},
+            {TransportLayerType::BIN_FLOAT, DataType::float64},
             {TransportLayerType::DEC_FLOAT, DataType::float64},
             {TransportLayerType::STRING, DataType::string},
             {TransportLayerType::VOID, DataType::Void}
