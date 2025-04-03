@@ -170,6 +170,8 @@ enum class mapFileRegisterKeys {
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
   FIXED_SIZE_NUM_WIDTH,
+  FRACTIONAL_BITS,
+  SIGNED,
 };
 
 // Associate json key strings with mapFileRegisterKeys enums.
@@ -187,6 +189,8 @@ inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<
         {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"}, 
         {mapFileRegisterKeys::RESPONSE_DELIMITER, "respDelim"},
         {mapFileRegisterKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+        {mapFileRegisterKeys::FRACTIONAL_BITS, "fractionalBits"},
+        {mapFileRegisterKeys::SIGNED, "signed"},
       // clang-format on
   };
   return uMap;
@@ -204,6 +208,8 @@ enum class mapFileInteractionInfoKeys {
   COMMAND_DELIMITER,
   RESPONSE_DELIMITER,
   FIXED_SIZE_NUM_WIDTH,
+  FRACTIONAL_BITS,
+  SIGNED,
 };
 
 // Associate json key strings with mapFileInteractionInfoKeys enums.
@@ -220,6 +226,8 @@ inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapF
         {mapFileInteractionInfoKeys::COMMAND_DELIMITER, "cmdDelim"},
         {mapFileInteractionInfoKeys::RESPONSE_DELIMITER, "respDelim"},
         {mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH, "fixedWidth"}
+        {mapFileInteractionInfoKeys::FRACTIONAL_BITS, "fractionalBits"},
+        {mapFileInteractionInfoKeys::SIGNED, "signed"},
       // clang-format on
   };
   return uMap;
