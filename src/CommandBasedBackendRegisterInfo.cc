@@ -37,6 +37,10 @@ namespace ChimeraTK {
   static void throwIfBadNElements(
       const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail);
 
+  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+
+  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+
   /**
    * @brief Throws unless at least one of the two interaction Infos has a type set.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
@@ -102,11 +106,35 @@ namespace ChimeraTK {
   template<typename EnumType>
   static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
 
+  /**
+   * @brief Sets iInfo.fractionalBitsOpt from JSON.
+   * This must be a template to accomdate keys at the register level and the interaction level.
+   * This must be run after the transportLayerType is set for that layer
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   */
+  template<typename EnumType>
+  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j) noexcept;
+  /**
+   * @brief Sets iInfo.signed from JSON.
+   * This must be a template to accomdate keys at the register level and the interaction level.
+   * Acceptable json values are "true", and "false".
+   * If no vaue is set, this sets a default value based on the type, so
+   * this must be run after the transportLayerType is set for that layer
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if the JSON lists unrecognizable value
+   */
+  template<typename EnumType>
+  static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
   void CommandBasedBackendRegisterInfo::init() {
     std::string errorMessageDetail = "register " + registerPath;
+    std::string errorMessageDetailRead = errorMessageDetail + " for read";
+    std::string errorMessageDetailWrite = errorMessageDetail + " for write";
     /*----------------------------------------------------------------------------------------------------------------*/
     // Validite data in readInfo and writeInfo
     throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
@@ -114,6 +142,11 @@ namespace ChimeraTK {
     synchronizeTransportLayerTypes(writeInfo, readInfo);
     throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
     throwIfBadNElements(writeInfo, getNumberOfElements(), errorMessageDetail);
+    throwIfBadFractionalBits(writeInfo, errorMessageDetailWrite);
+    throwIfBadFractionalBits(readInfo, errorMessageDetailRead);
+    throwIfBadSigned(writeInfo, errorMessageDetailWrite);
+    throwIfBadSigned(readInfo, errorMessageDetailRead);
+
     /*----------------------------------------------------------------------------------------------------------------*/
     // Check that the data types are compatible and set dataDescriptor
     dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
@@ -171,6 +204,14 @@ namespace ChimeraTK {
     setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
     setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
+    // FRACTIONAL_BITS
+    setFractionalBitsFromJson<mapFileRegisterKeys>(readInfo, j);
+    setFractionalBitsFromJson<mapFileRegisterKeys>(writeInfo, j);
+
+    // SIGNED
+    setSignedFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
+    setSignedFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+
     // READ,
     // Override settings from the top level based on the "read" key's contents
     if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ))) {
@@ -223,6 +264,12 @@ namespace ChimeraTK {
 
     // FIXED_SIZE_NUM_WIDTH,
     setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+
+    // FRACTIONAL_BITS
+    setFractionalBitsFromJson<mapFileInteractionInfoKeys>(*this, j);
+
+    // SIGNED
+    setSignedFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
   } // populateFromJson
 
   /********************************************************************************************************************/
@@ -370,6 +417,54 @@ namespace ChimeraTK {
       TransportLayerType type = writeInfo.getTransportLayerType();
       readInfo.setTransportLayerType(type);
     }
+  }
+
+  /********************************************************************************************************************/
+
+  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
+    if(not iInfo.fractionalBitsOpt) {
+      return;
+    }
+    if(not iInfo.fixedSizeNumberWidthOpt) {
+      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
+          " is set but " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " is not set for " +
+          errorMessageDetail);
+    }
+    if(iInfo.getTransportLayerType() != TransportLayerType::BIN_FLOAT) {
+      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
+          " is set for incompatible " + toStr(mapFileInteractionInfoKeys::TYPE) + " " +
+          toStr(TransportLayerType::BIN_FLOAT) + " for " + errorMessageDetail);
+    }
+    // case: fractionalBits is too big
+    // TODO confirm these formulas .. can fractional bits really not exceed the size of the container?
+    size_t width = *(iInfo.fixedSizeNumberWidthOpt);
+    if(iInfo.isSigned) {
+      if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value() + 1)) {
+        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
+            " exceeds the " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " minus the sign bit for " +
+            errorMessageDetail);
+      }
+    }
+    else {
+      if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value())) {
+        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileInteractionInfoKeys::FRACTIONAL_BITS) +
+            " exceeds the " + toStr(mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH) + " for " + errorMessageDetail);
+      }
+    }
+    // TODO if fractionalBits is super negative, throw
+  }
+
+  /********************************************************************************************************************/
+
+  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
+    if(not iInfo.isSigned) {
+      return;
+    }
+    TransportLayerType type = iInfo.getTransportLayerType();
+
+    if(type == TransportLayerType::VOID or type == TransportLayerType::STRING) {
+      throw ChimeraTK::logic_error("throwIfBadSigned: " + toStr(mapFileInteractionInfoKeys::TYPE) + " " + toStr(type) +
+          "is signed for " + errorMessageDetail);
     }
   }
 
@@ -511,5 +606,47 @@ namespace ChimeraTK {
   } // end setFixedWidthFromJson
 
   /********************************************************************************************************************/
+
+  template<typename EnumType>
+  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j) noexcept {
+    std::string keyStr = toStr(EnumType::FRACTIONAL_BITS);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      iInfo.fractionalBitsOpt = std::stoi(opt->get<std::string>());
+    }
+    else if(iInfo.isBinary()) {
+      iInfo.fractionalBitsOpt = 0;
+    }
+  }
+
+  /********************************************************************************************************************/
+
+  template<typename EnumType>
+  static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+    std::string keyStr = toStr(EnumType::SIGNED);
+    if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+      std::string val = opt->get<std::string>();
+      if(caseInsensitiveStrCompare(val, "true")) {
+        iInfo.isSigned = true;
+      }
+      else if(caseInsensitiveStrCompare(val, "false")) {
+        iInfo.isSigned = false;
+      }
+      else {
+        throw ChimeraTK::logic_error("Unknown value for " + keyStr + " " + val + " for " + errorMessageDetail);
+      }
+    }
+    else { // if not set, default to sensible values given the transportLayerType
+      TransportLayerType type = iInfo.getTransportLayerType();
+      if(type == TransportLayerType::DEC_INT or type == TransportLayerType::DEC_FLOAT or
+          type == TransportLayerType::BIN_FLOAT) {
+        iInfo.isSigned = true;
+      }
+      else {
+        iInfo.isSigned = false;
+      }
+    }
+  } // end setSignedFromJson
+
+  /**********************************************************************************************************************/
 
 } // namespace ChimeraTK
