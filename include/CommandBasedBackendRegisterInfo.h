@@ -44,15 +44,19 @@ namespace ChimeraTK {
       std::string responsePattern = "";
       std::string cmdLineDelimiter;
       /*
-       * fixedSizeNumberWidthOpt is the character width of the object to be searched for by the regex in the reply
-       * string, and the character width inserted while writing. For strings, its the number of characters in the
-       * string. For unsigned decimal integers, its the number of digits without the sign character. For hexInt and
-       * binInt, its the number of hexidecimal CHARACTERS to be searched for, so nibbles not bytes. consequently we will
-       * be able to support things like 12b binary, but not 13 bit binary. binFloat can only support 16b, 32b, and 64b
-       * floats, corresponding to widths 4, 8, 16. This is also used to set the UserType
+       * fixedRegexCharacterWidthOpt is the hexidecimal character width of the object to be searched for by the regex
+       * in the reply string, and the character width inserted while writing.
+       * It is set by either the json tags CHARACTER_WIDTH or BIT_WIDTH
+       * For strings, its the number of characters in the string.
+       * For unsigned decimal integers, its the number of digits without the sign character.
+       * For hexInt binInt, and binFloat its the number of hexidecimal CHARACTERS to be searched for, so nibbles, equal
+       * to the BIT_WIDTH / 4. Consequently we will be able to support things like 12b binary, but not 13 bit binary.
+       * binFloat can only support 16b, 32b, and 64b, corresponding to fixedRegexCharacterWidthOpt = 4, 8, 16 nibbles
+       * respectively.
        */
-      std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
-      std::optional<int> fractionalBitsOpt = std::nullopt; // can be negative, needs fixedSizeNumberWidthOpt to be set
+      std::optional<size_t> fixedRegexCharacterWidthOpt = std::nullopt;
+      std::optional<int> fractionalBitsOpt =
+          std::nullopt; // can be negative, needs fixedRegexCharacterWidthOpt to be set
       bool isSigned = false;
 
       /*--------------------------------------------------------------------------------------------------------------*/
