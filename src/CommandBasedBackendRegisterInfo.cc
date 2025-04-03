@@ -227,7 +227,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<size_t> InteractionInfo::getResponseNLines() const {
+  std::optional<size_t> InteractionInfo::getResponseNLines() const noexcept {
     if(usesReadLines()) {
       return std::get<ResponseLinesInfo>(responseInfo).nLines;
     }
@@ -236,7 +236,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<std::string> InteractionInfo::getResponseLinesDelimiter() const {
+  std::optional<std::string> InteractionInfo::getResponseLinesDelimiter() const noexcept {
     if(usesReadLines()) {
       return std::get<ResponseLinesInfo>(responseInfo).delimiter;
     }
@@ -245,7 +245,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<size_t> InteractionInfo::getResponseBytes() const {
+  std::optional<size_t> InteractionInfo::getResponseBytes() const noexcept {
     if(usesReadBytes()) {
       return std::get<ResponseBytesInfo>(responseInfo).nBytesReadResponse;
     }
@@ -254,7 +254,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  void InteractionInfo::setResponseDelimiter(std::string delimiter) {
+  void InteractionInfo::setResponseDelimiter(std::string delimiter) noexcept {
     if(not usesReadLines()) {
       responseInfo = ResponseLinesInfo{};
     }
@@ -263,7 +263,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  void InteractionInfo::setResponseNLines(size_t nLines) {
+  void InteractionInfo::setResponseNLines(size_t nLines) noexcept {
     if(not usesReadLines()) {
       responseInfo = ResponseLinesInfo{};
     }
