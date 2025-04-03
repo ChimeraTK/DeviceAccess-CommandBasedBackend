@@ -56,6 +56,12 @@ namespace ChimeraTK {
    */
   static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) noexcept;
 
+  // merges the two data types into the larger of the two containers, returns null_opt if they're incompatible.
+  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
+
+  // Gets the data type for this interaction info, all things considered.
+  static DataType getDataType(const InteractionInfo& info);
+
   /**
    * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
    * setting the DataDescriptor.
@@ -64,6 +70,8 @@ namespace ChimeraTK {
    */
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
+
+  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
 
   /**
    * @brief Sets iInfo.nElements from JSON, if present, or else sets it to 1.
@@ -461,29 +469,51 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+  /********************************************************************************************************************/
+
+  static DataType getDataType(const InteractionInfo& info) {
+    // TODO move functions here from mapFileKeys
+    // TODO make use of all the width and signed information.
+    return getDataTypeFromTransportLayerType(info.getTransportLayerType());
+  }
+
+  /********************************************************************************************************************/
 
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     assert(writeInfo.isActive() or readInfo.isActive());
 
-    if(writeInfo.isActive()) {
-      DataType writeDataType = getDataTypeFromTransportLayerType(writeInfo.getTransportLayerType());
-
-      // If readable and writeable, but incompatible data types, throw.
-      if(readInfo.isActive()) {
-        DataType readDataType = getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
-        if(writeDataType != readDataType) {
-          throw ChimeraTK::logic_error("Read and Write have incompatible DataTypes for " + errorMessageDetail);
-        }
-      }
-      return writeDataType;
+    if(writeInfo.isActive() and not readInfo.isActive()) {
+      return getDataType(writeInfo);
     }
-    else { // read-only, readInfo must be active.
-      DataType readDataType = getDataTypeFromTransportLayerType(readInfo.getTransportLayerType());
-      return readDataType;
+    else if(readInfo.isActive() and not writeInfo.isActive()) {
+      return getDataType(readInfo);
+    }
+    else { // both are active, have to reconcile them.
+      auto mergedDataType = getReconciledDataTypes(writeInfo, readInfo);
+      if(not mergedDataType) {
+        throw ChimeraTK::logic_error(
+            "getDataType: Read and Write have incompatible DataTypes for " + errorMessageDetail);
+      }
+      return *mergedDataType;
     }
   }
 
+  /********************************************************************************************************************/
+
+  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB) {
+    // TODO make this more complicated to accomodate expanding data types.
+    DataType a = getDataType(iInfoA);
+    DataType b = getDataType(iInfoB);
+    if(a == b) {
+      return a;
+    }
+    else {
+      return std::nullopt;
+    }
+  }
+
+  /********************************************************************************************************************/
   /********************************************************************************************************************/
 
   static void setNElementsFromJson(
