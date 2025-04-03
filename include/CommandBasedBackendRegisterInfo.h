@@ -44,6 +44,8 @@ namespace ChimeraTK {
       std::string responsePattern = "";
       std::optional<size_t> fixedSizeNumberWidthOpt = std::nullopt;
       std::string cmdLineDelimiter;
+      std::optional<int> fractionalBitsOpt = std::nullopt; // can be negative, needs fixedSizeNumberWidthOpt to be set
+      bool isSigned = false;
 
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
