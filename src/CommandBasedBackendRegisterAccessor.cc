@@ -158,6 +158,7 @@ namespace ChimeraTK {
             userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
       }
       this->_versionNumber = {};
+      this->_dataValidity = DataValidity::ok;
     }
   } // end doPostRead
 
