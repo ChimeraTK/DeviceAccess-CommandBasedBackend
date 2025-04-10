@@ -7,6 +7,13 @@
 #include <string>
 #include <vector>
 
+/*
+ * This is a debugging utility to compare two strings, which are likey to be binary data.
+ * If they do not match, this prints to cout, highlighting the differences.
+ * @returns true if A and B are identical.
+ */
+bool strCmp(const std::string& a, const std::string& b) noexcept; // DEBUG
+
 /**
  * Split a string by the delimiter, and return a vector of the resulting segments.
  * No delimiters are present in the resulting segments.
