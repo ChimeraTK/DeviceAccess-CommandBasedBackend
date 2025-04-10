@@ -144,7 +144,8 @@ namespace ChimeraTK {
    */
   template<typename EnumType>
   static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
-      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail);
+      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail,
+      const bool responseIsAbsent = false);
 
   /**
    * @brief Sets iInfo.fixedRegexCharacterWidthOpt from JSON.
@@ -321,12 +322,14 @@ namespace ChimeraTK {
     }
 
     // RESPESPONSE,
+    bool responseIsAbsent = true;
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::RESPESPONSE))) {
+      responseIsAbsent = false;
       responsePattern = opt->get<std::string>();
     }
 
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
-    setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, errorMessageDetail);
+    setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, errorMessageDetail, responseIsAbsent);
 
     // BIT_WIDTH, CHARACTER_WIDTH
     setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
@@ -807,7 +810,8 @@ namespace ChimeraTK {
 
   template<typename EnumType>
   static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
-      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail) {
+      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail,
+      const bool responseIsAbsent) {
     bool explicitlySetToReadLines = false;
     bool explicitlySetCmdDelimiter = false;
     std::string keyStr;
@@ -848,7 +852,12 @@ namespace ChimeraTK {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " + std::to_string(n) +
             " for " + errorMessageDetail);
       }
-      iInfo.setResponseNLines(static_cast<size_t>(n));
+      if(responseIsAbsent and (n != 0)) {
+        throw ChimeraTK::logic_error("Response is absent but " + toStr(EnumType::N_RESPONSE_LINES) + " = " +
+            std::to_string(n) + " for " + errorMessageDetail);
+      }
+      iInfo.setResponseNLines(
+          static_cast<size_t>(n)); // Gets 0verwritten if responseIsAbsent, yet ensures usesReadBytes() is true
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONSE_BYTES, Set to Binary Mode, destroying the previous delimiter and nLines settings
@@ -863,12 +872,28 @@ namespace ChimeraTK {
         throw ChimeraTK::logic_error(
             "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
       }
-      iInfo.setResponseBytes(static_cast<size_t>(n));
+
+      if(responseIsAbsent and (n != 0)) {
+        throw ChimeraTK::logic_error("Response is absent but " + toStr(EnumType::N_RESPONSE_BYTES) + " = " +
+            std::to_string(n) + " for " + errorMessageDetail);
+      }
+
+      iInfo.setResponseBytes(
+          static_cast<size_t>(n)); // Gets 0verwritten if responseIsAbsent, yet ensures usesReadLines() is true
 
       // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
       // This overrides the metadata and Register level delimiter settings.
       if(not explicitlySetCmdDelimiter) {
         iInfo.cmdLineDelimiter = "";
+      }
+    }
+    /*----------------------------------------------------------------------------------------------------------------*/
+    if(responseIsAbsent) {
+      if(iInfo.usesReadLines()) {
+        iInfo.setResponseNLines(0);
+      }
+      else if(iInfo.usesReadBytes()) {
+        iInfo.setResponseBytes(0);
       }
     }
   } // end setEndingsFromJson
