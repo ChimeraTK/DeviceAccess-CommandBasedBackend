@@ -59,44 +59,76 @@ BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testHexConversion) {
-  std::string hexInput = "BEEF";
+  std::string h1 = "BEEF"; // basic test with no nulls.
+  std::string b1 = binaryStrFromHexStr(h1);
+  BOOST_CHECK_EQUAL(b1, "\xBE\xEF");
+  std::string h1V1 = hexStrFromBinaryStr(b1);
+  std::string h1V2 = hexStrFromBinaryStr(b1, 4);
+  BOOST_CHECK_EQUAL(h1, h1V1);
+  BOOST_CHECK_EQUAL(h1, h1V2);
 
-  std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
+  std::string h2 = "00AB00CD"; // basic test with nulls, evens
+  std::string b2 = binaryStrFromHexStr(h2);
+  // reminder: printable replaces null characters with "\\0" so string comparison doesn't choke on null.
+  BOOST_CHECK_EQUAL(printable(b2), "\\0\xAB\\0\xCD");
+  std::string h2V1 = hexStrFromBinaryStr(b2);
+  std::string h2V2 = hexStrFromBinaryStr(b2, h2.length());
+  BOOST_CHECK_EQUAL(h2.size(), h2V1.size());
+  BOOST_CHECK_EQUAL(h2.size(), h2V2.size());
+  BOOST_CHECK_EQUAL(h2, h2V1);
+  BOOST_CHECK_EQUAL(h2, h2V2);
 
-  std::string binaryData = binaryStrFromHexStr(hexInput);
-  std::string hexOutput = hexStrFromBinaryStr(binaryData);
+  std::string h3 = "ABCDE";                  // odd, pad left
+  std::string b3L = binaryStrFromHexStr(h3); // pad left
+  BOOST_CHECK_EQUAL(b3L, "\x0A\xBC\xDE");
 
-  std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
+  std::string b3R = binaryStrFromHexStr(h3, false); // pad right
+  BOOST_CHECK_EQUAL(b3R, "\xAB\xCD\xE0");
+  std::string h3V1 = hexStrFromBinaryStr(b3L, h3.length());
+  // hexStrFromBinaryStr doesn't support right-padding, so no test
+  BOOST_CHECK_EQUAL(h3, h3V1);
 
-  BOOST_CHECK_EQUAL(hexInput, hexOutput);
+  std::string h4 = "0ABC0";                  // odd, pad left, building nulls
+  std::string b4L = binaryStrFromHexStr(h4); // pad left to null
+  std::string b4L_cmp{"\0\xAB\xC0", 3};
+  BOOST_CHECK_EQUAL(printable(b4L), "\\0\xAB\xC0");
+
+  std::string b4R = binaryStrFromHexStr(h4, false); // pad right to null
+  std::string b4R_cmp{"\x0A\xBC\0", 3};
+  BOOST_CHECK_EQUAL(printable(b4R), "\x0A\xBC\\0");
+
+  std::string h4V1 = hexStrFromBinaryStr(b4L, h4.length());
+  // hexStrFromBinaryStr doesn't support right-padding, so no test
+  BOOST_CHECK_EQUAL(h4.size(), h4V1.size());
+  BOOST_CHECK_EQUAL(h4, h4V1);
+
+  // Evaluate to a hex container that is larger than the input binary, with signed behavior test
+  std::string h2ExtUnsigned = hexStrFromBinaryStr(b2, h2.size() + 3);
+  std::string h2ExtUnsignedExpected = "000" + h2;
+  BOOST_CHECK_EQUAL(h2ExtUnsigned, h2ExtUnsignedExpected);
+
+  // Signed positive
+  std::string h2ExtSigned = hexStrFromBinaryStr(b2, h2.size() + 3, true);
+  std::string h2ExtSignedExpected = "000" + h2;
+  BOOST_CHECK_EQUAL(h2ExtSigned, h2ExtSignedExpected);
+
+  // Signed negative
+  std::string h1ExtSigned = hexStrFromBinaryStr(b1, h1.size() + 3, true);
+  std::string h1ExtSignedExpected = "FFF" + h1;
+  BOOST_CHECK_EQUAL(h1ExtSigned, h1ExtSignedExpected);
 }
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testHexConversionOdd) {
-  std::string hexInput = "BEEFE";
-
-  std::transform(hexInput.begin(), hexInput.end(), hexInput.begin(), ::toupper);
-
-  std::string binaryData = binaryStrFromHexStr(hexInput);
-  std::string hexOutput = hexStrFromBinaryStr(binaryData);
-
-  std::transform(hexOutput.begin(), hexOutput.end(), hexOutput.begin(), ::toupper);
-  // Expect hexOutput to be "0BEEFE"
-
-  std::string hexOutputMatchingPart =
-      (hexOutput.size() >= hexInput.size()) ? hexOutput.substr(hexOutput.size() - hexInput.size()) : hexOutput;
-
-  BOOST_CHECK_EQUAL(hexOutput[0], '0');
-  BOOST_CHECK_EQUAL(hexInput, hexOutputMatchingPart);
-}
-/**********************************************************************************************************************/
 BOOST_AUTO_TEST_CASE(nullReplacement_test) {
   std::string s = {"rtyuiR67\089oi", 13};
   s[5] = '\x00'; // replace 'R' with null so that the string literal use the single unicode char '\x0067'
+
   BOOST_CHECK_EQUAL(printable(s), "rtyui\\067\\089oi");
+
   std::string d = denull(s);
   BOOST_CHECK_EQUAL(d, "rtyuiNULLCHAR_E0xUr3HTw@_67NULLCHAR_E0xUr3HTw@_89oi");
+
   std::string r = renull(d);
   BOOST_CHECK_EQUAL(printable(r), printable(s));
 }
