@@ -9,6 +9,8 @@ using namespace boost::unit_test_framework;
 
 #include "stringUtils.h"
 
+#include <ChimeraTK/SupportedUserTypes.h>
+
 #include <optional>
 
 /**********************************************************************************************************************/
@@ -167,3 +169,127 @@ BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
 }
 
 /**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
+  // This tests the mechanics of toTransportLayerHexInt, which is also used for binary int.
+
+  // no fixed width, odd number of characters
+  int32_t iIn = 0xD0E;
+  std::string ans{"D0E", 3};
+  std::string hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value());
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // no fixed width, even number of characters
+  iIn = 0xAB0C;
+  ans = std::string("AB0C", 4);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value());
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, unsigned, even number of characters in, even out
+  iIn = 0xAB0C;
+  ans = std::string("00AB0C", 6);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 6, false);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, unsigned, even number of characters in, odd out
+  iIn = 0xAB0C;
+  ans = std::string("0AB0C", 5);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 5, false);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, unsigned, odd number of characters in, odd number out
+  iIn = 0xD0E;
+  ans = std::string("00D0E", 5);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 5, false);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, unsigned, odd number of characters in, even number out
+  iIn = 0xD0E;
+  ans = std::string("000D0E", 6);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 6, false);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, signed, positive, even number of characters
+  iIn = 0xAB0C;
+  ans = std::string("00AB0C", 6);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 6, true);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, signed, positive, odd number of characters
+  iIn = 0xD0E;
+  ans = std::string("00D0E", 5);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 5, true);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, signed, negative, even number of characters
+  iIn = -1 * (0xAB0C);
+  ans = std::string("FF54f4", 6);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 6, true);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // fixed width, signed, negative, odd number of characters
+  iIn = -1 * (0xD0E);
+  ans = std::string("FF2F2", 5);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 5, true);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // Trivial case
+  iIn = 0;
+  ans = std::string("000", 3);
+  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value(), 3, true);
+  BOOST_CHECK_EQUAL(hexOut, ans);
+}
+
+/**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
+  // This tests the mechanics of toUserTypeHexInt, which is also used for binary int.
+
+  // Unsigned int cases
+  std::string str{"AB0C", 4};
+  uint16_t uiAns = 0xAB0C;
+  uint16_t uiTest = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + str);
+  BOOST_CHECK_EQUAL(uiTest, uiAns);
+
+  str = std::string("A0B", 3);
+  uiAns = 0xA0B;
+  uiTest = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + str);
+  BOOST_CHECK_EQUAL(uiTest, uiAns);
+
+  // Trivial case, unsigned int
+  str = std::string("0", 1);
+  uiAns = 0x0;
+  uiTest = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + str);
+  BOOST_CHECK_EQUAL(uiTest, uiAns);
+
+  // Signed int cases:
+  // positive even
+  str = std::string("2B0C", 4);
+  int16_t iAns = 0x2B0C;
+  int16_t iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
+  BOOST_CHECK_EQUAL(iTest, iAns);
+
+  // positive odd
+  str = std::string("20B", 3);
+  iAns = 0x20B;
+  iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
+  BOOST_CHECK_EQUAL(iTest, iAns);
+
+  // negative even
+  iAns = -1 * static_cast<int16_t>(0x2B0C);
+  str = std::string("AB0C", 4);
+  iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
+  BOOST_CHECK_EQUAL(iTest, iAns);
+
+  // negative odd
+  iAns = -1 * static_cast<int16_t>(0x20B);
+  str = std::string("A0B", 3);
+  iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
+  BOOST_CHECK_EQUAL(iTest, iAns);
+
+  // Trivial case, signed int
+  iAns = 0;
+  str = std::string("0", 1);
+  iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
+  BOOST_CHECK_EQUAL(iTest, iAns);
+}
