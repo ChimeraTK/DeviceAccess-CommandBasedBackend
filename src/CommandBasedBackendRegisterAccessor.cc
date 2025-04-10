@@ -138,12 +138,24 @@ namespace ChimeraTK {
       std::string combinedReadString = "";
       if(_registerInfo.readInfo.usesReadLines()) {
         std::string delim = *_registerInfo.readInfo.getResponseLinesDelimiter();
-        for(const auto& line : _readTransferBuffer) {
-          combinedReadString += line + delim;
+        if(_registerInfo.readInfo.isBinary()) {
+          for(const auto& line : _readTransferBuffer) {
+            combinedReadString += hexStrFromBinaryStr(line) + delim;
+          }
+        }
+        else {
+          for(const auto& line : _readTransferBuffer) {
+            combinedReadString += line + delim;
+          }
         }
       }
       else if(_registerInfo.readInfo.usesReadBytes()) {
-        combinedReadString = _readTransferBuffer[0];
+        if(_registerInfo.readInfo.isBinary()) {
+          combinedReadString = hexStrFromBinaryStr(_readTransferBuffer[0]);
+        }
+        else {
+          combinedReadString = _readTransferBuffer[0];
+        }
       }
 
       std::smatch valueMatch;
@@ -189,6 +201,12 @@ namespace ChimeraTK {
     catch(inja::ParserError& e) {
       throw ChimeraTK::logic_error(
           "Inja parser error in write commandPattern of " + _registerInfo.registerPath + ": " + e.what());
+    }
+
+    if(_registerInfo.writeInfo.isBinary()) {
+      _writeTransferBuffer =
+          binaryStrFromHexStr(_writeTransferBuffer); // TODO What to do if _writeTransferBuffer has an odd number of
+                                                     // characters? Pad left, pad right, or throw?
     }
 
     // remember this register as the last used one if the register is readable
@@ -311,23 +329,19 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  template<typename UserType>
-  static std::string toTransportLayerHexInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
-    std::ostringstream oss;
-    oss << std::hex << ChimeraTK::userTypeToUserType<uint64_t, UserType>(val);
-    return oss.str();
-  }
-
-  /********************************************************************************************************************/
-
-  // Won't try to compile this if UserType is not an integer type.
+  // This will not try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
-  static std::string toTransportLayerBinInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+  static std::string toTransportLayerHexInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
     auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedRegexCharacterWidthOpt);
     if(not maybeStr) {
       throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
     }
-    return *maybeStr;
+    if(iInfo.fixedRegexCharacterWidthOpt) {
+      return hexStrFromBinaryStr(*maybeStr, *(iInfo.fixedRegexCharacterWidthOpt), iInfo.isSigned);
+    }
+    else {
+      return hexStrFromBinaryStr(*maybeStr);
+    }
   }
 
   /********************************************************************************************************************/
@@ -341,57 +355,46 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  template<typename UserType>
-  static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
-    return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str);
-  }
-
-  /********************************************************************************************************************/
-
-  // Won't try to compile this if UserType is not an integer type.
+  // This will not try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
-  static UserType toUserTypeBinInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
-    auto maybeInt = intFromBinaryStr<UserType>(str);
-    if(not maybeInt) {
-      throw ChimeraTK::runtime_error("Unable to fit the read value into UserType.");
+  static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    if(iInfo.isSigned) {
+      auto maybeInt = intFromBinaryStr<UserType>(binaryStrFromHexStr(str));
+      if(not maybeInt) {
+        throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType write");
+      }
+      return *maybeInt;
     }
-    return *maybeInt;
+    else {
+      return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str); // only supports unsigned conversion
+    }
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
   static ToUserTypeFunc<UserType> getToUserTypeFunction(TransportLayerType transportLayerType) {
-    if constexpr(std::is_integral_v<UserType>) {
-      // toUserTypeBinInt is only defined if UserType is an integer type, so guard it.
-      if(transportLayerType == TransportLayerType::BIN_INT) {
-        return &toUserTypeBinInt<UserType>;
+    if constexpr(std::is_integral_v<UserType>) { // toUserTypeHexInt is only defined when UserType is an integer type.
+      if((transportLayerType == TransportLayerType::BIN_INT) or (transportLayerType == TransportLayerType::HEX_INT)) {
+        return &toUserTypeHexInt<UserType>;
       }
     }
-    if(transportLayerType == TransportLayerType::HEX_INT) {
-      return &toUserTypeHexInt<UserType>;
-    }
-    else { // DEC_INT, DEC_FLOAT, STRING
-      return &toUserTypeDefault<UserType>;
-    }
+    // DEC_INT, DEC_FLOAT, STRING
+    return &toUserTypeDefault<UserType>;
   }
 
   /********************************************************************************************************************/
 
   template<typename UserType>
   static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType) {
-    if constexpr(std::is_integral_v<UserType>) {
-      // toTransportLayerBinInt is only defined if UserType is an integer type, so guard it.
-      if(transportLayerType == TransportLayerType::BIN_INT) {
-        return &toTransportLayerBinInt<UserType>;
+    if constexpr(std::is_integral_v<
+                     UserType>) { // toTransportLayerHexInt is only defined if UserType is an integer type.
+      if((transportLayerType == TransportLayerType::HEX_INT) or (transportLayerType == TransportLayerType::BIN_INT)) {
+        return &toTransportLayerHexInt<UserType>;
       }
     }
-    if(transportLayerType == TransportLayerType::HEX_INT) {
-      return &toTransportLayerHexInt<UserType>;
-    }
-    else { // DEC_INT, DEC_FLOAT, STRING
-      return &toTransportLayerDefault<UserType>;
-    }
+    // DEC_INT, DEC_FLOAT, STRING
+    return &toTransportLayerDefault<UserType>;
   }
 
   /********************************************************************************************************************/
