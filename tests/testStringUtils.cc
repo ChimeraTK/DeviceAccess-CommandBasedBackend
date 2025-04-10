@@ -61,6 +61,7 @@ BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
 BOOST_AUTO_TEST_CASE(testHexConversion) {
   std::string h1 = "BEEF"; // basic test with no nulls.
   std::string b1 = binaryStrFromHexStr(h1);
+  strCmp(b1, "\xBE\xEF");
   BOOST_CHECK_EQUAL(b1, "\xBE\xEF");
   std::string h1V1 = hexStrFromBinaryStr(b1);
   std::string h1V2 = hexStrFromBinaryStr(b1, 4);
@@ -80,21 +81,26 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
 
   std::string h3 = "ABCDE";                  // odd, pad left
   std::string b3L = binaryStrFromHexStr(h3); // pad left
+  strCmp(b3L, "\x0A\xBC\xDE");
   BOOST_CHECK_EQUAL(b3L, "\x0A\xBC\xDE");
 
   std::string b3R = binaryStrFromHexStr(h3, false); // pad right
+  strCmp(b3R, "\xAB\xCD\xE0");                      // DEBUG
   BOOST_CHECK_EQUAL(b3R, "\xAB\xCD\xE0");
   std::string h3V1 = hexStrFromBinaryStr(b3L, h3.length());
   // hexStrFromBinaryStr doesn't support right-padding, so no test
+  strCmp(h3, h3V1); // DEBUG
   BOOST_CHECK_EQUAL(h3, h3V1);
 
   std::string h4 = "0ABC0";                  // odd, pad left, building nulls
   std::string b4L = binaryStrFromHexStr(h4); // pad left to null
   std::string b4L_cmp{"\0\xAB\xC0", 3};
+  strCmp(b4L, b4L_cmp); // DEBUG
   BOOST_CHECK_EQUAL(printable(b4L), "\\0\xAB\xC0");
 
   std::string b4R = binaryStrFromHexStr(h4, false); // pad right to null
   std::string b4R_cmp{"\x0A\xBC\0", 3};
+  strCmp(b4R, b4R_cmp); // DEBUG
   BOOST_CHECK_EQUAL(printable(b4R), "\x0A\xBC\\0");
 
   std::string h4V1 = hexStrFromBinaryStr(b4L, h4.length());
