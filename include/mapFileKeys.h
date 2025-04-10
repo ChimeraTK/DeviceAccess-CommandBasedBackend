@@ -222,16 +222,37 @@ inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapF
       // clang-format off
         {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
         {mapFileInteractionInfoKeys::RESPESPONSE, "resp"},
-        {mapFileInteractionInfoKeys::TYPE, "type"}, //TYPE and below need to be in common with mapFileRegisterKeys
-        {mapFileInteractionInfoKeys::N_RESPONSE_BYTES, "nRespBytes"},
-        {mapFileInteractionInfoKeys::N_RESPONSE_LINES, "nRespLines"}, 
-        {mapFileInteractionInfoKeys::DELIMITER, "delimiter"},
-        {mapFileInteractionInfoKeys::COMMAND_DELIMITER, "cmdDelim"},
-        {mapFileInteractionInfoKeys::CHARACTER_WIDTH, "characterWidth"},
-        {mapFileInteractionInfoKeys::BIT_WIDTH, "bitWidth"},
-        {mapFileInteractionInfoKeys::FIXED_SIZE_NUM_WIDTH, "width"},
-        {mapFileInteractionInfoKeys::FRACTIONAL_BITS, "fractionalBits"},
-        {mapFileInteractionInfoKeys::SIGNED, "signed"},
+
+        //unordered_map<mapFileRegisterKeys.. is the single source of truth for these shared JSON key strings.
+        {mapFileInteractionInfoKeys::TYPE, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::TYPE)},
+
+        {mapFileInteractionInfoKeys::N_RESPONSE_BYTES, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::N_RESPONSE_BYTES)},
+
+        {mapFileInteractionInfoKeys::N_RESPONSE_LINES, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::N_RESPONSE_LINES)},
+
+        {mapFileInteractionInfoKeys::DELIMITER, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::DELIMITER)},
+
+        {mapFileInteractionInfoKeys::COMMAND_DELIMITER, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::COMMAND_DELIMITER)},
+
+        {mapFileInteractionInfoKeys::RESPONSE_DELIMITER, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::RESPONSE_DELIMITER)},
+
+        {mapFileInteractionInfoKeys::CHARACTER_WIDTH, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::CHARACTER_WIDTH)},
+
+        {mapFileInteractionInfoKeys::BIT_WIDTH, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::BIT_WIDTH)},
+
+        {mapFileInteractionInfoKeys::FRACTIONAL_BITS, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::FRACTIONAL_BITS)},
+
+        {mapFileInteractionInfoKeys::SIGNED, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::SIGNED)},
       // clang-format on
   };
   return uMap;
