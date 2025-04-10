@@ -73,6 +73,34 @@ void toLowerCase(std::string& str) noexcept;
  */
 [[nodiscard]] bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept;
 
+// Returns a string with all instance of the character charToBeReplaced in string s replace with the replacement string.
+[[nodiscard]] std::string replaceAll(
+    const std::string& s, const char charToBeReplaced, const std::string& replacement) noexcept;
+
+// Returns a string with all instance of the string strToBeReplaced in string s replace with the replacement string.
+[[nodiscard]] std::string replaceAll(
+    const std::string& s, const std::string& strToBeReplaced, const std::string& replacement) noexcept;
+
+// Placeholder tag for null characters with secure randomly generated 60b constant in base 64.
+constexpr const char NULL_TAG[] = "NULLCHAR_E0xUr3HTw@_";
+constexpr size_t NULL_TAG_SIZE = sizeof(NULL_TAG) - 1;
+
+/**
+ * Replaces null characters in s with '\'+'0', to make them printable.
+ */
+[[nodiscard]] std::string printable(const std::string& s) noexcept;
+
+/**
+ * Replaces null characters with the NULL_TAG,
+ * which is cryptographically unlikely to be stumbled upon by any other input.
+ */
+[[nodiscard]] std::string denull(const std::string& s) noexcept;
+
+/**
+ * This is the reverse operation of denull, replaceing the NULL_TAG with '\0' again.
+ */
+[[nodiscard]] std::string renull(const std::string& s) noexcept;
+
 /**********************************************************************************************************************/
 
 template<typename T>
