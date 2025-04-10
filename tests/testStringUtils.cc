@@ -90,6 +90,16 @@ BOOST_AUTO_TEST_CASE(testHexConversionOdd) {
   BOOST_CHECK_EQUAL(hexOutput[0], '0');
   BOOST_CHECK_EQUAL(hexInput, hexOutputMatchingPart);
 }
+/**********************************************************************************************************************/
+BOOST_AUTO_TEST_CASE(nullReplacement_test) {
+  std::string s = {"rtyuiR67\089oi", 13};
+  s[5] = '\x00'; // replace 'R' with null so that the string literal use the single unicode char '\x0067'
+  BOOST_CHECK_EQUAL(printable(s), "rtyui\\067\\089oi");
+  std::string d = denull(s);
+  BOOST_CHECK_EQUAL(d, "rtyuiNULLCHAR_E0xUr3HTw@_67NULLCHAR_E0xUr3HTw@_89oi");
+  std::string r = renull(d);
+  BOOST_CHECK_EQUAL(printable(r), printable(s));
+}
 
 /**********************************************************************************************************************/
 
