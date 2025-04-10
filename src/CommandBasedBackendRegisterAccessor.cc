@@ -209,7 +209,7 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    _backend->sendCommandAndRead(_registerInfo.writeInfo.commandPattern, _registerInfo.writeInfo);
+    _backend->sendCommandAndRead(_writeTransferBuffer, _registerInfo.writeInfo);
     return false; // no data was lost
   }
 
