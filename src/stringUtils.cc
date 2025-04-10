@@ -269,3 +269,21 @@ std::string renull(const std::string& s) noexcept {
 
 /**********************************************************************************************************************/
 
+bool strCmp(const std::string& a, const std::string& b) noexcept {
+  std::string aHex = hexStrFromBinaryStr(a);
+  std::string bHex = hexStrFromBinaryStr(b);
+  if(a.size() != b.size()) {
+    std::cout << "strCmp fail - length mismatch: " << a << " length " << a.size() << " != " << b << " length "
+              << b.size() << "   0x" << aHex << " != 0x" << bHex << std::endl;
+    return false;
+  }
+  for(size_t i = 0; i < a.size(); i++) {
+    if(a[i] != b[i]) {
+      std::cout << "strCmp fail - content mismatch: " << a << " and " << b << " differ at index i=" << i << " ("
+                << size_t(a[i]) << " vs " << size_t(b[i]) << ")"
+                << "   0x" << aHex << " != 0x" << bHex << std::endl;
+      return false;
+    }
+  }
+  return true;
+}
