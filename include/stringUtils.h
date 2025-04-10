@@ -150,7 +150,8 @@ template<typename intType, typename = enableIfIntegral<intType>>
 
   std::string result(strWidth, leftPackChar);
 
-  const size_t nLeftPackBytes = std::max(static_cast<size_t>(0), strWidth - sizeof(intType));
+  const size_t nLeftPackBytes = static_cast<size_t>(
+      std::max(static_cast<long>(0), static_cast<long>(strWidth) - static_cast<long>(sizeof(intType))));
   const size_t bytesToTransfer = strWidth - nLeftPackBytes;
   for(size_t i = 0; i < bytesToTransfer; i++) {
     // Transfer digits from least significant to most, populating the string from back to front
@@ -164,7 +165,7 @@ static inline size_t getStrNaturalWidth(
     const std::string binaryContainer, const bool interpretAsPositive = true) noexcept {
   const char leftpackChar = (interpretAsPositive ? '\0' : '\xFF');
   size_t naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
-  return ((naturalWidth == std::string::npos) ? 1 : naturalWidth);
+  return ((naturalWidth == std::string::npos) ? 1 : binaryContainer.size() - naturalWidth);
 }
 /**
  * @brief Interprets the data in the string as a binary representation of an integer
@@ -197,7 +198,8 @@ template<typename intType, typename = enableIfIntegral<intType>>
   intType result = 0;
 
   // Calculate how many leading F's we need to add if the string is shorter than expected
-  const size_t nLeftPackBytes = std::max(static_cast<size_t>(0), maxBytes - binaryContainer.size());
+  const size_t nLeftPackBytes = static_cast<size_t>(
+      std::max(static_cast<long>(0), static_cast<long>(maxBytes) - static_cast<long>(binaryContainer.size())));
   if(isNegative) {
     uint64_t ff = 0xFF;
     for(size_t i = 0; i < nLeftPackBytes; i++) {
