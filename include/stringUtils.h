@@ -3,6 +3,7 @@
 #pragma once
 #include <type_traits>
 
+#include <cassert>
 #include <optional>
 #include <string>
 #include <vector>
