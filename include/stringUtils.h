@@ -4,8 +4,10 @@
 #include <type_traits>
 
 #include <cassert>
+#include <cstring> //for memcpy
 #include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 /*
@@ -138,88 +140,199 @@ template<typename T>
 using enableIfNumeric = std::enable_if_t<std::is_arithmetic<T>::value>;
 
 /**********************************************************************************************************************/
-enum class OverflowBehavior { NULLOPT, EXPAND, TRUNCATE };
 
+// Get the bit that would be the sign bit if it i were signed.
 template<typename intType, typename = enableIfIntegral<intType>>
-static size_t getIntNaturalWidth(const intType payload) noexcept {
-  size_t naturalWidth = 1; // how many chars long should payload be with no leading 0's.
-  if(payload >= 0) {
-    intType temp = payload >> 8;
-    int limit = 130; // DEBUG
-    while((temp > 0) and (0 < limit--)) {
-      temp >>= 8;
-      naturalWidth++;
-    }
-    assert(limit > 0 && "Error! Runaway while loop on positive branch of enableIfIntegral"); // DEBUG
-  }
-  else { // negative payload
-    intType temp = payload >> 8;
-    int limit = 130; // DEBUG
-    while((temp != static_cast<intType>(-1)) and (0 < limit--)) {
-      temp >>= 8; // bit shift left-packs with 0xFF for negatives.
-      naturalWidth++;
-    }
-    assert(limit > 0 && "Error! Runaway while loop on negative branch of enableIfIntegral"); // DEBUG
-  }
-  return naturalWidth;
+inline static bool getFirstBit(const intType i) {
+  using SignedIntType = typename std::make_signed<intType>::type;
+  return (static_cast<SignedIntType>(i) < 0);
 }
 
-/**
- * @brief Converts signed and unsigned integers into a string holding the binary representation of the int.
- * This is only compiled when intType is an integer type
- * @param[in] payload A signed or unsigned integer of type intType.
- * @param[in] fixedWidth Determines the character width of the output, if set. When fixedWidth exceeding the size of
- * intType, the output is left-packed with the sign bit of payload.
- * @param[in] overflowBehavior Determins the behavior if a fixed width is set for the output, but the payload int cannot
- * fit. When overflowBehavior is not set, output size = natural width When overflowBehavior = NULLOPT,  output size =
- * fixedWidth if it fits, otherwise return a std::nullopt. When overflowBehavior = EXPAND,   output size =
- * max(fixedWidth,natural width) When overflowBehavior = TRUNCATE, output size = fixedWidth Overflow behavior comes into
- * play if the natural width of the payload exceeds the value of fixedWidth. (if payload is an int64 = 255, its natural
- * width is 1 char = '\xFF'. If payload is an int = -257, its natural width is 2 = "\xFE\xFF".
- * @returns an optional to a string container holding the binary representation of the int. std::nullopt is returned if
- * the int overflows and overflowBehavior = NULLOPT.
- */
+/**********************************************************************************************************************/
+
 template<typename intType, typename = enableIfIntegral<intType>>
-[[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload,
-    const std::optional<size_t>& fixedWidth = std::nullopt,
-    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
-  char leftPackChar = ((payload >= 0) ? '\0' : '\xFF');
-  size_t naturalWidth =
-      getIntNaturalWidth<intType>(payload); // how many chars long should payload be with no leading 0's.
-  size_t strWidth = naturalWidth;
+static size_t getIntNaturalByteWidth(const intType payload, const bool isSigned) noexcept {
+  size_t naturalWidth = 1; // how many chars long should payload be with no leading 0's.
+  int limit = 130;         // DEBUG, >128
+  bool signBit = 0;
+  bool lastPayloadBit = 0;
+  if(isSigned) {
+    signBit = getFirstBit(payload);
+    lastPayloadBit = static_cast<bool>((payload & 0x80) >> 7);
+  }
+  const intType endState = (signBit ? -1 : 0); //= -1 for negative payload, else 0
 
-  if(fixedWidth.has_value()) {
-    strWidth = fixedWidth.value();
-
-    if(strWidth < naturalWidth) { // overflow situation
-      if(overflowBehavior == OverflowBehavior::EXPAND) {
-        strWidth = naturalWidth;
-      }
-      else if(overflowBehavior == OverflowBehavior::NULLOPT) {
-        return std::nullopt;
-      } // else overflowBehavior = TRUNCATE
+  intType temp = payload >> 8;
+  while((temp != endState) and (0 < limit--)) {
+    if constexpr(std::is_signed<intType>::value) {
+      lastPayloadBit = (isSigned ? static_cast<bool>((temp & 0x80) >> 7) : 0);
     }
+    temp >>= 8;
+    naturalWidth++;
   }
 
-  std::string result(strWidth, leftPackChar);
+  assert(limit > 0 && "Error! Runaway while loop on positive branch of enableIfIntegral"); // DEBUG
+  return naturalWidth + static_cast<size_t>(signBit xor lastPayloadBit);
+}
 
-  const size_t nLeftPackBytes = static_cast<size_t>(
-      std::max(static_cast<long>(0), static_cast<long>(strWidth) - static_cast<long>(sizeof(intType))));
-  const size_t bytesToTransfer = strWidth - nLeftPackBytes;
+/**********************************************************************************************************************/
+
+enum class WidthOption { COMPACT, TYPE_WIDTH };
+enum class OverflowBehavior { NULLOPT, EXPAND, TRUNCATE };
+
+/*
+ * @brief Converts numeric types into a string holding the binary representation of the number.
+ * @param[in] payload A numeric type
+ * @param[in] width If set, and numType is an integer type, this determines the character (byte) width of the output.
+ * When width is WidthOption::TYPE_WIDTH, every byte in the payload will be reflected by a byte of the output string,
+ * even if that's full of 0 or F. If numType is floating point, this is the only behavior, regardless of how width is
+ * set. When width is a size_t that exceeding the size of numType, the output is left-packed with the sign bit of
+ * payload. When width is WidthOption::Compact, the output will be the smallest string that fully represents the
+ * payload.
+ * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
+ * providing an override to treat signed ints as unsigned and vice versa.
+ * @param[in] overflowBehavior Determins the behavior if width is set to a size_t, but the payload value cannot fit. It
+ * is not meaningful if width is a WidthOption. When overflowBehavior = NULLOPT,  output size = width if it fits,
+ * otherwise return a std::nullopt. When overflowBehavior = EXPAND, output size = max(fixedWidth,natural width).
+ * When overflowBehavior = TRUNCATE, output size = fixedWidth
+ * @returns an optional to a string container holding the binary representation of the payload number. std::nullopt is
+ * returned if the number overflows and overflowBehavior = NULLOPT
+ */
+
+template<typename numType, typename = enableIfNumeric<numType>>
+[[nodiscard]] static std::optional<std::string> binaryStrFromNumber(const numType payload,
+    const std::variant<size_t, WidthOption>& width = WidthOption::COMPACT,
+    bool isSigned = std::is_signed<numType>::value,
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+  constexpr size_t numTypeWidth = sizeof(numType);
+  static_assert(sizeof(numType) <= sizeof(uint64_t));
+
+  size_t bytesToTransfer;
+  size_t strWidth;
+  std::string result;
+
+  constexpr bool isFloat = std::is_floating_point_v<numType>;
+  if(isFloat or
+      (std::holds_alternative<WidthOption>(width) and (std::get<WidthOption>(width) == WidthOption::TYPE_WIDTH))) {
+    bytesToTransfer = numTypeWidth;
+    result = std::string(numTypeWidth, '\0');
+    strWidth = numTypeWidth;
+  }
+  else if constexpr(std::is_integral_v<numType>) {
+    bool isNegative = (isSigned and getFirstBit(payload));
+    char leftPackChar = (isNegative ? '\xFF' : '\0');
+    size_t naturalWidth = getIntNaturalByteWidth<numType>(
+        payload, isSigned); // how many chars long should payload be with no leading 0's.
+    if(std::holds_alternative<size_t>(width)) {
+      strWidth = std::get<std::size_t>(width);
+      if(strWidth < naturalWidth) { // overflow situation
+        if(overflowBehavior == OverflowBehavior::NULLOPT) {
+          return std::nullopt;
+        }
+        else if(overflowBehavior == OverflowBehavior::EXPAND) {
+          strWidth = naturalWidth;
+        }
+        else if((overflowBehavior == OverflowBehavior::TRUNCATE) and (strWidth == 0)) {
+          return std::string("\0", 1);
+        }
+        // else the following truncates.
+      }
+    }      // end fixedwidth
+    else { // width = WidthOption::COMPACT
+      strWidth = naturalWidth;
+    }
+
+    result = std::string(strWidth, leftPackChar);
+    const size_t nLeftPackBytes = static_cast<size_t>(
+        std::max(static_cast<long>(0), static_cast<long>(strWidth) - static_cast<long>(numTypeWidth)));
+    bytesToTransfer = strWidth - nLeftPackBytes;
+  }
+
+  // Copy into a uint so that we can do bit shifts, even if numType is float
+  uint64_t shiftablePayload = 0;
+  std::memcpy(&shiftablePayload, &payload, numTypeWidth);
+
   for(size_t i = 0; i < bytesToTransfer; i++) {
     // Transfer digits from least significant to most, populating the string from back to front
-    result[strWidth - 1 - i] = static_cast<char>((payload >> (8 * i)) & 0xFF);
+    result[strWidth - 1 - i] = static_cast<char>((shiftablePayload >> (8 * i)) & 0xFF);
   }
   return result;
 }
 
 /**********************************************************************************************************************/
-static inline size_t getStrNaturalWidth(
+
+/**
+ * @brief Converts numeric types into a string holding the binary representation of the number.
+ * @param[in] payload A floating point type
+ * @returns  a string container holding the binary representation of the floating point number. The length of the output
+ * is determined by the size of floatType, with every byte in the payload will be reflected by a byte of the output string.
+ */
+template<typename floatType, typename = enableIfFloat<floatType>>
+[[nodiscard]] std::string binaryStrFromFloat(const floatType payload) noexcept {
+  return binaryStrFromNumber<floatType>(payload).value_or("");
+  // The option returned by binaryStrFromNumber<floatType) is never nullopt.
+}
+
+/**********************************************************************************************************************/
+
+/**
+ * @brief Converts integer types into a string holding the binary representation of the int.
+ * @param[in] payload A numeric type
+ * @param[in] width Determines the character (byte) width of the output.
+ * When width is WidthOption::TYPE_WIDTH, every byte in the payload will be reflected by a byte of the output string,
+ * even if that's full of 0 or F. When width is WidthOption::Compact, the output will be the smallest string that fully
+ * represents the payload.
+ * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
+ * providing an override to treat signed ints as unsigned and vice versa.
+ * @returns an optional to a string container holding the binary representation of the payload int. std::nullopt is
+ * never returned, and is kept for consistentcy.
+ */
+template<typename intType, typename = enableIfIntegral<intType>>
+[[nodiscard]] std::optional<std::string> binaryStrFromInt(
+    const intType payload, const WidthOption width = WidthOption::COMPACT, bool isSigned = true) noexcept {
+  return binaryStrFromNumber<intType>(payload, width, isSigned);
+}
+
+/**********************************************************************************************************************/
+
+/**
+ * @brief Converts integer types into a string holding the binary representation of the int.
+ * @param[in] payload A numeric type
+ * @param[in] width Determines the character (byte) width of the output.
+ * When width is a size_t that exceeding the size of numType, the output is left-packed with the sign bit of payload.
+ * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
+ * providing an override to treat signed ints as unsigned and vice versa.
+ * @param[in] overflowBehavior Determins the behavior when the natrual size of the payload doesn't fit within width in
+ * bytes. For example, if the payload is a in64_t, and payload = 2, and width = 1, it fits. If payload = 10000 and width
+ * = 1, it doesn't fit. When overflowBehavior = NULLOPT and the intType doesn't fit, nullopt is returned. When
+ * overflowBehavior = EXPAND, output size = max(width,natural width). When overflowBehavior = TRUNCATE, output size =
+ * width. Overflow behavior comes into play if the natural width of the payload exceeds the value of width. (if payload
+ * is an int64 = 255, its natural width is 1 char = '\xFF'. If payload is an int = -257, its natural width is 2 =
+ * "\xFE\xFF".
+ * @returns an optional to a string container holding the binary representation of the payload int. std::nullopt is
+ * returned if numType is > 64bit, or the int overflows and overflowBehavior = NULLOPT
+ */
+template<typename intType, typename = enableIfIntegral<intType>>
+[[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload, const size_t width,
+    bool isSigned = true, const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+  return binaryStrFromNumber<intType>(payload, width, isSigned, overflowBehavior);
+}
+
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
+
+/**********************************************************************************************************************/
+/*
+ * @brief Returns the minimum number of bytes needed represent the int in the binaryContainer.
+ * param[in] interpretAsPositive Whether or not to binaryContainer as positive or negative.
+ */
+static inline size_t getStrNaturalByteWidth(
     const std::string binaryContainer, const bool interpretAsPositive = true) noexcept {
   const char leftpackChar = (interpretAsPositive ? '\0' : '\xFF');
   size_t naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
   return ((naturalWidth == std::string::npos) ? 1 : binaryContainer.size() - naturalWidth);
 }
+
 /**
  * @brief Interprets the data in the string as a binary representation of an integer
  * The binaryContiainer is interpreted as negative if intType is signed and the first bit of binaryContainer is 1
@@ -240,7 +353,7 @@ template<typename intType, typename = enableIfIntegral<intType>>
   }
 
   bool isNegative = (std::is_signed<intType>::value) and (static_cast<unsigned char>((binaryContainer[0]) & 0x80) != 0);
-  size_t naturalWidth = getStrNaturalWidth(binaryContainer, not isNegative);
+  size_t naturalWidth = getStrNaturalByteWidth(binaryContainer, not isNegative);
   const size_t maxBytes = sizeof(intType);
 
   // Validate input length
