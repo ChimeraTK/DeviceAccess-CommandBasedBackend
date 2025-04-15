@@ -69,7 +69,7 @@ void toLowerCase(std::string& str) noexcept;
  * @returns A string containing the corresponding binary data, with characters like \xFF, of length ceil(input.ceil / 2).
  */
 [[nodiscard]] std::string binaryStrFromHexStr(
-    const std::string& hexStr, const bool padLeft = true, const bool isSigned = true) noexcept;
+    const std::string& hexStr, const bool padLeft = true, const bool isSigned = false) noexcept;
 
 /**
  * @brief Convert a string container of bytes into the string hexidecimal representation of that data.
