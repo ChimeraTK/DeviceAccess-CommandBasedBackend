@@ -333,16 +333,18 @@ namespace ChimeraTK {
   // This will not try to compile this if UserType is not an integer type.
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static std::string toTransportLayerHexInt(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
-    auto maybeStr = binaryStrFromInt<UserType>(val, iInfo.fixedRegexCharacterWidthOpt);
+    std::optional<std::string> maybeStr;
+    if(iInfo.fixedRegexCharacterWidthOpt) {
+      maybeStr = hexStrFromInt(val, *(iInfo.fixedRegexCharacterWidthOpt), iInfo.isSigned, OverflowBehavior::NULLOPT);
+    }
+    else {
+      maybeStr = hexStrFromInt(val, WidthOption::COMPACT, iInfo.isSigned);
+    }
+
     if(not maybeStr) {
       throw ChimeraTK::runtime_error("Unable to fit value into the fixed_width write slot");
     }
-    if(iInfo.fixedRegexCharacterWidthOpt) {
-      return hexStrFromBinaryStr(*maybeStr, *(iInfo.fixedRegexCharacterWidthOpt), iInfo.isSigned);
-    }
-    else {
-      return hexStrFromBinaryStr(*maybeStr);
-    }
+    return *maybeStr;
   }
 
   /********************************************************************************************************************/
