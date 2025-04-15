@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
   BOOST_CHECK_EQUAL(h2, h2V1);
   BOOST_CHECK_EQUAL(h2, h2V2);
 
-  std::string h3 = "ABCDE";                  // odd, pad left
-  std::string b3L = binaryStrFromHexStr(h3); // pad left
+  std::string h3 = "ABCDE";                               // odd, pad left
+  std::string b3L = binaryStrFromHexStr(h3, true, false); // pad left with 0 like a uint
   strCmp(b3L, "\x0A\xBC\xDE");
   BOOST_CHECK_EQUAL(b3L, "\x0A\xBC\xDE");
 
