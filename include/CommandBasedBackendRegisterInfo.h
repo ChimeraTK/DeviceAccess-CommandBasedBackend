@@ -100,19 +100,12 @@ namespace ChimeraTK {
       void setResponseBytes(size_t nBytes) noexcept { responseInfo = ResponseBytesInfo{nBytes}; }
       void setTransportLayerType(TransportLayerType& type) noexcept;
 
-      inline bool usesReadLines() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_LINES); }
-      inline bool usesReadBytes() const { return (getSendCommandType() == SEND_COMMAND_AND_READ_BYTES); }
+      inline bool usesReadLines() const { return std::holds_alternative<ResponseLinesInfo>(responseInfo); }
+      inline bool usesReadBytes() const { return std::holds_alternative<ResponseBytesInfo>(responseInfo); }
       inline bool hasTransportLayerType() const { return transportLayerType.has_value(); }
       /*--------------------------------------------------------------------------------------------------------------*/
      protected:
       bool _isBinary = false;
-      /*
-       * SendCommandType labels the indicies of the types in the responseInfo variant
-       * so as to name sendCommand functions to be used in CommandBasedBackend.
-       * The numeric value MUST match the index order of variants in responseInfo
-       */
-      enum SendCommandType { SEND_COMMAND_AND_READ_LINES = 0, SEND_COMMAND_AND_READ_BYTES = 1 };
-      inline SendCommandType getSendCommandType() const { return static_cast<SendCommandType>(responseInfo.index()); }
     }; // end InteractionInfo
 
     /*----------------------------------------------------------------------------------------------------------------*/
