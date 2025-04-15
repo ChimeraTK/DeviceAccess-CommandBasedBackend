@@ -204,9 +204,10 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.writeInfo.isBinary()) {
-      _writeTransferBuffer =
-          binaryStrFromHexStr(_writeTransferBuffer); // TODO What to do if _writeTransferBuffer has an odd number of
-                                                     // characters? Pad left, pad right, or throw?
+      _writeTransferBuffer = binaryStrFromHexStr(
+          _writeTransferBuffer, false); // TODO What to do if _writeTransferBuffer has an odd number of
+                                        // characters? Pad left, pad right, or throw?
+                                        // currently set to 0-pad right.
     }
 
     // remember this register as the last used one if the register is readable
@@ -359,9 +360,9 @@ namespace ChimeraTK {
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     if(iInfo.isSigned) {
-      auto maybeInt = intFromBinaryStr<UserType>(binaryStrFromHexStr(str));
+      auto maybeInt = intFromBinaryStr<UserType>(binaryStrFromHexStr(str, true, iInfo.isSigned));
       if(not maybeInt) {
-        throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType write");
+        throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType for writint");
       }
       return *maybeInt;
     }

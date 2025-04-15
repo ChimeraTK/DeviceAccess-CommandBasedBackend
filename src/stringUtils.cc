@@ -101,10 +101,14 @@ void toLowerCase(std::string& str) noexcept {
 
 /**********************************************************************************************************************/
 
-std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft) noexcept {
-  // Use case: writing to device. We fill in the hexidecimal of interest with the regex, then convert to binary for sending.
-  // If h is odd, the first byte or last will be special, requiring padding
-  // This padding could go on the left or the right (padLeft = false).
+std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, const bool isSigned) noexcept {
+  /* Use case: writing to device. We fill in the hexidecimal of interest with the regex, then convert to binary for sending.
+  * If h is odd, the first byte or last will be special, requiring padding
+  * This padding could go on the left or the right (padLeft = false).
+
+  * Problem: if you feed in ABC with padLeft=true, this gets interpreted to 0ABC, loosing the signed bit.
+  * So we need isSigned to tell us whether to move the signed bit.
+  */
 
   const std::function<char(char)> binCharFromHexChar = [](char hex) noexcept -> char {
     return hex - (hex <= '9' ? '0' : hex <= 'F' ? 'A' - 10 : 'a' - 10);
@@ -124,6 +128,9 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft) n
   if(hexLengthIsOdd) {
     if(padLeft) {
       binOut[0] = binCharFromHexChar(hexStr[0]);
+      if(isSigned and (binOut[0] >= 0x08)) { // signed and negative
+        binOut[0] += 0xF0;                   // Left-pack with F.
+      }
     }
     else { // pad right
       binOut.back() = (binCharFromHexChar(hexStr[hexStr.length() - 1]) << 4);
