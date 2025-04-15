@@ -348,6 +348,14 @@ namespace ChimeraTK {
   }
 
   /********************************************************************************************************************/
+
+  // This will not try to compile this if UserType is not an integer type.
+  template<typename UserType, typename = enableIfFloat<UserType>>
+  static std::string toTransportLayerHexFloat(const UserType& val, [[maybe_unused]] const InteractionInfo& iInfo) {
+    return hexStrFromFloat(val);
+  }
+
+  /********************************************************************************************************************/
   /********************************************************************************************************************/
   // For use in postRead
 
@@ -372,6 +380,18 @@ namespace ChimeraTK {
       return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str); // only supports unsigned conversion
     }
   }
+  /********************************************************************************************************************/
+
+  template<typename UserType, typename = enableIfFloat<UserType>>
+  static UserType toUserTypeHexFloat(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
+    auto maybeFloat = floatFromBinaryStr<UserType>(
+        binaryStrFromHexStr(str, false)); // binaryStrFromHex will right-pack a 0 fractional nibble str.length is odd.
+                                          // If that doesn't make it fit into the float type, we throw.
+    if(not maybeFloat) {
+      throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType for writing");
+    }
+    return *maybeFloat;
+  }
 
   /********************************************************************************************************************/
 
@@ -382,6 +402,11 @@ namespace ChimeraTK {
         return &toUserTypeHexInt<UserType>;
       }
     }
+    else if constexpr(std::is_floating_point_v<UserType>) {
+      if(transportLayerType == TransportLayerType::BIN_FLOAT) {
+        return &toUserTypeHexFloat<UserType>;
+      }
+    }
     // DEC_INT, DEC_FLOAT, STRING
     return &toUserTypeDefault<UserType>;
   }
@@ -390,10 +415,15 @@ namespace ChimeraTK {
 
   template<typename UserType>
   static ToTransportLayerFunc<UserType> getToTransportLayerFunction(TransportLayerType transportLayerType) {
-    if constexpr(std::is_integral_v<
-                     UserType>) { // toTransportLayerHexInt is only defined if UserType is an integer type.
+    if constexpr(std::is_integral_v<UserType>) {
+      // toTransportLayerHexInt is only defined if UserType is an integer type.
       if((transportLayerType == TransportLayerType::HEX_INT) or (transportLayerType == TransportLayerType::BIN_INT)) {
         return &toTransportLayerHexInt<UserType>;
+      }
+    }
+    else if constexpr(std::is_floating_point_v<UserType>) {
+      if(transportLayerType == TransportLayerType::BIN_FLOAT) {
+        return &toTransportLayerHexFloat<UserType>;
       }
     }
     // DEC_INT, DEC_FLOAT, STRING
