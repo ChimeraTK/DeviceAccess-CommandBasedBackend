@@ -64,11 +64,12 @@ void toLowerCase(std::string& str) noexcept;
  * @brief Convert the string of hexidecimal into a string containing the corresponding binary data.
  * @param[in] hexData A string of hexidecimal such as "B0B", case insensitive.
  * @param[in] padLeft If hexStr has odd length, then the output must be padded with an extra nibble.
- * If padLeft, it is padded on the left with 0, else its 0-padded on the right.
- * If hexData has odd length, then a leading 0 is assumed.
+ * If padLeft, it is padded on the left, else its 0-padded on the right.
+ * @param[in] isSigned Whether to treat hexStr as signed in case hexStr.length() is odd.
  * @returns A string containing the corresponding binary data, with characters like \xFF, of length ceil(input.ceil / 2).
  */
-[[nodiscard]] std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft = true) noexcept;
+[[nodiscard]] std::string binaryStrFromHexStr(
+    const std::string& hexStr, const bool padLeft = true, const bool isSigned = true) noexcept;
 
 /**
  * @brief Convert a string container of bytes into the string hexidecimal representation of that data.
