@@ -204,10 +204,10 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.writeInfo.isBinary()) {
-      _writeTransferBuffer = binaryStrFromHexStr(
-          _writeTransferBuffer, false); // TODO What to do if _writeTransferBuffer has an odd number of
-                                        // characters? Pad left, pad right, or throw?
-                                        // currently set to 0-pad right.
+      _writeTransferBuffer =
+          binaryStrFromHexStr(_writeTransferBuffer, false, false); // TODO What to do if _writeTransferBuffer has an odd
+                                                                   // number of characters? Pad left, pad right, or
+                                                                   // throw? currently set to 0-pad right.
     }
 
     // remember this register as the last used one if the register is readable
@@ -385,8 +385,8 @@ namespace ChimeraTK {
   template<typename UserType, typename = enableIfFloat<UserType>>
   static UserType toUserTypeHexFloat(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     auto maybeFloat = floatFromBinaryStr<UserType>(
-        binaryStrFromHexStr(str, false)); // binaryStrFromHex will right-pack a 0 fractional nibble str.length is odd.
-                                          // If that doesn't make it fit into the float type, we throw.
+        binaryStrFromHexStr(str, false, false)); // binaryStrFromHex will right-pack a 0 fractional nibble str.length is
+                                                 // odd. If that doesn't make it fit into the float type, we throw.
     if(not maybeFloat) {
       throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType for writing");
     }
