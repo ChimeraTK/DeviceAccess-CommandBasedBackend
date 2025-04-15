@@ -11,6 +11,7 @@ using namespace boost::unit_test_framework;
 
 #include <ChimeraTK/SupportedUserTypes.h>
 
+#include <cfloat>
 #include <optional>
 
 /**********************************************************************************************************************/
@@ -369,4 +370,104 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
   str = std::string("0", 1);
   iTest = intFromBinaryStr<int16_t>(binaryStrFromHexStr(str)).value();
   BOOST_CHECK_EQUAL(iTest, iAns);
+}
+
+BOOST_AUTO_TEST_CASE(floatBinary_test) {
+  // For each case, convert the number to binary, and back to float. Then convert to hex and back to float by way of
+  // binary. Check that each round trip works.
+  float f, f2, f3;
+  std::string b, b2, h;
+
+  f = 0.f;
+  b = binaryStrFromFloat(f);
+  f2 = floatFromBinaryStr<float>(b).value();
+  h = hexStrFromFloat(f);
+  b2 = binaryStrFromHexStr(h);
+  f3 = floatFromBinaryStr<float>(b2).value();
+  BOOST_CHECK_EQUAL(f, f2);
+  BOOST_CHECK_EQUAL(f, f3);
+
+  f = 0.25;
+  b = binaryStrFromFloat(f);
+  f2 = floatFromBinaryStr<float>(b).value();
+  h = hexStrFromFloat(f);
+  b2 = binaryStrFromHexStr(h);
+  f3 = floatFromBinaryStr<float>(b2).value();
+  BOOST_CHECK_EQUAL(f, f2);
+  BOOST_CHECK_EQUAL(f, f3);
+
+  f = FLT_MAX;
+  b = binaryStrFromFloat(f);
+  f2 = floatFromBinaryStr<float>(b).value();
+  h = hexStrFromFloat(f);
+  b2 = binaryStrFromHexStr(h);
+  f3 = floatFromBinaryStr<float>(b2).value();
+  BOOST_CHECK_EQUAL(f, f2);
+  BOOST_CHECK_EQUAL(f, f3);
+
+  f = FLT_TRUE_MIN;
+  b = binaryStrFromFloat(f);
+  f2 = floatFromBinaryStr<float>(b).value();
+  h = hexStrFromFloat(f);
+  b2 = binaryStrFromHexStr(h);
+  f3 = floatFromBinaryStr<float>(b2).value();
+  BOOST_CHECK_EQUAL(f, f2);
+  BOOST_CHECK_EQUAL(f, f3);
+
+  f = FLT_EPSILON;
+  b = binaryStrFromFloat(f);
+  f2 = floatFromBinaryStr<float>(b).value();
+  h = hexStrFromFloat(f);
+  b2 = binaryStrFromHexStr(h);
+  f3 = floatFromBinaryStr<float>(b2).value();
+  BOOST_CHECK_EQUAL(f, f2);
+  BOOST_CHECK_EQUAL(f, f3);
+
+  /*------------------------------------------------------------------------------------------------------------------*/
+  double d, d2, d3;
+
+  d = 0.0;
+  b = binaryStrFromFloat(d);
+  d2 = floatFromBinaryStr<double>(b).value();
+  h = hexStrFromFloat(d);
+  b2 = binaryStrFromHexStr(h);
+  d3 = floatFromBinaryStr<double>(b2).value();
+  BOOST_CHECK_EQUAL(d, d2);
+  BOOST_CHECK_EQUAL(d, d3);
+
+  d = 3.14e9;
+  b = binaryStrFromFloat(d);
+  d2 = floatFromBinaryStr<double>(b).value();
+  h = hexStrFromFloat(d);
+  b2 = binaryStrFromHexStr(h);
+  d3 = floatFromBinaryStr<double>(b2).value();
+  BOOST_CHECK_EQUAL(d, d2);
+  BOOST_CHECK_EQUAL(d, d3);
+
+  d = DBL_MAX;
+  b = binaryStrFromFloat(d);
+  d2 = floatFromBinaryStr<double>(b).value();
+  h = hexStrFromFloat(d);
+  b2 = binaryStrFromHexStr(h);
+  d3 = floatFromBinaryStr<double>(b2).value();
+  BOOST_CHECK_EQUAL(d, d2);
+  BOOST_CHECK_EQUAL(d, d3);
+
+  d = DBL_TRUE_MIN;
+  b = binaryStrFromFloat(d);
+  d2 = floatFromBinaryStr<double>(b).value();
+  h = hexStrFromFloat(d);
+  b2 = binaryStrFromHexStr(h);
+  d3 = floatFromBinaryStr<double>(b2).value();
+  BOOST_CHECK_EQUAL(d, d2);
+  BOOST_CHECK_EQUAL(d, d3);
+
+  d = DBL_EPSILON;
+  b = binaryStrFromFloat(d);
+  d2 = floatFromBinaryStr<double>(b).value();
+  h = hexStrFromFloat(d);
+  b2 = binaryStrFromHexStr(h);
+  d3 = floatFromBinaryStr<double>(b2).value();
+  BOOST_CHECK_EQUAL(d, d2);
+  BOOST_CHECK_EQUAL(d, d3);
 }

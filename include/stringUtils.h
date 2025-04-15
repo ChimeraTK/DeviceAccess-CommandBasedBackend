@@ -323,6 +323,17 @@ template<typename intType, typename = enableIfIntegral<intType>>
 /**********************************************************************************************************************/
 
 /**
+ * @brief Gets the hex string representation of the floating point payload.
+ * @returns string containing the hexidecimal representation of the float, with length = 2*sizeof(floatType)
+ */
+template<typename floatType, typename = enableIfFloat<floatType>>
+[[nodiscard]] std::string hexStrFromFloat(const floatType payload) noexcept {
+  return hexStrFromBinaryStr(binaryStrFromFloat(payload));
+}
+
+/**********************************************************************************************************************/
+
+/**
  * Returns true if the 0th
  */
 static inline bool zerothNibbleCanBeRemoved(bool isSigned, bool isNegative, uint8_t byte0) {
@@ -475,5 +486,34 @@ template<typename intType, typename = enableIfIntegral<intType>>
     result |= static_cast<intType>(static_cast<unsigned char>(binaryContainer[i + truncationBytes])) << shift;
   }
 
+  return result;
+}
+
+/**********************************************************************************************************************/
+
+/**
+ * Converts a string containing the binary representation of a floating poitn number into the floating point number.
+ */
+template<typename floatType, typename = enableIfFloat<floatType>>
+[[nodiscard]] std::optional<floatType> floatFromBinaryStr(const std::string& binaryContainer) noexcept {
+  constexpr size_t nBytes = sizeof(floatType);
+  static_assert(nBytes <= sizeof(uint64_t));
+
+  if(binaryContainer.empty()) {
+    return 0;
+  }
+
+  // validate the binary container's size.
+  if(nBytes != binaryContainer.size()) {
+    return std::nullopt;
+  }
+  uint64_t result_uint = 0;
+  for(size_t i = 0; i < nBytes; ++i) {
+    size_t shift = 8 * (nBytes - 1 - i);
+    result_uint |= static_cast<uint64_t>(static_cast<unsigned char>(binaryContainer[i])) << shift;
+  }
+
+  floatType result;
+  std::memcpy(&result, &result_uint, nBytes);
   return result;
 }
