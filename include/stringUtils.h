@@ -322,7 +322,99 @@ template<typename intType, typename = enableIfIntegral<intType>>
 /**********************************************************************************************************************/
 /**********************************************************************************************************************/
 
+/**
+ * Returns true if the 0th
+ */
+static inline bool zerothNibbleCanBeRemoved(bool isSigned, bool isNegative, uint8_t byte0) {
+  return ((isSigned and (((not isNegative) and (byte0 <= 0x07)) or (isNegative and (byte0 >= 0xF8)))) or
+      ((not isSigned) and (byte0 <= 0x0F)));
+}
 /**********************************************************************************************************************/
+
+/**
+ * @brief Returns the hex string representation of the int payload.
+ * @param[in] width takes either the value WidthOption::COMPACT, or WidthOption::TYPE_WIDTH. COMPACT minimizes the
+ * output length. TYPE_WIDTH makes the output reflect the entire intType, including leading 0's and F's, so the output
+ * size will be 2*sizeof(intType).
+ * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
+ * providing an override to treat signed ints as unsigned and vice versa.
+ * Returns the hex string representation, wrapped in an optional. The optional wrapping is done for consistentcy, even
+ * though nullopt is never returned here.
+ */
+template<typename intType, typename = enableIfIntegral<intType>>
+[[nodiscard]] std::optional<std::string> hexStrFromInt(const intType payload,
+    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) noexcept {
+  auto byteStrOpt = binaryStrFromInt<intType>(payload, width, isSigned);
+  if(not byteStrOpt) {
+    return std::nullopt;
+  }
+  std::string result = hexStrFromBinaryStr(*byteStrOpt);
+  if(width == WidthOption::COMPACT and zerothNibbleCanBeRemoved(isSigned, (payload < 0), (*byteStrOpt)[0])) {
+    result.erase(0, 1);
+  }
+  return result;
+}
+
+/**********************************************************************************************************************/
+
+/**
+ * @brief Gets the hexidecimal string representation of the integer payload.
+ * @param[in] nHexChars The requested number of hex digits in the output string.
+ * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
+ * providing an override to treat signed ints as unsigned and vice versa.
+ * @param[in] overflowBehavior Determins the behavior if the payload in nibbles exceeds the size of nHexChars (nHexChars
+ * < natrual width of payload in nibbles ). When overflowBehavior = NULLOPT and the payload doesn't fit, std::nullopt is
+ * returned. When overflowBehavior = EXPAND, the size of the output enlarges until it fits: output.size() =
+ * max(nHexChars,natural width). When overflowBehavior = TRUNCATE, the output is left-truncated to fit: output.size() =
+ * nHexChars.
+ * @returns a string containing the hexidecimal representation of the integer type.
+ */
+template<typename intType, typename = enableIfIntegral<intType>>
+[[nodiscard]] std::optional<std::string> hexStrFromInt(const intType payload, const size_t nHexChars,
+    bool isSigned = std::is_signed<intType>::value,
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+  if((nHexChars == 0) and (overflowBehavior == OverflowBehavior::TRUNCATE)) {
+    return "";
+  }
+  size_t byteWidth = (nHexChars / 2) + (nHexChars % 2);
+  bool nHexCharIsOdd = static_cast<bool>(nHexChars % 2);
+  auto byteStrOpt = binaryStrFromInt<intType>(payload, byteWidth, isSigned, overflowBehavior);
+  if(not byteStrOpt) {
+    return std::nullopt;
+  }
+  std::string result;
+
+  if(overflowBehavior == OverflowBehavior::EXPAND) {
+    result = hexStrFromBinaryStr(*byteStrOpt);
+
+    // We may have over expanded in binaryStrFromNum, expanding bytes rather than nibbles
+    if(zerothNibbleCanBeRemoved(isSigned, (payload < 0), (*byteStrOpt)[0])) {
+      result.erase(0, 1);
+    }
+  }
+  else {
+    result = hexStrFromBinaryStr(*byteStrOpt, nHexChars, isSigned);
+    if((overflowBehavior == OverflowBehavior::NULLOPT) and nHexCharIsOdd) {
+      uint8_t byte0 = (*byteStrOpt)[0];
+
+      if((((not isSigned) or (payload > 0)) and (byte0 & 0xF0)) or
+          (isSigned and (payload < 0) and ((byte0 & 0xF0) != 0xF0))) {
+        /* nHexChars is odd, but binaryStrFromNumber returns an even byteWidth number of nibbles >= nHexChars.
+         * binaryStrFromNumber will go nullopt if payload exceeds byteWidth, but there could still be meaningful content
+         * in the first nibble of byteStrOpt that is truncated away in result. So we check that this nibble has no
+         * meaningful value -- either leading 0 for positive, or leading F for negative. And if meaningful data would be
+         * truncated away, we return std::nullopt
+         */
+        return std::nullopt;
+      }
+    }
+  }
+  return result;
+}
+
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
+
 /*
  * @brief Returns the minimum number of bytes needed represent the int in the binaryContainer.
  * param[in] interpretAsPositive Whether or not to binaryContainer as positive or negative.
