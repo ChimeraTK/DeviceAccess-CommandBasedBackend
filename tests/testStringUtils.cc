@@ -229,16 +229,21 @@ BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
   // This tests the mechanics of toTransportLayerHexInt, which is also used for binary int.
 
   // no fixed width, odd number of characters
-  int32_t iIn = 0xD0E;
-  std::string ans{"0D0E",
-      4}; // We get 2 bytes out of the binaryStringFromInt, which is unconstrained to 3, so it becomes 4 hex digits
-  std::string hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, std::nullopt).value());
+  int32_t iIn = 0x10E;
+  std::string ans{"10E", 3};
+  std::string hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value();
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  // no fixed width, odd number of characters, keeping sign bit.
+  iIn = 0xD0E;
+  ans = std::string("0D0E", 4);
+  hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // no fixed width, even number of characters
   iIn = 0xAB0C;
   ans = std::string("AB0C", 4);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<uint32_t>(iIn, std::nullopt).value());
+  hexOut = hexStrFromInt<uint32_t>(iIn).value();
   // If set to binaryStrFromInt<int32_t> rather than uint32, we expect "00AB0C"
   BOOST_CHECK_EQUAL(hexOut, ans);
 
@@ -246,68 +251,63 @@ BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
   iIn = 0xAB0C;
   size_t width = 6;
   ans = std::string("00AB0C", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, false);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, even number of characters in, odd out
   iIn = 0xAB0C;
   width = 5;
   ans = std::string("0AB0C", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, false);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, odd number of characters in, odd number out
   iIn = 0xD0E;
   width = 5;
   ans = std::string("00D0E", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, false);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, odd number of characters in, even number out
   iIn = 0xD0E;
   width = 6;
   ans = std::string("000D0E", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, false);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, positive, even number of characters
   iIn = 0xAB0C;
   width = 6;
   ans = std::string("00AB0C", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, true);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
-
-  // REDUNDANT just checking
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn).value(), width, true);
-  BOOST_CHECK_EQUAL(hexOut, ans); // FAIL [FFAB0C != 00AB0C]
-  // But this is all crazy. Just go directly to hex.
 
   // fixed width, signed, positive, odd number of characters
   iIn = 0xD0E;
   width = 5;
   ans = std::string("00D0E", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, true);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, negative, even number of characters
   iIn = -1 * (0xAB0C);
   width = 6;
   ans = std::string("FF54F4", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), 6, true);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, negative, odd number of characters
   iIn = -1 * (0xD0E);
   width = 5;
   ans = std::string("FF2F2", width);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, true);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // Trivial case
   iIn = 0;
   width = 3;
   ans = std::string("000", 3);
-  hexOut = hexStrFromBinaryStr(binaryStrFromInt<int32_t>(iIn, 2 * width).value(), width, true);
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
   BOOST_CHECK_EQUAL(hexOut, ans);
 }
 
