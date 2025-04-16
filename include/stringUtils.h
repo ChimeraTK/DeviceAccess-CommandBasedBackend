@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
+
 #include <type_traits>
+
+#include <ChimeraTK/SupportedUserTypes.h>
 
 #include <cassert>
 #include <cstring> //for memcpy
@@ -132,18 +135,26 @@ constexpr size_t NULL_TAG_SIZE = sizeof(NULL_TAG) - 1;
 /**********************************************************************************************************************/
 
 template<typename T>
-using enableIfIntegral = std::enable_if_t<std::is_integral<T>::value>;
+using enableIfIntegral = std::enable_if_t<std::is_integral<T>::value || std::is_same_v<T, ChimeraTK::Boolean>>;
+
+template<typename T>
+using enableIfNonBoolIntegral =
+    std::enable_if_t<std::is_integral<T>::value && !std::is_same_v<T, bool> && !std::is_same_v<T, ChimeraTK::Boolean>>;
+
+template<typename T>
+using enableIfBool = std::enable_if_t<std::is_same_v<T, bool> || std::is_same_v<T, ChimeraTK::Boolean>>;
 
 template<typename T>
 using enableIfFloat = std::enable_if_t<std::is_floating_point<T>::value>;
 
 template<typename T>
-using enableIfNumeric = std::enable_if_t<std::is_arithmetic<T>::value>;
+using enableIfNonBoolNumeric = std::enable_if_t<std::is_arithmetic<T>::value && !std::is_same_v<T, bool> &&
+    !std::is_same_v<T, ChimeraTK::Boolean>>;
 
 /**********************************************************************************************************************/
 
 // Get the bit that would be the sign bit if it i were signed.
-template<typename intType, typename = enableIfIntegral<intType>>
+template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 inline static bool getFirstBit(const intType i) {
   using SignedIntType = typename std::make_signed<intType>::type;
   return (static_cast<SignedIntType>(i) < 0);
@@ -151,7 +162,7 @@ inline static bool getFirstBit(const intType i) {
 
 /**********************************************************************************************************************/
 
-template<typename intType, typename = enableIfIntegral<intType>>
+template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 static size_t getIntNaturalByteWidth(const intType payload, const bool isSigned) noexcept {
   size_t naturalWidth = 1; // how many chars long should payload be with no leading 0's.
   int limit = 130;         // DEBUG, >128
@@ -200,11 +211,11 @@ enum class OverflowBehavior { NULLOPT, EXPAND, TRUNCATE };
  * returned if the number overflows and overflowBehavior = NULLOPT
  */
 
-template<typename numType, typename = enableIfNumeric<numType>>
+template<typename numType>
 [[nodiscard]] static std::optional<std::string> binaryStrFromNumber(const numType payload,
     const std::variant<size_t, WidthOption>& width = WidthOption::COMPACT,
-    bool isSigned = std::is_signed<numType>::value,
-    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+    bool isSigned = std::is_signed<numType>::value, const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT,
+    enableIfNonBoolNumeric<numType>* = nullptr) noexcept {
   constexpr size_t numTypeWidth = sizeof(numType);
   static_assert(sizeof(numType) <= sizeof(uint64_t));
 
@@ -258,6 +269,52 @@ template<typename numType, typename = enableIfNumeric<numType>>
     result[strWidth - 1 - i] = static_cast<char>((shiftablePayload >> (8 * i)) & 0xFF);
   }
   return result;
+}
+
+/*
+ * @brief Converts boolean types (bool and ChimeraTK::Boolean) into a string holding the binary representation of the number.
+ * @param[in] payload A bool
+ * @param[in] width If set, this determines the character (byte) width of the output.
+ * When width is WidthOption::TYPE_WIDTH or WidthOption::Compact, the output has size 1.
+ * @param[in] isSigned This does nothing at all, and is kept to keep the same interface as above.
+ * @param[in] overflowBehavior Determins the behavior if width is set to a size_t = 0.
+ * It is not meaningful if width is a WidthOption. When overflowBehavior = NULLOPT,  output size = width if it fits,
+ * otherwise return a std::nullopt. When overflowBehavior = EXPAND, output size = 1,
+ * When overflowBehavior = TRUNCATE, the return string will then be "\0" regardless of payload.
+ * Is not meaningful if width is a WidthOption. When overflowBehavior is not set, output size = natural width. When
+ * overflowBehavior = NULLOPT,  output size = width if it fits, otherwise return a std::nullopt. When overflowBehavior =
+ * EXPAND, output size = max(fixedWidth,natural width). When overflowBehavior = TRUNCATE, output size = fixedWidth
+ * @returns an optional to a string container holding the binary representation of the payload number. std::nullopt is
+ * returned if the number overflows and overflowBehavior = NULLOPT
+ */
+
+template<typename boolType>
+[[nodiscard]] static std::optional<std::string> binaryStrFromNumber(const boolType payload,
+    const std::variant<size_t, WidthOption>& width = WidthOption::COMPACT, [[maybe_unused]] bool isSigned = false,
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT, enableIfBool<boolType>* = nullptr) noexcept {
+  std::string ret;
+  if(std::holds_alternative<size_t>(width)) {
+    size_t strWidth = std::get<std::size_t>(width);
+    if(strWidth == 0) {
+      if(overflowBehavior == OverflowBehavior::NULLOPT) {
+        return std::nullopt;
+      }
+      else if(overflowBehavior == OverflowBehavior::TRUNCATE) {
+        return std::string("\0", 1);
+      }
+      // else overflowBehavior == OverflowBehavior::EXPAND
+      strWidth = 1;
+    }
+    ret = std::string(strWidth, '\0');
+  }
+  else {
+    ret = std::string("\0", 1);
+  }
+
+  if(payload) {
+    ret[ret.size() - 1] = '\x01';
+  }
+  return ret;
 }
 
 /**********************************************************************************************************************/
@@ -450,9 +507,9 @@ static inline size_t getStrNaturalByteWidth(
  * std::nullopt is returned under that condition.
  * @returns integer of type intType, if possible, representing the data in binaryContainer.
  */
-template<typename intType, typename = enableIfIntegral<intType>>
-[[nodiscard]] std::optional<intType> intFromBinaryStr(
-    const std::string& binaryContainer, const bool truncateIfOverflow = false) noexcept {
+template<typename intType>
+[[nodiscard]] std::optional<intType> intFromBinaryStr(const std::string& binaryContainer,
+    const bool truncateIfOverflow = false, enableIfNonBoolIntegral<intType>* = nullptr) noexcept {
   if(binaryContainer.empty()) {
     return std::nullopt;
   }
@@ -488,6 +545,24 @@ template<typename intType, typename = enableIfIntegral<intType>>
   }
 
   return result;
+}
+
+template<typename boolType>
+[[nodiscard]] std::optional<boolType> intFromBinaryStr(const std::string& binaryContainer,
+    const bool truncateIfOverflow = false, enableIfBool<boolType>* = nullptr) noexcept {
+  if(binaryContainer.empty()) {
+    return std::nullopt; // TODO FIXME overflowBehavior
+  }
+  if(truncateIfOverflow) {
+    return static_cast<boolType>(binaryContainer[0] & 0x01);
+  }
+  else {
+    unsigned int orOfBytes = 0;
+    for(char b : binaryContainer) {
+      orOfBytes |= static_cast<unsigned char>(b);
+    }
+    return (orOfBytes != 0);
+  }
 }
 
 /**********************************************************************************************************************/
