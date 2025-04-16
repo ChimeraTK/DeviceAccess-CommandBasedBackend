@@ -152,7 +152,52 @@ BOOST_AUTO_TEST_CASE(caseInsensitiveStrCompare_tests) {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
-  std::string res;
+  std::string res, ans;
+
+  // Test small types
+  ChimeraTK::Boolean ctkBool;
+
+  ctkBool = false;
+  res = binaryStrFromInt(static_cast<bool>(ctkBool)).value_or("nullopt");
+  ans = std::string("\x00", 1);
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  ctkBool = true;
+  res = binaryStrFromInt(static_cast<bool>(ctkBool)).value_or("nullopt");
+  ans = std::string("\x01", 1);
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  // test an actual ChimeraTK::Boolean
+  ctkBool = true;
+  res = binaryStrFromInt(ctkBool).value_or("nullopt");
+  ans = std::string("\x01", 1);
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  ctkBool = true;
+  res = binaryStrFromInt(ctkBool, 3).value_or("nullopt");
+  ans = std::string("\0\0\x01", 3);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  // test bool with overflow behavior
+  ctkBool = true;
+  res = binaryStrFromInt(ctkBool, 0, false, OverflowBehavior::TRUNCATE).value_or("nullopt");
+  ans = std::string("\0", 1);
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  res = binaryStrFromInt(ctkBool, 0, false, OverflowBehavior::NULLOPT).value_or("nullopt");
+  ans = "nullopt";
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
+  res = binaryStrFromInt(ctkBool, 0, false, OverflowBehavior::EXPAND).value_or("nullopt");
+  ans = std::string("\x01", 1);
+  strCmp(res, ans);
+  BOOST_CHECK_EQUAL(res, ans);
+
 
   // Test natural width conversion
   res = binaryStrFromInt(static_cast<int32_t>(5)).value_or("");
@@ -179,7 +224,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
 
   // Test fixed width with EXPAND behavior, which is default when not overflowing
   res = binaryStrFromInt(static_cast<uint32_t>(0xABCDEF), 2, false, OverflowBehavior::EXPAND).value_or("");
-  std::string ans{"\xAB\xCD\xEF", 3};
+  ans = std::string("\xAB\xCD\xEF", 3);
   strCmp(res, ans);
   BOOST_CHECK_EQUAL(res, ans);
 
@@ -229,10 +274,30 @@ BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
 BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
   // This tests the mechanics of toTransportLayerHexInt, which is also used for binary int.
 
+  std::string ans, hexOut;
+
+  // Bool
+  ChimeraTK::Boolean bIn;
+
+  bIn = false;
+  ans = "0";
+  hexOut = hexStrFromInt<ChimeraTK::Boolean>(bIn).value_or("nullopt");
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  bIn = true;
+  ans = "1";
+  hexOut = hexStrFromInt<ChimeraTK::Boolean>(bIn).value_or("nullopt");
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
+  bIn = true;
+  ans = "001";
+  hexOut = hexStrFromInt<ChimeraTK::Boolean>(bIn, 3, false).value_or("nullopt");
+  BOOST_CHECK_EQUAL(hexOut, ans);
+
   // no fixed width, odd number of characters
   int32_t iIn = 0x10E;
-  std::string ans{"10E", 3};
-  std::string hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value();
+  ans = std::string("10E", 3);
+  hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // no fixed width, odd number of characters, keeping sign bit.
