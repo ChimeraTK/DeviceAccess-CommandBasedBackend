@@ -7,10 +7,10 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/DummyServerLib dummy_lib_sources)
 add_library(DummyServerLib ${dummy_lib_sources})
-target_link_libraries(DummyServerLib PUBLIC ${PROJECT_NAME} )
+target_link_libraries(DummyServerLib PUBLIC ${PROJECT_NAME} ChimeraTK::ChimeraTK-DeviceAccess)
 
 add_executable(dummy-server manual_tests/DummyServer-stand-alone.cc)
-target_link_libraries(dummy-server PUBLIC DummyServerLib )
+target_link_libraries(dummy-server PUBLIC DummyServerLib)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} testExecutables)
 foreach( testExecutableSrcFile ${testExecutables})
