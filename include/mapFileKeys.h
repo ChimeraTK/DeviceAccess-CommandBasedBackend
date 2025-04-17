@@ -81,7 +81,7 @@ inline const boost::bimap<EnumType, std::string> getBimapForEnum();
  * For making boost::bimap literals.
  */
 template<typename L, typename R>
-static boost::bimap<L, R> _makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
+boost::bimap<L, R> makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
   return boost::bimap<L, R>(list.begin(), list.end());
 }
 
@@ -272,7 +272,7 @@ enum class TransportLayerType {
 
 template<>
 inline const boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
-  static const auto bmap = _makeBimap<TransportLayerType, std::string>({
+  static const auto bmap = makeBimap<TransportLayerType, std::string>({
       // clang-format off
             {TransportLayerType::DEC_INT, "dec"},
             {TransportLayerType::HEX_INT, "hex"},
@@ -296,14 +296,30 @@ inline std::string toStr<TransportLayerType>(TransportLayerType keyEnum) {
   }
   return it->second; // Safe access
 }
-
-// get a std::optional<TransportLayerType> from a string using
+// To get a std::optional<TransportLayerType> from a string, use
 // strToEnumOpt<TransportLayerType>(std::string typeString)
 
+/*
+ * signedTransportLayerTypeToDataTypeMap and unsignedTransportLayerTypeToDataTypeMap
+ * hold the default relationships between the TransportLayerType and the DataType
+ * for signed and unsigned values. These will be second-guessed.
+ */
 namespace ChimeraTK {
-  static const std::unordered_map<TransportLayerType, DataType> TransportLayerTypeToDataTypeMap = {
+  static const std::unordered_map<TransportLayerType, DataType> signedTransportLayerTypeToDataTypeMap = {
       // clang-format off
             {TransportLayerType::DEC_INT, DataType::int64},
+            {TransportLayerType::HEX_INT, DataType::int64},
+            {TransportLayerType::BIN_INT, DataType::int64},
+            {TransportLayerType::BIN_FLOAT, DataType::float64},
+            {TransportLayerType::DEC_FLOAT, DataType::float64},
+            {TransportLayerType::STRING, DataType::string},
+            {TransportLayerType::VOID, DataType::Void}
+      // clang-format on
+  };
+
+  static const std::unordered_map<TransportLayerType, DataType> unsignedTransportLayerTypeToDataTypeMap = {
+      // clang-format off
+            {TransportLayerType::DEC_INT, DataType::uint64},
             {TransportLayerType::HEX_INT, DataType::uint64},
             {TransportLayerType::BIN_INT, DataType::uint64},
             {TransportLayerType::BIN_FLOAT, DataType::float64},
@@ -313,17 +329,6 @@ namespace ChimeraTK {
       // clang-format on
   };
 
-  /**
-   * @brief Fetches data types corresponding to the TransportLayerType type.
-   * @throws ChimeraTK::logic_error if the type is not recognized.
-   */
-  inline DataType getDataTypeFromTransportLayerType(TransportLayerType type) {
-    auto it = TransportLayerTypeToDataTypeMap.find(type);
-    if(it == TransportLayerTypeToDataTypeMap.end()) {
-      throw ChimeraTK::logic_error("Type " + toStr(type) + " is not in TransportLayerTypeToDataTypeMap.");
-    }
-    return it->second;
-  }
 } // namespace ChimeraTK
 
 /**********************************************************************************************************************/
