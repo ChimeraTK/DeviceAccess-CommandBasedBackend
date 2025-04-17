@@ -154,6 +154,8 @@ BOOST_AUTO_TEST_CASE(caseInsensitiveStrCompare_tests) {
 BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
   std::string res, ans;
 
+  // TODO test max values
+
   // Test small types
   ChimeraTK::Boolean ctkBool;
 
@@ -198,43 +200,53 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
   strCmp(res, ans);
   BOOST_CHECK_EQUAL(res, ans);
 
+  // test int8's
+  res = binaryStrFromInt(static_cast<int8_t>(0)).value_or("nullopt");
+  ans = std::string("\x00", 1);
+  BOOST_CHECK_EQUAL(res, ans);
 
-  // Test natural width conversion
-  res = binaryStrFromInt(static_cast<int32_t>(5)).value_or("");
+  res = binaryStrFromInt(static_cast<int8_t>(5)).value_or("nullopt");
   BOOST_CHECK_EQUAL(res, "\x05");
 
-  res = binaryStrFromInt(static_cast<int32_t>(-2)).value_or("");
+  res = binaryStrFromInt(static_cast<uint8_t>(5)).value_or("nullopt");
+  BOOST_CHECK_EQUAL(res, "\x05");
+
+  // Test natural width conversion
+  res = binaryStrFromInt(static_cast<int32_t>(5)).value_or("nullopt");
+  BOOST_CHECK_EQUAL(res, "\x05");
+
+  res = binaryStrFromInt(static_cast<int32_t>(-2)).value_or("nullopt");
   BOOST_CHECK_EQUAL(res, "\xFE");
 
   // Test natural width. int32 won't fit in 3 byts, but its ok.
-  res = binaryStrFromInt(static_cast<int32_t>(5), 3).value_or("");
+  res = binaryStrFromInt(static_cast<int32_t>(5), 3).value_or("nullopt");
   std::string s = {"\x00\x00\x05", 3};
   BOOST_CHECK_EQUAL(res, s);
 
-  res = binaryStrFromInt(static_cast<int32_t>(-2), 3).value_or("");
+  res = binaryStrFromInt(static_cast<int32_t>(-2), 3).value_or("nullopt");
   BOOST_CHECK_EQUAL(res, "\xFF\xFF\xFE");
 
   // Test left packing. Put an 8-bit number into a 10 byte string
-  res = binaryStrFromInt(static_cast<int8_t>(5), 10).value_or("");
+  res = binaryStrFromInt(static_cast<int8_t>(5), 10).value_or("nullopt");
   s = {"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05", 10};
   BOOST_CHECK_EQUAL(res, s);
 
-  res = binaryStrFromInt(static_cast<int8_t>(-2), 10).value_or("");
+  res = binaryStrFromInt(static_cast<int8_t>(-2), 10).value_or("nullopt");
   BOOST_CHECK_EQUAL(res, "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFE");
 
   // Test fixed width with EXPAND behavior, which is default when not overflowing
-  res = binaryStrFromInt(static_cast<uint32_t>(0xABCDEF), 2, false, OverflowBehavior::EXPAND).value_or("");
+  res = binaryStrFromInt(static_cast<uint32_t>(0xABCDEF), 2, false, OverflowBehavior::EXPAND).value_or("nullopt");
   ans = std::string("\xAB\xCD\xEF", 3);
   strCmp(res, ans);
   BOOST_CHECK_EQUAL(res, ans);
 
-  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, true, OverflowBehavior::EXPAND).value_or("");
+  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, true, OverflowBehavior::EXPAND).value_or("nullopt");
   ans = std::string("\0\xAB\xCD\xEF", 4); // Another byte gets added to show the sign.
   strCmp(res, ans);
   BOOST_CHECK_EQUAL(res, ans);
 
   // Test fixed width with TRUNCATE behavior. Truncate to 2 bytes
-  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, true, OverflowBehavior::TRUNCATE).value_or("");
+  res = binaryStrFromInt(static_cast<int32_t>(0xABCDEF), 2, true, OverflowBehavior::TRUNCATE).value_or("nullopt");
   BOOST_CHECK_EQUAL(res, "\xCD\xEF");
 
   // Test fixed width with NULLOPT overflow behavior
@@ -295,7 +307,9 @@ BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // no fixed width, odd number of characters
-  int32_t iIn = 0x10E;
+  int32_t iIn;
+
+  iIn = 0x10E;
   ans = std::string("10E", 3);
   hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
@@ -303,77 +317,79 @@ BOOST_AUTO_TEST_CASE(toTransportLayerHexInt_test) {
   // no fixed width, odd number of characters, keeping sign bit.
   iIn = 0xD0E;
   ans = std::string("0D0E", 4);
-  hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, WidthOption::COMPACT).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // no fixed width, even number of characters
   iIn = 0xAB0C;
   ans = std::string("AB0C", 4);
-  hexOut = hexStrFromInt<uint32_t>(iIn).value();
+  hexOut = hexStrFromInt<uint32_t>(iIn).value_or("nullopt");
   // If set to binaryStrFromInt<int32_t> rather than uint32, we expect "00AB0C"
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, even number of characters in, even out
+  size_t width;
+
   iIn = 0xAB0C;
-  size_t width = 6;
+  width = 6;
   ans = std::string("00AB0C", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, even number of characters in, odd out
   iIn = 0xAB0C;
   width = 5;
   ans = std::string("0AB0C", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, odd number of characters in, odd number out
   iIn = 0xD0E;
   width = 5;
   ans = std::string("00D0E", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, unsigned, odd number of characters in, even number out
   iIn = 0xD0E;
   width = 6;
   ans = std::string("000D0E", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, false).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, positive, even number of characters
   iIn = 0xAB0C;
   width = 6;
   ans = std::string("00AB0C", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, positive, odd number of characters
   iIn = 0xD0E;
   width = 5;
   ans = std::string("00D0E", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, negative, even number of characters
   iIn = -1 * (0xAB0C);
   width = 6;
   ans = std::string("FF54F4", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // fixed width, signed, negative, odd number of characters
   iIn = -1 * (0xD0E);
   width = 5;
   ans = std::string("FF2F2", width);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 
   // Trivial case
   iIn = 0;
   width = 3;
   ans = std::string("000", 3);
-  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value();
+  hexOut = hexStrFromInt<int32_t>(iIn, width, true).value_or("nullopt");
   BOOST_CHECK_EQUAL(hexOut, ans);
 }
 
