@@ -82,11 +82,12 @@ namespace ChimeraTK {
    */
   static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
 
-  // merges the two data types into the larger of the two containers, returns null_opt if they're incompatible.
-  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
-
-  // Gets the data type for this interaction info, all things considered.
-  static DataType getDataType(const InteractionInfo& info);
+  /*
+   * Get the DataType best suited to the InteractionInfo info.
+   * This considers iInfo.isSigned, and the fixedRegexCharacterWidthOpt
+   * returns the smallest datatype that meets those needs.
+   */
+  static DataType getDataType(const InteractionInfo& iInfo);
 
   /**
    * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
@@ -97,7 +98,14 @@ namespace ChimeraTK {
   static DataType getDataType(
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
-  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
+  /*
+   * Gets a single DataType, if possible, that will work for both iInfoA and iInfoB.
+   * The resulting data type will have the larger of the two bit depths needed to suit iInfoB.
+   * If either of the iInfo's are signed and call for integers, the result will be a signed integer.
+   * If the types cannot be reconciled, then nullopt is returned.
+   */
+  static std::optional<DataType> getReconciledDataTypes(
+      const InteractionInfo& iInfoA, const InteractionInfo& iInfoB) noexcept;
 
   /**
    * @brief Sets iInfo.nElements from JSON, if present, or else sets it to 1.
@@ -556,11 +564,103 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static DataType getDataType(const InteractionInfo& info) {
-    // TODO move functions here from mapFileKeys
-    // TODO make use of all the width and signed information.
-    return getDataTypeFromTransportLayerType(info.getTransportLayerType());
+  // Size codes have absoute value = bit depth of the type, and are negative if the type is signed.
+  static const auto dataTypeSizeCodeBimap = makeBimap<DataType, int>({
+      {DataType::Boolean, 1},
+      {DataType::int8, -8},
+      {DataType::uint8, 8},
+      {DataType::int16, -16},
+      {DataType::uint16, 16},
+      {DataType::int32, -32},
+      {DataType::uint32, 32},
+      {DataType::int64, -64},
+      {DataType::uint64, 64},
+  });
+
+  /*
+   * Given some number of bits, minBits, get the next largest number of bits corresponding to a DataType.
+   */
+  static int getMinBitCountForADataType(size_t minBits) {
+    if(minBits <= 1)
+      return 1;
+    else if(minBits <= 8)
+      return 8;
+    else if(minBits <= 16)
+      return 16;
+    else if(minBits <= 32)
+      return 32;
+    else
+      return 64;
   }
+
+  /*
+   * Get the DataType best suited to the InteractionInfo info.
+   * This considers iInfo.isSigned, and the fixedRegexCharacterWidthOpt
+   * returns the smallest datatype that meets those needs.
+   */
+  static DataType getDataType(const InteractionInfo& iInfo) {
+    const TransportLayerType type = iInfo.getTransportLayerType();
+    const bool isSigned = iInfo.isSigned;
+    const auto& map = (isSigned ? signedTransportLayerTypeToDataTypeMap : unsignedTransportLayerTypeToDataTypeMap);
+    auto it = map.find(type); // std::unordered_map<TransportLayerType, DataType>::const_iterator it;
+
+    if(it == unsignedTransportLayerTypeToDataTypeMap.end()) {
+      throw ChimeraTK::logic_error("Type " + toStr(type) + " is not in " + (isSigned ? "" : "un") +
+          "signedtransportLayerTypeToDataTypeMap. Fix it in mapFileKeys.h");
+    }
+
+    // Get the default DataType for this type and signed state
+    DataType d = it->second;
+
+    if(d == DataType::none) {
+      throw ChimeraTK::logic_error("Invalid DataType::none. Go fix the unsigned/signedTransportLayerTypeToDataTypeMap "
+                                   "in mapFileKeys.h to not use 'none'.");
+    }
+
+    // Consider shrinking the DataType based on the width setting.
+    if(iInfo.fixedRegexCharacterWidthOpt) {
+      size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
+      if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_INT or
+          type == TransportLayerType::DEC_INT) { // Any int type
+
+        bool adjustSizeFromFixedWidth = false;
+        size_t fixedWidthSizeInBits;
+        if(type == TransportLayerType::DEC_INT) {
+          adjustSizeFromFixedWidth = true;
+          // width is the number of base10 characters
+          fixedWidthSizeInBits = static_cast<size_t>(std::lround(
+              std::ceil((isSigned ? 1.0 : 0.0) + (std::log(static_cast<double>(width + 1)) / std::log(2.0)))));
+          // When C++23 becomes available, replace std::lround(std::ceil( with std::ceil2int
+        }
+        else {
+          adjustSizeFromFixedWidth = true;
+          // width is the number of hexidecimal characters, aka nibbles.
+          fixedWidthSizeInBits = (width * 4);
+        }
+
+        if(adjustSizeFromFixedWidth) {
+          // fixedWidthSizeInBits might be something like 7. Get the next largest number of bits that makes a viable
+          // DataType, equal to the absolute value of the size code.
+          int minimumFixedWidthContainerSizeInBits = getMinBitCountForADataType(fixedWidthSizeInBits);
+
+          // Use the smallest size that fits
+          int newSizeCode = (minimumFixedWidthContainerSizeInBits * (isSigned ? -1 : 1));
+          d = dataTypeSizeCodeBimap.right.at(newSizeCode);
+        }
+      }
+      else if((type == TransportLayerType::DEC_FLOAT) or (type == TransportLayerType::BIN_FLOAT)) {
+        // TODO add `or (type == TransportLayerType::HEX_FLOAT)` to the above conditional once HEX_FLOAT is implemented
+
+        size_t maxSizeToAllowFloat = 8; // BIN_FLOAT, HEX_FLOAT case: 0-8 nibbles, fitting into 32 bits.
+        if(type == TransportLayerType::DEC_FLOAT) {
+          maxSizeToAllowFloat = 7;
+        }
+        d = ((width <= maxSizeToAllowFloat) ? DataType::float32 : DataType::float64);
+      }
+    }
+
+    return d;
+  } // end getDataType
 
   /********************************************************************************************************************/
 
@@ -586,15 +686,38 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB) {
-    // TODO make this more complicated to accomodate expanding data types.
+  static std::optional<DataType> getReconciledDataTypes(
+      const InteractionInfo& iInfoA, const InteractionInfo& iInfoB) noexcept {
     DataType a = getDataType(iInfoA);
     DataType b = getDataType(iInfoB);
+
+    bool invalidCombination = false;
+    invalidCombination |= (a.isNumeric() xor b.isNumeric()); // Invalid if one is numeric and the other is not
+    invalidCombination |= (a.isIntegral() xor
+        b.isIntegral()); // Invalid if one is integral and the other is not
+                         // Together with the numeric xor: invalid if one is floating point and the other isn't.
+    invalidCombination |=
+        ((not a.isNumeric()) and (a != b)); // Invalid if a missmatched pair of in {String, Void, none}
+    if(invalidCombination) {
+      return std::nullopt;
+    }
+
     if(a == b) {
       return a;
     }
-    else {
-      return std::nullopt;
+
+    // a and b now must be numeric and must be reconciled.
+    if(a.isIntegral()) { // b is also integral
+      // Figure out a DataType that's large enough for both and has a sign bit if one of the two needs it.
+      bool mergedIsSigned = (a.isSigned() or b.isSigned());
+      int aSizeCode = std::abs(dataTypeSizeCodeBimap.left.at(a));
+      int bSizeCode = std::abs(dataTypeSizeCodeBimap.left.at(b));
+      int mergedSizeCode =
+          std::max(aSizeCode, bSizeCode) * (mergedIsSigned ? -1 : 1); // Use the larger of the two bit depths.
+      return dataTypeSizeCodeBimap.right.at(mergedSizeCode);
+    }
+    else { // a and b are both floating point and not equal, therefore one is float64.
+      return DataType::float64;
     }
   }
 

@@ -53,6 +53,7 @@ namespace ChimeraTK {
        * to the BIT_WIDTH / 4. Consequently we will be able to support things like 12b binary, but not 13 bit binary.
        * binFloat can only support 16b, 32b, and 64b, corresponding to fixedRegexCharacterWidthOpt = 4, 8, 16 nibbles
        * respectively.
+       * It may be used to set the size of the DataType.
        */
       std::optional<size_t> fixedRegexCharacterWidthOpt = std::nullopt;
       std::optional<int> fractionalBitsOpt =
