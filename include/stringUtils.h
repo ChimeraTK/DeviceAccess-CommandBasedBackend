@@ -163,28 +163,35 @@ inline static bool getFirstBit(const intType i) {
 /**********************************************************************************************************************/
 
 template<typename intType, typename = enableIfNonBoolIntegral<intType>>
-static size_t getIntNaturalByteWidth(const intType payload, const bool isSigned) noexcept {
-  size_t naturalWidth = 1; // how many chars long should payload be with no leading 0's.
-  int limit = 130;         // DEBUG, >128
-  bool signBit = 0;
-  bool lastPayloadBit = 0;
-  if(isSigned) {
-    signBit = getFirstBit(payload);
-    lastPayloadBit = static_cast<bool>((payload & 0x80) >> 7);
-  }
-  const intType endState = (signBit ? -1 : 0); //= -1 for negative payload, else 0
+static size_t getIntNaturalByteWidth(
+    const intType payload, const bool isSigned = std::is_signed<intType>::value) noexcept {
+  using SignedIntType = typename std::make_signed<intType>::type;
 
-  intType temp = payload >> 8;
-  while((temp != endState) and (0 < limit--)) {
-    if constexpr(std::is_signed<intType>::value) {
-      lastPayloadBit = (isSigned ? static_cast<bool>((temp & 0x80) >> 7) : 0);
+  // Normalize to positives
+  SignedIntType signedPayload = static_cast<SignedIntType>(payload);
+  if(isSigned and (signedPayload < 0)) {
+    signedPayload *= -1;
+  }
+  // Count leading 0 bytes
+  constexpr size_t start = sizeof(intType) - 1;
+  size_t naturalWidth = 1;
+  for(size_t i = start; i > 0; --i) {
+    if(((signedPayload >> (8 * i)) & 0xFF) != 0) {
+      // located the first byte that's non-zero.
+      naturalWidth = i + 1;
+      break;
     }
-    temp >>= 8;
-    naturalWidth++;
   }
 
-  assert(limit > 0 && "Error! Runaway while loop on positive branch of enableIfIntegral"); // DEBUG
-  return naturalWidth + static_cast<size_t>(signBit xor lastPayloadBit);
+  // Figure if an extra byte is needed for a the sign bit
+  bool extraSignByte = 0;
+  if(isSigned) {
+    bool signBit = getFirstBit(payload);
+    bool lastPayloadBit = static_cast<bool>((payload >> (8 * naturalWidth - 1)) & 0x01);
+    extraSignByte = signBit xor lastPayloadBit;
+  }
+
+  return naturalWidth + static_cast<size_t>(extraSignByte);
 }
 
 /**********************************************************************************************************************/
@@ -249,7 +256,7 @@ template<typename numType>
         }
         // else the following truncates.
       }
-    }      // end fixedwidth
+    }      // end fixed width
     else { // width = WidthOption::COMPACT
       strWidth = naturalWidth;
     }
@@ -341,13 +348,15 @@ template<typename floatType, typename = enableIfFloat<floatType>>
  * even if that's full of 0 or F. When width is WidthOption::Compact, the output will be the smallest string that fully
  * represents the payload.
  * @param[in] isSigned Whether to treat an int type as signed or unsigned. This overrides the signed status of numType,
- * providing an override to treat signed ints as unsigned and vice versa.
+ * providing an override to treat signed ints as unsigned and vice versa. This only does something when width=COMPACT.
+ * For example, binaryStrFromInt<int32_t>(-5,COMPACT,true) --> "\xFB", with the leading F's contracted,
+ * but binaryStrFromInt<int32_t>(-5,COMPACT,false) --> "\xFF\xFF\xFF\xFB" with all leading F's treated as meaningful data.
  * @returns an optional to a string container holding the binary representation of the payload int. std::nullopt is
  * never returned, and is kept for consistentcy.
  */
 template<typename intType, typename = enableIfIntegral<intType>>
-[[nodiscard]] std::optional<std::string> binaryStrFromInt(
-    const intType payload, const WidthOption width = WidthOption::COMPACT, bool isSigned = true) noexcept {
+[[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload,
+    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) noexcept {
   return binaryStrFromNumber<intType>(payload, width, isSigned);
 }
 
@@ -372,7 +381,8 @@ template<typename intType, typename = enableIfIntegral<intType>>
  */
 template<typename intType, typename = enableIfIntegral<intType>>
 [[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload, const size_t width,
-    bool isSigned = true, const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+    bool isSigned = std::is_signed<intType>::value,
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
   return binaryStrFromNumber<intType>(payload, width, isSigned, overflowBehavior);
 }
 
