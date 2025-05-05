@@ -136,10 +136,10 @@ void DummyServer::mainLoop() {
   std::string delim = ChimeraTK::SERIAL_DEFAULT_DELIMITER;
   uint64_t nIter = 0;
   while(true) {
-    if(_debug) {
-      std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl;
-    }
-    if(byteMode) {
+    if(not byteMode) {
+      if(_debug) {
+         std::cout << "dummy-server is patiently listening in readline mode(" << nIter++ << ")..." << std::endl;
+      }
       auto readValue = _serialPort->readline();
       if(!readValue.has_value() || _stopMainLoop) {
         return;
@@ -320,6 +320,9 @@ void DummyServer::mainLoop() {
       }
     }      // end if line mode
     else { // byte mode
+      if(_debug) {
+         std::cout << "dummy-server is patiently listening in byte mode to read "<<bytesToRead<<" bytes (" << nIter++ << ")..." << std::endl;
+      }
       auto readValue = _serialPort->readBytes(bytesToRead);
       if(!readValue.has_value() || _stopMainLoop) {
         return;
