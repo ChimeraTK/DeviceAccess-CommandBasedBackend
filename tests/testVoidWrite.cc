@@ -13,7 +13,7 @@ using namespace boost::unit_test_framework;
 #include <ChimeraTK/Device.h>
 #include <ChimeraTK/UnifiedBackendTest.h>
 
-static DummyServer dummyServer;
+static DummyServer dummyServer{true, true};
 
 /**
  * Test write of the CommandBasedBackend's void-type accessor.
