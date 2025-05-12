@@ -166,7 +166,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void InteractionInfo::populateFromJson(const json& j, const std::string& errorMessageDetail) {
+  void InteractionInfo::populateFromJson(const json& j, const std::string& errorMessageDetail, bool skipSetType) {
     // This is not just a constructor because we want to fill in json
 
     // Validate json keys at the InteractionInfo level
@@ -180,7 +180,9 @@ namespace ChimeraTK {
       // of an active interaction to involve type
 
     // TYPE
-    setTypeFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    if(not skipSetType) {
+      setTypeFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    }
 
     if(not isActive()) {
       return;
@@ -409,7 +411,7 @@ namespace ChimeraTK {
     keyStr = toStr(EnumType::N_RESPONSE_LINES);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       explicitlySetToReadLines = true;
-      int n = std::stoi(opt->get<std::string>());
+      int n = opt->get<int>();
       if(n < 0) {
         throw ChimeraTK::logic_error("Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " + std::to_string(n) +
             " for " + errorMessageDetail);

@@ -48,8 +48,11 @@ namespace ChimeraTK {
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
 
-      // Set the entire InteractionInfo from json.
-      void populateFromJson(const json& j, const std::string& errorMessageDetail);
+      // Set the entire InteractionInfo from json,
+      // transportLayerType is exceptional: it typically needs to be set at all levels before other
+      // CommandBasedRegisterInfo level quantities can be set. So, when we have to set the type earlier than the rest of
+      // interactionInfo, we can skip setting it again by setting skipSetType to true.
+      void populateFromJson(const json& j, const std::string& errorMessageDetail, bool skipSetType = false);
 
       /*
        * If an InteractionInfo is not active, then it is disabled.
