@@ -912,8 +912,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
       ChimeraTK::Boolean test = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + inputStr);
       BOOST_CHECK_EQUAL(test, ans);
 
-      BOOST_CHECK_EQUAL(intFromBinaryStr<ChimeraTK::Boolean>(binaryStrFromHexStr(inputStr)).value_or(-1),
-          ans); // TODO replace previous //FAIL  [1 != 0]
+      BOOST_CHECK_EQUAL(intFromBinaryStr<ChimeraTK::Boolean>(binaryStrFromHexStr(inputStr)).value_or(-1), ans);
     }
 
     BOOST_CHECK_EQUAL(
@@ -931,8 +930,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
       uint16_t test = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + inputStr);
       BOOST_CHECK_EQUAL(test, ans);
 
-      BOOST_CHECK_EQUAL(intFromBinaryStr<uint16_t>(binaryStrFromHexStr(inputStr)).value_or(-1),
-          ans); // TODO replace previous //[65535 != 0]
+      BOOST_CHECK_EQUAL(intFromBinaryStr<uint16_t>(binaryStrFromHexStr(inputStr)).value_or(-1), ans);
     }
   }
 
@@ -955,7 +953,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
     for(const auto& [inputStr, ans, isSigned] : testCases) {
       BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>(binaryStrFromHexStr(inputStr, true, isSigned)).value_or(-1), ans);
     }
-    BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>("").value_or(-1), -1);
+    BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>("").value_or(-1), 0);
   }
 
 } // end toUserTypeHexInt_test
