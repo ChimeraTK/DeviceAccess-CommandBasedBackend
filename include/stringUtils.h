@@ -521,7 +521,7 @@ template<typename intType>
 [[nodiscard]] std::optional<intType> intFromBinaryStr(const std::string& binaryContainer,
     const bool truncateIfOverflow = false, enableIfNonBoolIntegral<intType>* = nullptr) noexcept {
   if(binaryContainer.empty()) {
-    return std::nullopt;
+    return 0;
   }
 
   bool isNegative = (std::is_signed<intType>::value) and (static_cast<unsigned char>((binaryContainer[0]) & 0x80) != 0);
