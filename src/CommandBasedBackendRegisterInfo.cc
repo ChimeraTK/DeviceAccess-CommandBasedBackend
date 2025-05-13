@@ -144,7 +144,7 @@ namespace ChimeraTK {
    */
   template<typename EnumType>
   static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
-      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail);
+      const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail, const bool responseIsAbsent = false);
 
   /**
    * @brief Sets iInfo.fixedRegexCharacterWidthOpt from JSON.
