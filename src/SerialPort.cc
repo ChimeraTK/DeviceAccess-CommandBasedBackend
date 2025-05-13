@@ -183,6 +183,9 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
   std::string SerialPort::readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout) {
+    if(nBytesToRead == 0) {
+      return "";
+    }
     auto future =
         std::async(std::launch::async, [&]() -> std::optional<std::string> { return this->readBytes(nBytesToRead); });
 
