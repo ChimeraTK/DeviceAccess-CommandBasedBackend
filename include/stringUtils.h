@@ -561,7 +561,7 @@ template<typename boolType>
 [[nodiscard]] std::optional<boolType> intFromBinaryStr(const std::string& binaryContainer,
     const bool truncateIfOverflow = false, enableIfBool<boolType>* = nullptr) noexcept {
   if(binaryContainer.empty()) {
-    return std::nullopt; // TODO FIXME overflowBehavior
+    return false; // TODO FIXME overflowBehavior
   }
   if(truncateIfOverflow) {
     return static_cast<boolType>(binaryContainer[0] & 0x01);
