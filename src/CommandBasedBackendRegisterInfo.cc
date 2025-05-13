@@ -35,7 +35,15 @@ namespace ChimeraTK {
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error If no type has been set.
    */
-  static void throwIfTransportLayerTypeAreNotSet(
+  static void throwIfATransportLayerTypeIsNotSet(
+      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Throws unless both interaction Infos have a type set.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error
+   */
+  static void throwIfTransportLayerTypesAreNotBothSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
@@ -56,7 +64,7 @@ namespace ChimeraTK {
   /**
    * @brief Validates fractionalBitsOpt, and its interactions.
    * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedRegexCharacterWidthOpt, and signed.
-   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * transportLayerType must be set before running this
    * @param[in] iInfo The InteractionInfo to validate.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error If fractionalBitsOpt or its interactions is invalid.
@@ -65,7 +73,7 @@ namespace ChimeraTK {
 
   /**
    * @brief Validates fixedRegexCharacterWidthOpt, particularly its interaction with the transportLayerType.
-   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * transportLayerType must be set before running this
    * Ensures that fixedRegexCharacterWidthOpt is set if iInfo.isBinary().
    * @param[in] iInfo The InteractionInfo to validate.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
@@ -75,7 +83,7 @@ namespace ChimeraTK {
 
   /**
    * @brief Validates the signed property, making sure its a valid property for the TransportLayerType.
-   * transportLayerType must be set before running this, so always run throwIfTransportLayerTypeAreNotSet first.
+   * transportLayerType must be set before running this
    * @param[in] iInfo The InteractionInfo to validate.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error If the signed property is invalid for the type.
@@ -183,8 +191,7 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // Validite data in readInfo and writeInfo
     throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
-    throwIfTransportLayerTypeAreNotSet(writeInfo, readInfo, errorMessageDetail);
-    synchronizeTransportLayerTypes(writeInfo, readInfo);
+    throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail);
     throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
     throwIfBadNElements(writeInfo, getNumberOfElements(), errorMessageDetail);
     throwIfBadFixedWidth(writeInfo, errorMessageDetailWrite);
@@ -228,10 +235,13 @@ namespace ChimeraTK {
      * Then call init() for data validation and tasks common to all constructors.
      */
     std::string errorMessageDetail = "register " + registerPath;
+    std::string errorMessageDetailRead = errorMessageDetail + " read";
+    std::string errorMessageDetailWrite = errorMessageDetail + " write";
+    auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ));
+    auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE));
 
     // Validate retister-level json keys
-    throwIfHasInvalidJsonKeyCaseInsensitive(
-        j, getMapForEnum<mapFileRegisterKeys>(), "Map file " + errorMessageDetail + " has unknown key");
+    throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileRegisterKeys>(), "Map file " + errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
 
@@ -241,13 +251,22 @@ namespace ChimeraTK {
     // TYPE
     setTypeFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
     setTypeFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+    if(readOpt) {
+      setTypeFromJson<mapFileInteractionInfoKeys>(readInfo, readOpt->get<json>(), errorMessageDetailRead);
+    }
+    if(writeOpt) {
+      setTypeFromJson<mapFileInteractionInfoKeys>(writeInfo, writeOpt->get<json>(), errorMessageDetailWrite);
+    }
+    throwIfATransportLayerTypeIsNotSet(writeInfo, readInfo, errorMessageDetail);
+    synchronizeTransportLayerTypes(writeInfo, readInfo);
+    throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail); // DEBUG
 
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
     setEndingsFromJson<mapFileRegisterKeys>(readInfo, j, defaultSerialDelimiter, errorMessageDetail);
     setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter, errorMessageDetail);
     // NOTE: These delimiter settings may be overrided by populateFromJson below.
 
-    // BIT_WIDTH, CHARACTER_WIDTH
+    // BIT_WIDTH, CHARACTER_WIDTH, depends on transportLayerType
     setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
     setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
@@ -261,14 +280,14 @@ namespace ChimeraTK {
 
     // READ,
     // Override settings from the top level based on the "read" key's contents
-    if(auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ))) {
-      readInfo.populateFromJson(readOpt->get<json>(), errorMessageDetail + " read");
+    if(readOpt) {
+      readInfo.populateFromJson(readOpt->get<json>(), errorMessageDetailRead, true);
     }
 
     // WRITE
     // Override settings from the top level based on the "write" key's contents
-    if(auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE))) {
-      writeInfo.populateFromJson(writeOpt->get<json>(), errorMessageDetail + " write");
+    if(writeOpt) {
+      writeInfo.populateFromJson(writeOpt->get<json>(), errorMessageDetailWrite, true);
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write response from pattern; Ticket 13531
@@ -283,8 +302,8 @@ namespace ChimeraTK {
     // This is not just a constructor because we want to fill in json
 
     // Validate json keys at the InteractionInfo level
-    throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileInteractionInfoKeys>(),
-        "Map file Interaction has unknown key for " + errorMessageDetail);
+    throwIfHasInvalidJsonKeyCaseInsensitive(
+        j, getMapForEnum<mapFileInteractionInfoKeys>(), "Map file Interaction for " + errorMessageDetail);
 
     // COMMAND
     if(auto opt = caseInsensitiveGetValueOption(j, toStr(mapFileInteractionInfoKeys::COMMAND))) {
@@ -436,20 +455,34 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfTransportLayerTypeAreNotSet(
+  static void throwIfTransportLayerTypesAreNotBothSet(
+      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+    if(not(writeInfo.hasTransportLayerType())) {
+      throw ChimeraTK::logic_error(
+          "throwIfTransportLayerTypesAreNotBothSet: Type is required but is missing for write " + errorMessageDetail);
+    }
+    if(not(readInfo.hasTransportLayerType())) {
+      throw ChimeraTK::logic_error(
+          "throwIfTransportLayerTypesAreNotBothSet: Type is required but is missing for read " + errorMessageDetail);
+    }
+  }
+
+  /********************************************************************************************************************/
+
+  static void throwIfATransportLayerTypeIsNotSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if type/transportLayerType is not set.
     if(not(writeInfo.hasTransportLayerType() or readInfo.hasTransportLayerType())) {
       throw ChimeraTK::logic_error(
-          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing for " + errorMessageDetail);
+          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing for " + errorMessageDetail);
     }
     if(readInfo.isActive() and not readInfo.hasTransportLayerType()) {
       throw ChimeraTK::logic_error(
-          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing on read for " + errorMessageDetail);
+          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing on read for " + errorMessageDetail);
     }
     if(writeInfo.isActive() and not writeInfo.hasTransportLayerType()) {
       throw ChimeraTK::logic_error(
-          "throwIfTransportLayerTypeAreNotSet: Type is required but is missing on write for " + errorMessageDetail);
+          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing on write for " + errorMessageDetail);
     }
   }
 
