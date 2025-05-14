@@ -451,6 +451,10 @@ namespace ChimeraTK {
             toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
       }
     }
+    if(nElem == 0) {
+      throw ChimeraTK::logic_error(
+          funcName + "Invalid zero " + toStr(mapFileRegisterKeys::N_ELEM) + " for " + errorMessageDetail);
+    }
   } // end if void type
 
   /********************************************************************************************************************/
