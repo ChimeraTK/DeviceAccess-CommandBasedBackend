@@ -166,7 +166,7 @@ void DummyServer::mainLoop() {
       else if(data == u8"\u0018") {
         voidCounter++;
         if(_debug) {
-          std::cout << "Received Emergency Stop Movement command." << std::endl;
+          std::cout << "Received Emergency Stop Movement command. voidCounter = " << voidCounter << std::endl;
         }
       }
       else if(data == "*IDN?") {
@@ -290,6 +290,27 @@ void DummyServer::mainLoop() {
           sendDelimited("error: unknown trace");
         }
       }
+      else if(data.find("FLT?") == 0) {
+        sendDelimited(std::to_string(flt));
+      }
+      else if(data.find("FLT") == 0) {
+        if(data.size() < 4) {
+          sendDelimited("12346 Syntax error: FLT needs an argument");
+          continue;
+        }
+        try {
+          flt = std::stof(data.substr(4));
+          if(_debug) {
+            std::cout << "Setting flt to " << flt << std::endl;
+          }
+        }
+        catch(...) {
+          sendDelimited("12346 Syntax error in argument: " + data.substr(4));
+        }
+      }
+      else if(data.find("\u0007") == 0) {
+        sendDelimited(std::string("\xB0", 1));
+      }
       else if(data.find("altDelimLine") == 0) {
         auto replyStr = stripDelim(data, ChimeraTK::SERIAL_DEFAULT_DELIMITER,
             std::size(ChimeraTK::SERIAL_DEFAULT_DELIMITER) - 1); //-1 for null terminator
@@ -321,7 +342,8 @@ void DummyServer::mainLoop() {
     }      // end if line mode
     else { // byte mode
       if(_debug) {
-         std::cout << "dummy-server is patiently listening in byte mode to read "<<bytesToRead<<" bytes (" << nIter++ << ")..." << std::endl;
+        std::cout << "dummy-server is patiently listening in byte mode to read " << bytesToRead << " bytes (" << nIter++
+                  << ")..." << std::endl;
       }
       auto readValue = _serialPort->readBytes(bytesToRead);
       if(!readValue.has_value() || _stopMainLoop) {
@@ -329,12 +351,65 @@ void DummyServer::mainLoop() {
       }
       std::string data = readValue.value();
 
-      if(data.find("setLineMode") == 0) { // go back to line mode
+      if((data.find("\x10") == 0)) { // go back to line mode
+        // this exercises sending bytes and reading lines
+        byteMode = false;
+        std::cout << "Now on line mode" << std::endl;
+        sendDelimited("\x06"); // send back Acknowlege, as line delimited binary
+      }
+      if((data.find("setLineMode") == 0)) { // go back to line mode
         // this exercises sending bytes and reading lines
         byteMode = false;
         std::cout << "Now on line mode" << std::endl;
         sendDelimited("OK");
       }
+      else if((data.find("BFLT?") == 0)) {
+        _serialPort->send(binaryStrFromFloat(flt));
+        byteMode = false; // go back to line mode at the end of this command
+        std::cout << "Now on line mode" << std::endl;
+      }
+      else if((data.find("BFLT ") == 0)) {
+        auto tokens = tokenise(data);
+        if(tokens.size() >= 2) {
+          std::string t1 = tokens[1];
+          auto fltOption = floatFromBinaryStr<float>(t1);
+          if(fltOption) {
+            flt = *fltOption;
+          }
+          else {
+            std::cout << "Unable to convert to float from binary 0x" << hexStrFromBinaryStr(tokens[1]) << std::endl;
+          }
+        }
+        else {
+          std::cout << "BFLT needs a second argument" << std::endl;
+        }
+        byteMode = false; // go back to line mode at the end of this command
+        std::cout << "Now on line mode" << std::endl;
+      }
+      else if((data.find(std::string("\xF5\x03\xAD\xD5\x00\x00\x00\x00", 8)) == 0)) {
+        std::string ulogStr("\0\0\0\0", 4);
+        auto maybeStr = binaryStrFromInt(ulog);
+        if(maybeStr) {
+          ulogStr = *maybeStr;
+        }
+        else {
+          std::cout << "Unable to convert to int to binary string" << ulog << std::endl;
+        }
+        _serialPort->send(std::string("\xF5\x04\xAD\xD5", 4) + ulogStr);
+        byteMode = false; // go back to line mode at the end of this command
+        std::cout << "Now on line mode" << std::endl;
+      }
+      else if((data.find(std::string("\xF5\x01\xAD\xD5", 4)) == 0)) {
+        auto intOpt = intFromBinaryStr<uint32_t>(data.substr(4));
+        if(intOpt) {
+          ulog = *intOpt;
+        }
+        else {
+          std::cout << "Unable to convert to int from binary 0x" << hexStrFromBinaryStr(data.substr(4)) << std::endl;
+        }
+        _serialPort->send(std::string("\xF5\x02\xAD\xD5", 4) + data.substr(4));
+      }
+
       else {
         // echo back the input
         _serialPort->send(data);
