@@ -96,7 +96,8 @@ void toLowerCase(std::string& str) noexcept;
  * 2*byteStr.length(), the byte string is left truncated. If nHexChar is larger, it is left padded. string is guarenteed
  * to be exactly twice as long as the input string.
  */
-std::string hexStrFromBinaryStr(const std::string& byteStr, size_t nHexChars, bool isSigned = false) noexcept;
+[[nodiscard]] std::string hexStrFromBinaryStr(
+    const std::string& byteStr, size_t nHexChars, bool isSigned = false) noexcept;
 
 /**
  * @brief Case insensitive equality comparison of two strings.
