@@ -10,6 +10,8 @@
 #include <optional>
 #include <utility>
 
+#define funcName (std::string(__func__) + ": ")
+
 namespace ChimeraTK {
 
   using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
@@ -272,7 +274,8 @@ namespace ChimeraTK {
     setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
     // FRACTIONAL_BITS, depends on transportLayerType
-    setFractionalBitsFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
+    setFractionalBitsFromJson<mapFileRegisterKeys>(
+        readInfo, j, errorMessageDetail); // These must come after setFixedWidthFromJson
     setFractionalBitsFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
 
     // SIGNED, depends on transportLayerType
@@ -335,7 +338,8 @@ namespace ChimeraTK {
     setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
 
     // FRACTIONAL_BITS
-    setFractionalBitsFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    setFractionalBitsFromJson<mapFileInteractionInfoKeys>(
+        *this, j, errorMessageDetail); // Must come after setFixedWidthFromJson
 
     // SIGNED
     setSignedFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
@@ -401,14 +405,14 @@ namespace ChimeraTK {
     bool writeable = writeInfo.isActive();
 
     if(not(readable or writeable)) {
-      throw ChimeraTK::logic_error("throwIfBadActivation: A non-empty read:" +
-          toStr(mapFileInteractionInfoKeys::COMMAND) + " or write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
+      throw ChimeraTK::logic_error(funcName + "A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) +
+          " or write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
           " tags is required, and neither are present for " + errorMessageDetail);
     }
 
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(readInfo.isActive() or not writeInfo.isActive()) {
-        throw ChimeraTK::logic_error("throwIfBadActivation: Void type must be write-only but has a " +
+        throw ChimeraTK::logic_error(funcName + "Void type must be write-only but has a " +
             toStr(mapFileRegisterKeys::READ) + " key for " + errorMessageDetail);
       }
     }
@@ -424,20 +428,18 @@ namespace ChimeraTK {
     bool hasWriteResponse = not writeInfo.responsePattern.empty();
     // Throw if there are responses without corresponding commands.
     if(hasReadResponse and lacksReadCommand) {
-      throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: A non-empty read " +
-          toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty read " +
-          toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+          " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
     }
 
     if(hasWriteResponse and lacksWriteCommand) {
-      throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: A non-empty write " +
-          toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty write " +
-          toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
+          " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
     }
 
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-        throw ChimeraTK::logic_error("throwIfBadCommandAndResponsePatterns: Illegal inja template in write " +
+        throw ChimeraTK::logic_error(funcName + "Illegal inja template in write " +
             toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern + "\" for void-type for " +
             errorMessageDetail);
       }
@@ -450,7 +452,7 @@ namespace ChimeraTK {
       const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail) {
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(nElem != 1) {
-        throw ChimeraTK::logic_error("throwIfBadNElements: Void type must only have 1 element but has " +
+        throw ChimeraTK::logic_error(funcName + "Void type must only have 1 element but has " +
             toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
       }
     }
@@ -465,12 +467,10 @@ namespace ChimeraTK {
   static void throwIfTransportLayerTypesAreNotBothSet(
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     if(not(writeInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(
-          "throwIfTransportLayerTypesAreNotBothSet: Type is required but is missing for write " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Type is required but is missing for write " + errorMessageDetail);
     }
     if(not(readInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(
-          "throwIfTransportLayerTypesAreNotBothSet: Type is required but is missing for read " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Type is required but is missing for read " + errorMessageDetail);
     }
   }
 
@@ -480,16 +480,13 @@ namespace ChimeraTK {
       InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
     // Throw if type/transportLayerType is not set.
     if(not(writeInfo.hasTransportLayerType() or readInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(
-          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Type is required but is missing for " + errorMessageDetail);
     }
     if(readInfo.isActive() and not readInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error(
-          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing on read for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Type is required but is missing on read for " + errorMessageDetail);
     }
     if(writeInfo.isActive() and not writeInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error(
-          "throwIfATransportLayerTypeIsNotSet: Type is required but is missing on write for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Type is required but is missing on write for " + errorMessageDetail);
     }
   }
 
@@ -513,12 +510,12 @@ namespace ChimeraTK {
       return;
     }
     if(not iInfo.fixedRegexCharacterWidthOpt) {
-      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
-          " is set but " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " is not set for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " is set but " +
+          toStr(mapFileRegisterKeys::BIT_WIDTH) + " is not set for " + errorMessageDetail);
     }
     if((iInfo.getTransportLayerType() != TransportLayerType::BIN_INT) and
         (iInfo.getTransportLayerType() != TransportLayerType::HEX_INT)) {
-      throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
+      throw ChimeraTK::logic_error(funcName + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
           " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(iInfo.getTransportLayerType()) +
           " for " + errorMessageDetail + " (only " + toStr(TransportLayerType::BIN_INT) + " and " +
           toStr(TransportLayerType::HEX_INT) + " are compatible)");
@@ -528,14 +525,14 @@ namespace ChimeraTK {
     size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
     if(iInfo.isSigned) {
       if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value() + 1)) {
-        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
-            " exceeds the " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " minus the sign bit for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " exceeds the " +
+            toStr(mapFileRegisterKeys::BIT_WIDTH) + " minus the sign bit for " + errorMessageDetail);
       }
     }
     else {
       if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value())) {
-        throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
-            " exceeds the " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " exceeds the " +
+            toStr(mapFileRegisterKeys::BIT_WIDTH) + " for " + errorMessageDetail);
       }
     }
     // TODO if fractionalBits is super negative, throw
@@ -552,8 +549,7 @@ namespace ChimeraTK {
     std::string eitherWidthTag = bitWidthTag + " or " + charWidthTag;
     if(not iInfo.fixedRegexCharacterWidthOpt) {
       if(iInfo.isBinary()) {
-        throw ChimeraTK::logic_error(
-            "throwIfBadFixedWidth: " + bitWidthTag + " must be set for binary type for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + bitWidthTag + " must be set for binary type for " + errorMessageDetail);
       }
       return;
     }
@@ -562,13 +558,12 @@ namespace ChimeraTK {
 
     // VOID
     if(type == TransportLayerType::VOID) {
-      throw ChimeraTK::logic_error("throwIfBadFixedWidth: " + eitherWidthTag + " is set for " + toStr(type) + "=" +
+      throw ChimeraTK::logic_error(funcName + eitherWidthTag + " is set for " + toStr(type) + "=" +
           toStr(TransportLayerType::VOID) + " for " + errorMessageDetail);
     }
 
     if(regexCharacterWidth == 0) {
-      throw ChimeraTK::logic_error(
-          "throwIfBadFixedWidth: Invalid zero " + eitherWidthTag + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Invalid zero " + eitherWidthTag + " for " + errorMessageDetail);
     }
 
     // FLOAT
@@ -576,7 +571,7 @@ namespace ChimeraTK {
       std::array<size_t, 3> validWidths = {16, 8, 4}; // widths are in nibbles.
 
       if(std::find(validWidths.begin(), validWidths.end(), regexCharacterWidth) == validWidths.end()) {
-        throw ChimeraTK::logic_error("throwIfBadFixedWidth: Invalid " + bitWidthTag + " " +
+        throw ChimeraTK::logic_error(funcName + "Invalid " + bitWidthTag + " " +
             std::to_string(4 * regexCharacterWidth) + " bits for type " + toStr(type) + " for " + errorMessageDetail);
       }
     }
@@ -587,8 +582,8 @@ namespace ChimeraTK {
        */
       size_t maxWidth = iInfo.isSigned ? 19 : 20;
       if(regexCharacterWidth > maxWidth) {
-        throw ChimeraTK::logic_error("throwIfBadFixedWidth: Invalid " + charWidthTag + " " +
-            std::to_string(regexCharacterWidth) + " digits for type " + toStr(type) + " for " + errorMessageDetail +
+        throw ChimeraTK::logic_error(funcName + "Invalid " + charWidthTag + " " + std::to_string(regexCharacterWidth) +
+            " digits for type " + toStr(type) + " for " + errorMessageDetail +
             ". That cannot be fit into 64 bits. Allowed range is 1-" + std::to_string(maxWidth));
       }
     }
@@ -596,7 +591,7 @@ namespace ChimeraTK {
     else if((type == TransportLayerType::HEX_INT) or (type == TransportLayerType::BIN_INT)) {
       // Here regexCharacterWidth means the number of hexideicimal characters (nibbles) for the transport layer representation.
       if(regexCharacterWidth > 16 /*16 nibbles = 64 bits*/) {
-        throw ChimeraTK::logic_error("throwIfBadFixedWidth Invalid " + bitWidthTag + " " +
+        throw ChimeraTK::logic_error(funcName + "Invalid " + bitWidthTag + " " +
             std::to_string(4 * regexCharacterWidth) + " bits for type " + toStr(type) + " for " + errorMessageDetail +
             ". That cannot be fit into 64 bits. Allowed range is 1-16.");
       }
@@ -612,8 +607,8 @@ namespace ChimeraTK {
     TransportLayerType type = iInfo.getTransportLayerType();
 
     if(type == TransportLayerType::VOID or type == TransportLayerType::STRING) {
-      throw ChimeraTK::logic_error("throwIfBadSigned: " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) +
-          "is signed for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(
+          funcName + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) + "is signed for " + errorMessageDetail);
     }
   }
 
@@ -661,7 +656,7 @@ namespace ChimeraTK {
     auto it = map.find(type); // std::unordered_map<TransportLayerType, DataType>::const_iterator it;
 
     if(it == unsignedTransportLayerTypeToDataTypeMap.end()) {
-      throw ChimeraTK::logic_error("Type " + toStr(type) + " is not in " + (isSigned ? "" : "un") +
+      throw ChimeraTK::logic_error(funcName + "Type " + toStr(type) + " is not in " + (isSigned ? "" : "un") +
           "signedtransportLayerTypeToDataTypeMap. Fix it in mapFileKeys.h");
     }
 
@@ -669,8 +664,9 @@ namespace ChimeraTK {
     DataType d = it->second;
 
     if(d == DataType::none) {
-      throw ChimeraTK::logic_error("Invalid DataType::none. Go fix the unsigned/signedTransportLayerTypeToDataTypeMap "
-                                   "in mapFileKeys.h to not use 'none'.");
+      throw ChimeraTK::logic_error(funcName +
+          "Invalid DataType::none. Go fix the unsigned/signedTransportLayerTypeToDataTypeMap "
+          "in mapFileKeys.h to not use 'none'.");
     }
 
     // Consider shrinking the DataType based on the width setting.
@@ -733,8 +729,7 @@ namespace ChimeraTK {
     else { // both are active, have to reconcile them.
       auto mergedDataType = getReconciledDataTypes(writeInfo, readInfo);
       if(not mergedDataType) {
-        throw ChimeraTK::logic_error(
-            "getDataType: Read and Write have incompatible DataTypes for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + "Read and Write have incompatible DataTypes for " + errorMessageDetail);
       }
       return *mergedDataType;
     }
@@ -785,8 +780,8 @@ namespace ChimeraTK {
     std::string keyStr = toStr(mapFileRegisterKeys::N_ELEM);
     long nElementsUnprotected = caseInsensitiveGetValueOr(j, keyStr, static_cast<long>(1));
     if(nElementsUnprotected < 1) {
-      throw ChimeraTK::logic_error(
-          "Invalid non-positive " + keyStr + " " + std::to_string(nElementsUnprotected) + " for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "Invalid non-positive " + keyStr + " " +
+          std::to_string(nElementsUnprotected) + " for " + errorMessageDetail);
     }
     rInfo.nElements = static_cast<unsigned int>(nElementsUnprotected);
   } // end setNElementsFromJson
@@ -800,7 +795,8 @@ namespace ChimeraTK {
     if(typeStrOpt) {
       std::optional<TransportLayerType> typeEnumOpt = strToEnumOpt<TransportLayerType>(*typeStrOpt);
       if(not typeEnumOpt) {
-        throw ChimeraTK::logic_error("Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(
+            funcName + "Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
       }
       iInfo.setTransportLayerType(*typeEnumOpt);
     }
@@ -849,11 +845,11 @@ namespace ChimeraTK {
       explicitlySetToReadLines = true;
       int n = opt->get<int>();
       if(n < 0) {
-        throw ChimeraTK::logic_error("Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " + std::to_string(n) +
-            " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + "Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " +
+            std::to_string(n) + " for " + errorMessageDetail);
       }
       if(responseIsAbsent and (n != 0)) {
-        throw ChimeraTK::logic_error("Response is absent but " + toStr(EnumType::N_RESPONSE_LINES) + " = " +
+        throw ChimeraTK::logic_error(funcName + "Response is absent but " + toStr(EnumType::N_RESPONSE_LINES) + " = " +
             std::to_string(n) + " for " + errorMessageDetail);
       }
       iInfo.setResponseNLines(
@@ -864,17 +860,18 @@ namespace ChimeraTK {
     keyStr = toStr(EnumType::N_RESPONSE_BYTES);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       if(explicitlySetToReadLines) {
-        throw ChimeraTK::logic_error("Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(
+            funcName + "Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
       }
 
       int n = opt->get<int>();
       if(n < 0) {
         throw ChimeraTK::logic_error(
-            "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
+            funcName + "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
       }
 
       if(responseIsAbsent and (n != 0)) {
-        throw ChimeraTK::logic_error("Response is absent but " + toStr(EnumType::N_RESPONSE_BYTES) + " = " +
+        throw ChimeraTK::logic_error(funcName + "Response is absent but " + toStr(EnumType::N_RESPONSE_BYTES) + " = " +
             std::to_string(n) + " for " + errorMessageDetail);
       }
 
@@ -912,43 +909,42 @@ namespace ChimeraTK {
     }
 
     if(bitWidthOpt and charWidthOpt) {
-      throw ChimeraTK::logic_error("Error in setFixedWidthFromJson: " + bitWidthKeyStr + " and " + charWidthKeyStr +
-          " cannot both be set. See: " + errorMessageDetail);
+      throw ChimeraTK::logic_error(
+          funcName + bitWidthKeyStr + " and " + charWidthKeyStr + " cannot both be set. See: " + errorMessageDetail);
     }
 
     int nRegexChars;
     if(not iInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error(
-          "Unable to run setFixedWidthFromJson without a transportLayerType set." + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + " A transportLayerType must be set." + errorMessageDetail);
     }
     auto type = iInfo.getTransportLayerType();
     if(bitWidthOpt) { // BIT_WIDTH
       int nBits = bitWidthOpt->get<int>();
       if(nBits <= 0) {
-        throw ChimeraTK::logic_error(
-            "Invalid non-positive " + bitWidthKeyStr + " " + std::to_string(nBits) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + "Invalid non-positive " + bitWidthKeyStr + " " + std::to_string(nBits) +
+            " for " + errorMessageDetail);
       }
       if(nBits % 4 != 0) { // n bits must represent a nibble.
-        throw ChimeraTK::logic_error("Invalid " + bitWidthKeyStr + "=" + std::to_string(nBits) +
+        throw ChimeraTK::logic_error(funcName + "Invalid " + bitWidthKeyStr + "=" + std::to_string(nBits) +
             " must be a multiple of 4 bits. See: " + errorMessageDetail);
       }
       if((type == TransportLayerType::VOID) or (type == TransportLayerType::DEC_INT) or
           (type == TransportLayerType::STRING)) {
-        throw ChimeraTK::logic_error("Invalid combination of " + bitWidthKeyStr + " and " + toStr(EnumType::TYPE) +
-            " for " + errorMessageDetail + ". Did you mean " + charWidthKeyStr + "?");
+        throw ChimeraTK::logic_error(funcName + "Invalid combination of " + bitWidthKeyStr + " and " +
+            toStr(EnumType::TYPE) + " for " + errorMessageDetail + ". Did you mean " + charWidthKeyStr + "?");
       }
       nRegexChars = nBits / 4;
     }
     else if(charWidthOpt) { // CHARACTER_WIDTH
       if((type == TransportLayerType::VOID) or (type == TransportLayerType::BIN_INT) or
           (type == TransportLayerType::BIN_FLOAT) or (type == TransportLayerType::DEC_FLOAT)) {
-        throw ChimeraTK::logic_error("Invalid combination of " + charWidthKeyStr + " and " + toStr(EnumType::TYPE) +
-            " for " + errorMessageDetail + ". Did you mean " + bitWidthKeyStr + "?");
+        throw ChimeraTK::logic_error(funcName + "Invalid combination of " + charWidthKeyStr + " and " +
+            toStr(EnumType::TYPE) + " for " + errorMessageDetail + ". Did you mean " + bitWidthKeyStr + "?");
       }
       nRegexChars = charWidthOpt->get<int>();
       if(nRegexChars <= 0) {
-        throw ChimeraTK::logic_error("Invalid non-positive " + charWidthKeyStr + " " + std::to_string(nRegexChars) +
-            " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(funcName + "Invalid non-positive " + charWidthKeyStr + " " +
+            std::to_string(nRegexChars) + " for " + errorMessageDetail);
       }
       // Screen types
     }
@@ -966,7 +962,7 @@ namespace ChimeraTK {
       return;
     }
     if(not iInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error("setFractionalBitsFromJson: A transportLayerType must be set." + errorMessageDetail);
+      throw ChimeraTK::logic_error(funcName + "A transportLayerType must be set." + errorMessageDetail);
     }
     auto type = iInfo.getTransportLayerType();
     if(((type == TransportLayerType::BIN_INT) or (type == TransportLayerType::HEX_INT)) and
@@ -986,7 +982,7 @@ namespace ChimeraTK {
     else { // if not set, default to sensible values given the transportLayerType
       if(not iInfo.hasTransportLayerType()) {
         throw ChimeraTK::logic_error(
-            "Unable to run setSignedFromJson branch without a transportLayerType set." + errorMessageDetail);
+            funcName + " A transportLayerType or " + keyStr + " must be set." + errorMessageDetail);
       }
 
       TransportLayerType type = iInfo.getTransportLayerType();
