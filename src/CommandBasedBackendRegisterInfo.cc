@@ -505,17 +505,19 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if(not iInfo.fractionalBitsOpt) {
+    if((not iInfo.fractionalBitsOpt) or (not iInfo.isActive())) {
       return;
     }
     if(not iInfo.fixedRegexCharacterWidthOpt) {
       throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
           " is set but " + toStr(mapFileRegisterKeys::BIT_WIDTH) + " is not set for " + errorMessageDetail);
     }
-    if(iInfo.getTransportLayerType() != TransportLayerType::BIN_FLOAT) {
+    if((iInfo.getTransportLayerType() != TransportLayerType::BIN_INT) and
+        (iInfo.getTransportLayerType() != TransportLayerType::HEX_INT)) {
       throw ChimeraTK::logic_error("throwIfBadFractionalBits: " + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
-          " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(TransportLayerType::BIN_FLOAT) +
-          " for " + errorMessageDetail);
+          " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(iInfo.getTransportLayerType()) +
+          " for " + errorMessageDetail + " (only " + toStr(TransportLayerType::BIN_INT) + " and " +
+          toStr(TransportLayerType::HEX_INT) + " are compatible)");
     }
     // case: fractionalBits is too big
     // TODO confirm these formulas .. can fractional bits really not exceed the size of the container?
@@ -597,7 +599,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if(not iInfo.isSigned) {
+    if((not iInfo.isSigned) or (not iInfo.isActive())) {
       return;
     }
     TransportLayerType type = iInfo.getTransportLayerType();
@@ -954,12 +956,14 @@ namespace ChimeraTK {
     std::string keyStr = toStr(EnumType::FRACTIONAL_BITS);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       iInfo.fractionalBitsOpt = opt->get<int>();
+      return;
     }
-    else if(iInfo.isBinary()) {
-      if(not iInfo.hasTransportLayerType()) {
-        throw ChimeraTK::logic_error(
-            "Unable to run setFractionalBitsFromJson without a transportLayerType set." + errorMessageDetail);
-      }
+    if(not iInfo.hasTransportLayerType()) {
+      throw ChimeraTK::logic_error("setFractionalBitsFromJson: A transportLayerType must be set." + errorMessageDetail);
+    }
+    auto type = iInfo.getTransportLayerType();
+    if(((type == TransportLayerType::BIN_INT) or (type == TransportLayerType::HEX_INT)) and
+        iInfo.fixedRegexCharacterWidthOpt.has_value()) {
       iInfo.fractionalBitsOpt = 0;
     }
   }
@@ -970,16 +974,7 @@ namespace ChimeraTK {
   static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
     std::string keyStr = toStr(EnumType::SIGNED);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
-      std::string val = opt->get<std::string>();
-      if(caseInsensitiveStrCompare(val, "true")) {
-        iInfo.isSigned = true;
-      }
-      else if(caseInsensitiveStrCompare(val, "false")) {
-        iInfo.isSigned = false;
-      }
-      else {
-        throw ChimeraTK::logic_error("Unknown value for " + keyStr + " " + val + " for " + errorMessageDetail);
-      }
+      iInfo.isSigned = opt->get<bool>();
     }
     else { // if not set, default to sensible values given the transportLayerType
       if(not iInfo.hasTransportLayerType()) {
