@@ -540,6 +540,9 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static void throwIfBadFixedWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
+    if(not iInfo.isActive()) {
+      return;
+    }
     std::string bitWidthTag = toStr(mapFileRegisterKeys::BIT_WIDTH);
     std::string charWidthTag = toStr(mapFileRegisterKeys::CHARACTER_WIDTH);
     std::string eitherWidthTag = bitWidthTag + " or " + charWidthTag;
@@ -915,8 +918,8 @@ namespace ChimeraTK {
           "Unable to run setFixedWidthFromJson without a transportLayerType set." + errorMessageDetail);
     }
     auto type = iInfo.getTransportLayerType();
-    if(bitWidthOpt) {                                         // BIT_WIDTH
-      int nBits = std::stoi(bitWidthOpt->get<std::string>()); // take in
+    if(bitWidthOpt) { // BIT_WIDTH
+      int nBits = bitWidthOpt->get<int>();
       if(nBits <= 0) {
         throw ChimeraTK::logic_error(
             "Invalid non-positive " + bitWidthKeyStr + " " + std::to_string(nBits) + " for " + errorMessageDetail);
@@ -938,7 +941,7 @@ namespace ChimeraTK {
         throw ChimeraTK::logic_error("Invalid combination of " + charWidthKeyStr + " and " + toStr(EnumType::TYPE) +
             " for " + errorMessageDetail + ". Did you mean " + bitWidthKeyStr + "?");
       }
-      nRegexChars = std::stoi(charWidthOpt->get<std::string>());
+      nRegexChars = charWidthOpt->get<int>();
       if(nRegexChars <= 0) {
         throw ChimeraTK::logic_error("Invalid non-positive " + charWidthKeyStr + " " + std::to_string(nRegexChars) +
             " for " + errorMessageDetail);
