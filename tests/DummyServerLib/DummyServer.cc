@@ -38,7 +38,7 @@ DummyServer::~DummyServer() {
   }
   try {
     if(_debug) {
-      std::cout << "joining main thread" << std::endl;
+      std::cout << "DummyServer joining main thread" << std::endl;
     }
     deactivate();
   }
@@ -76,7 +76,7 @@ void DummyServer::activate() {
     }
   }
   if(_debug) {
-    std::cout << "echoing port " << _backportNode << std::endl;
+    std::cout << "DummyServer: echoing port " << _backportNode << std::endl;
   }
 
   // Finally start the main loop, which accesses the serial port.
@@ -139,7 +139,7 @@ void DummyServer::mainLoop() {
   while(true) {
     if(not byteMode) {
       if(_debug) {
-         std::cout << "dummy-server is patiently listening in readline mode(" << nIter++ << ")..." << std::endl;
+        std::cout << "DummyServer is patiently listening in readline mode(" << nIter++ << ")..." << std::endl;
       }
       auto readValue = _serialPort->readline();
       if(!readValue.has_value() || _stopMainLoop) {
@@ -148,7 +148,12 @@ void DummyServer::mainLoop() {
       auto data = readValue.value();
 
       if(_debug) {
-        std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
+        std::cout << "DummyServer: rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
+        if(data.size() == 0) {
+          std::cout << "DummyServer: WARNING: This may indication that a delimiter was incorrectly appended to the "
+                       "previous command."
+                    << std::endl;
+        }
       }
 
       if(sendNothing) {
@@ -161,13 +166,14 @@ void DummyServer::mainLoop() {
       }
       if(data == "*CLS") {
         if(_debug) {
-          std::cout << "Received debug clear command" << std::endl;
+          std::cout << "DummyServer: Received debug clear command" << std::endl;
         }
       }
     else if((data.size() == 1) && (data[0] == 0x18)) {
         voidCounter++;
         if(_debug) {
-          std::cout << "Received Emergency Stop Movement command." << std::endl;
+          std::cout << "DummyServer: Received Emergency Stop Movement command. voidCounter = " << voidCounter
+                    << std::endl;
         }
       }
       else if(data == "*IDN?") {
@@ -242,7 +248,7 @@ void DummyServer::mainLoop() {
         try {
           cwFrequency = std::stol(data.substr(13));
           if(_debug) {
-            std::cout << "Setting cwFrequency to " << cwFrequency << std::endl;
+            std::cout << "DummyServer: Setting cwFrequency to " << cwFrequency << std::endl;
           }
         }
         catch(...) {
@@ -270,7 +276,7 @@ void DummyServer::mainLoop() {
             if(responseWithDataAndSyntaxError) {
               out[10] = 'M';
               if(_debug) {
-                std::cout << "sending with syntax error: " << out << std::endl;
+                std::cout << "DummyServer: sending with syntax error: " << out << std::endl;
               }
             }
             out.pop_back();
@@ -278,7 +284,7 @@ void DummyServer::mainLoop() {
               auto lastComma = out.rfind(',');
               out = out.substr(0, lastComma);
               if(_debug) {
-                std::cout << "sending with syntax error: " << out << std::endl;
+                std::cout << "DummyServer: sending with syntax error: " << out << std::endl;
               }
             }
             sendDelimited(out);
@@ -291,7 +297,40 @@ void DummyServer::mainLoop() {
           sendDelimited("error: unknown trace");
         }
       }
+      else if(data.find("FLT?") == 0) {
+        if(_debug) {
+          std::cout << "DummyServer: register FLT?" << std::endl;
+        }
+        sendDelimited(std::to_string(flt));
+      }
+      else if(data.find("FLT") == 0) {
+        if(_debug) {
+          std::cout << "DummyServer: register FLT:" << data << "." << std::endl;
+        }
+        if(data.size() < 4) {
+          sendDelimited("12346 Syntax error: FLT needs an argument");
+          continue;
+        }
+        try {
+          flt = std::stof(data.substr(4));
+          if(_debug) {
+            std::cout << "DummyServer: Setting flt to " << flt << std::endl;
+          }
+        }
+        catch(...) {
+          sendDelimited("12347 Syntax error in argument: " + data.substr(4));
+        }
+      }
+      else if(data.find("\u0007") == 0) {
+        if(_debug) {
+          std::cout << "DummyServer: register 0007" << std::endl;
+        }
+        sendDelimited(std::string("\xB0", 1));
+      }
       else if(data.find("altDelimLine") == 0) {
+        if(_debug) {
+          std::cout << "DummyServer: altDelimLine" << std::endl;
+        }
         auto replyStr = stripDelim(data, ChimeraTK::SERIAL_DEFAULT_DELIMITER,
             std::size(ChimeraTK::SERIAL_DEFAULT_DELIMITER) - 1); //-1 for null terminator
         _serialPort->send(replyStr);                             // Do not add a delimiter here.
@@ -303,7 +342,7 @@ void DummyServer::mainLoop() {
         auto tokens = tokenise(data);
         if(tokens.size() >= 2) {
           bytesToRead = std::stoul(tokens[1]);
-          std::cout << "Set BytesToRead to " << bytesToRead << std::endl;
+          std::cout << "DummyServer: Set BytesToRead to " << bytesToRead << std::endl;
         }
         else {
           bytesToRead = 16;
@@ -314,7 +353,7 @@ void DummyServer::mainLoop() {
         std::vector<std::string> lines = splitString(data, ";");
         for(const std::string& dat : lines) {
           if(_debug) {
-            std::cout << "tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
+            std::cout << "DummyServer: tx'ing \"" << replaceNewLines(dat) << "\"" << std::endl;
           }
           sendDelimited(dat);
         }
@@ -322,25 +361,129 @@ void DummyServer::mainLoop() {
     }      // end if line mode
     else { // byte mode
       if(_debug) {
-         std::cout << "dummy-server is patiently listening in byte mode to read "<<bytesToRead<<" bytes (" << nIter++ << ")..." << std::endl;
+        std::cout << "DummyServer is patiently listening in byte mode to read " << bytesToRead << " bytes (" << nIter++
+                  << ")..." << std::endl;
       }
       auto readValue = _serialPort->readBytes(bytesToRead);
       if(!readValue.has_value() || _stopMainLoop) {
+        std::cout << "DummyServer: Byte mode readValue has no value!" << std::endl;
         return;
       }
       std::string data = readValue.value();
 
-      if(data.find("setLineMode") == 0) { // go back to line mode
-        // this exercises sending bytes and reading lines
+      if((data.find("\x10") == 0)) { // go back to line mode
+                                     // this exercises sending bytes and reading lines
+        if(_debug) {
+          std::cout << "DummyServer: Registering x10 setLineMode?" << std::endl;
+        }
         byteMode = false;
-        std::cout << "Now on line mode" << std::endl;
+        if(_debug) {
+          std::cout << "DummyServer: Now on line mode" << std::endl;
+        }
+        sendDelimited("\x06"); // send back Acknowlege, as line delimited binary
+      }
+      if((data.find("setLineMode") == 0)) { // go back to line mode
+                                            // this exercises sending bytes and reading lines
+        if(_debug) {
+          std::cout << "DummyServer: Registering setLineMode?" << std::endl;
+        }
+        byteMode = false;
+        if(_debug) {
+          std::cout << "DummyServer: Now on line mode" << std::endl;
+        }
         sendDelimited("OK");
       }
+      else if((data.find("BFLT?") == 0)) {
+        if(_debug) {
+          std::cout << "DummyServer: Registering BFLT?" << std::endl;
+        }
+        std::string bflt = binaryStrFromFloat(flt);
+        if(_debug) {
+          std::cout << "DummyServer: sending " << hexStrFromBinaryStr(bflt) << std::endl;
+        }
+        _serialPort->send(bflt); // sends with no delimiter
+        byteMode = false;        // go back to line mode at the end of this command
+        if(_debug) {
+          std::cout << "DummyServer: Now on line mode" << std::endl;
+        }
+      }
+      else if((data.find("BFLT ") == 0)) {
+        if(_debug) {
+          std::cout << "DummyServer: Registering BFLT:" << data << "." << std::endl;
+        }
+        std::string floatData = data.substr(5);
+        if(floatData.size() >= 4) {
+          auto fltOption = floatFromBinaryStr<float>(floatData);
+          if(fltOption) {
+            flt = *fltOption;
+            if(_debug) {
+              std::cout << "DummyServer: set flt to " << flt << std::endl;
+            }
+          }
+          else {
+            std::cout << "DummyServer: Unable to convert to float from binary 0x" << hexStrFromBinaryStr(floatData)
+                      << std::endl;
+          }
+        }
+        else {
+          std::cout << "DummyServer: BFLT needs a valid second argument" << std::endl;
+        }
+        byteMode = false; // go back to line mode at the end of this command
+        if(_debug) {
+          std::cout << "DummyServer: Now on line mode" << std::endl;
+        }
+      }
+      else if((data.find(std::string("\xF5\x03\xAD\xD5\x00\x00\x00\x00", 8)) == 0)) {
+        if(_debug) {
+          std::cout << "DummyServer: Registering ulog read cmd" << std::endl; // DEBUG
+        }
+        std::string ulogStr("\0\0\0\0", 4);
+        auto maybeStr = binaryStrFromInt(ulog, 4);
+        if(maybeStr) {
+          ulogStr = *maybeStr;
+        }
+        else {
+          std::cout << "DummyServer: Unable to convert to int to binary string" << ulog << std::endl;
+        }
+        std::string retStr = std::string("\xF5\x04\xAD\xD5", 4) + ulogStr;
+        if(_debug) {
+          std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
+        }
+        _serialPort->send(retStr);
+        byteMode = false; // go back to line mode at the end of this command
+        if(_debug) {
+          std::cout << "DummyServer: Now on line mode" << std::endl; // DEBUG
+        }
+      }
+      else if((data.find(std::string("\xF5\x01\xAD\xD5", 4)) == 0)) {
+        if(_debug) {
+          std::cout << "DummyServer: Registering ulog write cmd" << std::endl;
+        }
+        auto intOpt = intFromBinaryStr<uint32_t>(data.substr(4));
+        if(intOpt) {
+          ulog = *intOpt;
+          if(_debug) {
+            std::cout << "DummyServer: Retreived ulog as " << ulog << std::endl;
+          }
+        }
+        else {
+          std::cout << "DummyServer: Unable to convert to int from binary 0x" << hexStrFromBinaryStr(data.substr(4))
+                    << std::endl;
+        }
+        std::string retStr = std::string("\xF5\x02\xAD\xD5", 4) + data.substr(4);
+        if(_debug) {
+          std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
+        }
+        _serialPort->send(retStr);
+      }
+
       else {
         // echo back the input
         _serialPort->send(data);
+        if(_debug) {
+          std::cout << "DummyServer: Catch-all for " << data << std::endl; // DEBUG
+        }
       }
-      //
     }
   } // end while
 } // end mainLoop
@@ -360,7 +503,7 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
   try {
     acc[i] = std::stof(value);
     if(_debug) {
-      std::cout << "Setting acc[" << i << "] to " << acc[i] << std::endl;
+      std::cout << "DummyServer: Setting acc[" << i << "] to " << acc[i] << std::endl;
     }
   }
   catch(...) {
@@ -382,7 +525,7 @@ void DummyServer::setHex(size_t i, const std::string& value) {
     }
 
     if(_debug) {
-      std::cout << "Setting hex[" << i << "] to " << std::hex << hex[i] << std::endl;
+      std::cout << "DummyServer: Setting hex[" << i << "] to " << std::hex << hex[i] << std::endl;
     }
   }
   catch(...) {
