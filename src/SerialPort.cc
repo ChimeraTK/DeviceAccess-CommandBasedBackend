@@ -4,14 +4,15 @@
 
 #include <ChimeraTK/Exception.h>
 
-#include <chrono>  //Needed for timeout
-#include <cstring> //Used for memset
 #include <fcntl.h>
-#include <future> //Needed for timeout
-#include <iostream>
-#include <string>
 #include <termios.h> //For termain IO interface
 #include <unistd.h>  //POSIX OS API
+
+#include <chrono>  //Needed for timeout
+#include <cstring> //Used for memset
+#include <future>  //Needed for timeout
+#include <iostream>
+#include <string>
 #include <vector>
 
 /**********************************************************************************************************************/
