@@ -121,7 +121,16 @@ namespace ChimeraTK {
     }
 
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
-    auto readCommand = _registerInfo.readInfo.commandPattern;
+    std::string readCommand;
+    if(_registerInfo.readInfo.isBinary()) {
+      readCommand = binaryStrFromHexStr(_registerInfo.readInfo.commandPattern, /*padLeft*/ false, /*isSigned*/ false);
+      /* TODO What to do if _registerInfo.readInfo.commandPattern has an odd
+       number of characters? Pad left, pad right, or throw?
+       currently set padLeft=false to pad right. */
+    }
+    else {
+      readCommand = _registerInfo.readInfo.commandPattern;
+    }
 
     _readTransferBuffer = _backend->sendCommandAndRead(readCommand, _registerInfo.readInfo);
   }
@@ -204,10 +213,10 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.writeInfo.isBinary()) {
-      _writeTransferBuffer =
-          binaryStrFromHexStr(_writeTransferBuffer, false, false); // TODO What to do if _writeTransferBuffer has an odd
-                                                                   // number of characters? Pad left, pad right, or
-                                                                   // throw? currently set to 0-pad right.
+      _writeTransferBuffer = binaryStrFromHexStr(_writeTransferBuffer, /*padLeft*/ false, /*isSigned*/ false);
+      /* TODO What to do if _writeTransferBuffer has an odd
+       number of characters? Pad left, pad right, or throw?
+       Currently set to padLeft = false for pad right. */
     }
 
     // remember this register as the last used one if the register is readable
