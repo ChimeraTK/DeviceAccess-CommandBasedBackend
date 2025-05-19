@@ -187,8 +187,9 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Could not open the map file " + mapFileName);
     }
 
-    json j;
-    file >> j;
+    std::string json_str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    json j = json::parse(json_str, /*callback */ nullptr, /* allow exception, default is true */ true,
+        /* permit c-style comments in json.*/ true);
 
     throwIfHasInvalidJsonKeyCaseInsensitive(
         j, getMapForEnum<mapFileTopLevelKeys>(), "Map file top level has unknown key");
