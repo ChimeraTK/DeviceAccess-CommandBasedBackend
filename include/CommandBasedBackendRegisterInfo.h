@@ -8,6 +8,7 @@
 #include <ChimeraTK/BackendRegisterInfoBase.h>
 #include <ChimeraTK/DataDescriptor.h>
 
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <variant>
