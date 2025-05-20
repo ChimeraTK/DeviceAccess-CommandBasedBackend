@@ -992,4 +992,29 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  // Operators for cout << InteractionInfo
+  std::ostream& operator<<(std::ostream& os, const InteractionInfo& iInfo) {
+    return os << "isActive: " << iInfo.isActive() << ", isBinary: " << iInfo.isBinary() << ", transportLayerType: "
+              << (iInfo.hasTransportLayerType() ? toStr(iInfo.getTransportLayerType()) : std::string("not set"))
+              << ", interpret patterns as hex: "
+              << (iInfo.hasTransportLayerType() ?
+                         ((iInfo.getTransportLayerType() == TransportLayerType::BIN_INT) or
+                             (iInfo.getTransportLayerType() == TransportLayerType::BIN_FLOAT)) :
+                         false)
+              << ", isSigned: " << iInfo.isSigned <<
+        // interpret as hex?
+        ", commandPattern: \"" << replaceNewLines(iInfo.commandPattern) << "\", cmdLineDelimiter: \""
+              << replaceNewLines(iInfo.cmdLineDelimiter) << "\", responsePattern: \""
+              << replaceNewLines(iInfo.responsePattern)
+              << "\", getResponseNLines: " << (iInfo.usesReadLines() ? (int)iInfo.getResponseNLines().value() : -1)
+              << " getResponseLinesDelimiter: \""
+              << (iInfo.usesReadLines() ? replaceNewLines(iInfo.getResponseLinesDelimiter().value()) : "nullopt")
+              << "\", getResponseBytes: " << (iInfo.usesReadBytes() ? (int)iInfo.getResponseBytes().value() : -1)
+              << ", fixedRegexCharacterWidthOpt: "
+              << (iInfo.fixedRegexCharacterWidthOpt ? (int)iInfo.fixedRegexCharacterWidthOpt.value() : -1)
+              << ", fractionalBitsOpt: " << (iInfo.fractionalBitsOpt ? (int)iInfo.fractionalBitsOpt.value() : -1);
+  }
+
+  /********************************************************************************************************************/
+
 } // namespace ChimeraTK
