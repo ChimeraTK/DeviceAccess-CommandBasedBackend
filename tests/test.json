@@ -28,7 +28,7 @@
       "/binFloatTest":{"read":{"cmd":"42464C543F" /*ASCII HEX for "BFLT?"*/, "resp":"{{x.0}}", "nRespBytes":4},"write":{"cmd":"42464C5420{{x.0}}" /*ASCII hex for "BFLT {{x.0}}"*/}, "type":"ieee754","bitWidth":32},
       "/uLog":{"read":{"Cmd":"F503ADD500000000", "Resp":"F504ADD5{{x.0}}"},
                "write":{"Cmd":"F501ADD5{{x.0}}", "Resp":"F502ADD5.*"},
-			   "nRespBytes":9, "bitWidth":32, "type":"fixed" }
+			   "nRespBytes":8, "bitWidth":32, "type":"fixed" }
   }
 }
 

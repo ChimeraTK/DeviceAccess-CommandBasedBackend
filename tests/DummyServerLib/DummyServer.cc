@@ -369,15 +369,15 @@ void DummyServer::mainLoop() {
         std::cout << "Now on line mode" << std::endl;
       }
       else if((data.find("BFLT ") == 0)) {
-        auto tokens = tokenise(data);
-        if(tokens.size() >= 2) {
-          std::string t1 = tokens[1];
-          auto fltOption = floatFromBinaryStr<float>(t1);
+        std::string floatData = data.substr(5);
+        if(floatData.size() >= 4) {
+          auto fltOption = floatFromBinaryStr<float>(floatData);
           if(fltOption) {
             flt = *fltOption;
           }
           else {
-            std::cout << "Unable to convert to float from binary 0x" << hexStrFromBinaryStr(tokens[1]) << std::endl;
+            std::cout << "DummyServer: Unable to convert to float from binary 0x" << hexStrFromBinaryStr(floatData)
+                      << std::endl;
           }
         }
         else {
@@ -388,7 +388,7 @@ void DummyServer::mainLoop() {
       }
       else if((data.find(std::string("\xF5\x03\xAD\xD5\x00\x00\x00\x00", 8)) == 0)) {
         std::string ulogStr("\0\0\0\0", 4);
-        auto maybeStr = binaryStrFromInt(ulog);
+        auto maybeStr = binaryStrFromInt(ulog, 4);
         if(maybeStr) {
           ulogStr = *maybeStr;
         }
