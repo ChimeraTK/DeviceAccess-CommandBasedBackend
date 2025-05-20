@@ -155,4 +155,7 @@ namespace ChimeraTK {
     DataDescriptor dataDescriptor;
   }; // end CommandBasedBackendRegisterInfo
 
+  // Operators for cout:
+  std::ostream& operator<<(std::ostream& os, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+
 } // end namespace ChimeraTK
