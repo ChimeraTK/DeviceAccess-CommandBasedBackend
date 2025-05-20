@@ -23,12 +23,12 @@
       "/floatTest":{"read":{"cmd":"FLT?", "resp":"{{x.0}}\r\n"},"write":{"cmd":"FLT {{x.0}}"}, "type":"float"},
       "/controllerReadyStatus":{"read":{"Cmd":"\u0007", "Resp":"{{x.0}}\r\n", "type":"fixed", "bitWidth":8}},
       
-      "/setByteModeVoid":{"write":{"cmd":"setByteMode", "cmdDelim":"\r\n", "resp":"ok", "nRespBytes":2},"type":"VOID"},
-      "/setByteMode":{"write":{"cmd":"setByteMode {{x.0}}", "cmdDelim":"\r\n", "resp":"ok", "nRespBytes":2},"type":"dec"},
+      "/setByteModeVoid":{"write":{"cmd":"setByteMode", "resp":"ok", "nRespBytes":2},"type":"VOID"},
+      "/setByteMode":{"write":{"cmd":"setByteMode {{x.0}}", "resp":"ok", "nRespBytes":2},"type":"dec"},
       "/binFloatTest":{"read":{"cmd":"42464C543F" /*ASCII HEX for "BFLT?"*/, "resp":"{{x.0}}", "nRespBytes":4},"write":{"cmd":"42464C5420{{x.0}}" /*ASCII hex for "BFLT {{x.0}}"*/}, "type":"ieee754","bitWidth":32},
       "/uLog":{"read":{"Cmd":"F503ADD500000000", "Resp":"F504ADD5{{x.0}}"},
                "write":{"Cmd":"F501ADD5{{x.0}}", "Resp":"F502ADD5.*"},
-			   "nRespBytes":9, "bitWidth":32, "type":"HEX" }
+			   "nRespBytes":9, "bitWidth":32, "type":"fixed" }
   }
 }
 

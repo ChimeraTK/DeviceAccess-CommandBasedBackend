@@ -809,17 +809,18 @@ namespace ChimeraTK {
       const std::optional<std::string> defaultDelimOpt, const std::string& errorMessageDetail,
       const bool responseIsAbsent) {
     bool explicitlySetToReadLines = false;
-    bool explicitlySetCmdDelimiter = false;
     std::string keyStr;
     /*----------------------------------------------------------------------------------------------------------------*/
     if(defaultDelimOpt) {
       iInfo.cmdLineDelimiter = *defaultDelimOpt;
       iInfo.setResponseDelimiter(*defaultDelimOpt);
     }
+    if(iInfo.isBinary()) { // If binary mode and no command delimiter is set, we default to undelimited.
+      iInfo.cmdLineDelimiter = "";
+    }
     // DELIMITER
     keyStr = toStr(EnumType::DELIMITER);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
-      explicitlySetCmdDelimiter = true;
       // Don't set explicitlySetToReadLines, so if there's a readBytes, DELIMITER acts like COMMAND_DELIMITER
       iInfo.cmdLineDelimiter = *opt;
       iInfo.setResponseDelimiter(*opt);
@@ -828,7 +829,6 @@ namespace ChimeraTK {
     // COMMAND_DELIMITER, override all other settings
     keyStr = toStr(EnumType::COMMAND_DELIMITER);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
-      explicitlySetCmdDelimiter = true;
       iInfo.cmdLineDelimiter = *opt;
     }
 
@@ -853,7 +853,7 @@ namespace ChimeraTK {
             std::to_string(n) + " for " + errorMessageDetail);
       }
       iInfo.setResponseNLines(
-          static_cast<size_t>(n)); // Gets 0verwritten if responseIsAbsent, yet ensures usesReadBytes() is true
+          static_cast<size_t>(n)); // Gets Overwritten if responseIsAbsent, yet ensures usesReadBytes() is true
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // N_RESPONSE_BYTES, Set to Binary Mode, destroying the previous delimiter and nLines settings
@@ -876,13 +876,7 @@ namespace ChimeraTK {
       }
 
       iInfo.setResponseBytes(
-          static_cast<size_t>(n)); // Gets 0verwritten if responseIsAbsent, yet ensures usesReadLines() is true
-
-      // If the Command delimiter was not explicitly set, presume we are sending binary with no delimiter.
-      // This overrides the metadata and Register level delimiter settings.
-      if(not explicitlySetCmdDelimiter) {
-        iInfo.cmdLineDelimiter = "";
-      }
+          static_cast<size_t>(n)); // Gets Overwritten if responseIsAbsent, yet ensures usesReadLines() is true
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     if(responseIsAbsent) {
