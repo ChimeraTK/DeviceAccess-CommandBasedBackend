@@ -102,17 +102,17 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::vector<std::string> CommandBasedBackend::sendCommandAndRead(
-      const std::string cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+      const std::string& cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
     std::vector<std::string> ret;
     if(iInfo.usesReadLines()) {
       ret = _commandHandler->sendCommandAndReadLines(
-          std::move(cmd), *iInfo.getResponseNLines(), iInfo.cmdLineDelimiter, *iInfo.getResponseLinesDelimiter());
+          cmd, *iInfo.getResponseNLines(), iInfo.cmdLineDelimiter, *iInfo.getResponseLinesDelimiter());
     }
     else if(iInfo.usesReadBytes()) {
       std::string binResponce =
-          _commandHandler->sendCommandAndReadBytes(std::move(cmd), *iInfo.getResponseBytes(), iInfo.cmdLineDelimiter);
+          _commandHandler->sendCommandAndReadBytes(cmd, *iInfo.getResponseBytes(), iInfo.cmdLineDelimiter);
       ret.push_back(binResponce);
     }
     return ret;

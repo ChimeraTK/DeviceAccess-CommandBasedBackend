@@ -3,7 +3,6 @@
 #pragma once
 
 #include "stringUtils.h"
-#include <unordered_map>
 
 #include <ChimeraTK/BackendRegisterCatalogue.h>
 
@@ -12,6 +11,7 @@
 #include <array>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 /*
  * Structure of the Map File JSON:
@@ -68,11 +68,11 @@ const int requiredMapFileFormatVersion = 2;
  * only specifiers of JSON structure..
  */
 template<typename EnumType>
-inline const std::unordered_map<EnumType, std::string> getMapForEnum();
+inline std::unordered_map<EnumType, std::string> getMapForEnum();
 
 // Strictly speaking we don't need templates for this, but templating improves extensibility and style consistency.
 template<typename EnumType>
-inline const boost::bimap<EnumType, std::string> getBimapForEnum();
+inline boost::bimap<EnumType, std::string> getBimapForEnum();
 
 /**********************************************************************************************************************/
 // Static functions for internal use only
@@ -127,13 +127,12 @@ enum class mapFileTopLevelKeys {
 
 // Associate json key strings with mapFileTopLevelKeys enums.
 template<>
-inline const std::unordered_map<mapFileTopLevelKeys, std::string> getMapForEnum<mapFileTopLevelKeys>() {
+inline std::unordered_map<mapFileTopLevelKeys, std::string> getMapForEnum<mapFileTopLevelKeys>() {
   static const std::unordered_map<mapFileTopLevelKeys, std::string> uMap = {
       // clang-format off
         {mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION, "mapFileFormatVersion"}, 
         {mapFileTopLevelKeys::METADATA, "metadata"},
-        {mapFileTopLevelKeys::REGISTERS, "registers"}
-      // clang-format on
+        {mapFileTopLevelKeys::REGISTERS, "registers"} // clang-format on
   };
   return uMap;
 }
@@ -147,12 +146,11 @@ enum class mapFileMetadataKeys {
 
 // Associate json key strings with mapFileMetadataKeys enums.
 template<>
-inline const std::unordered_map<mapFileMetadataKeys, std::string> getMapForEnum<mapFileMetadataKeys>() {
+inline std::unordered_map<mapFileMetadataKeys, std::string> getMapForEnum<mapFileMetadataKeys>() {
   static const std::unordered_map<mapFileMetadataKeys, std::string> uMap = {
       // clang-format off
         {mapFileMetadataKeys::DEFAULT_RECOVERY_REGISTER, "defaultRecoveryRegister"},
-        {mapFileMetadataKeys::DELIMITER, "delimiter"}
-      // clang-format on
+        {mapFileMetadataKeys::DELIMITER, "delimiter"} // clang-format on
   };
   return uMap;
 }
@@ -177,7 +175,7 @@ enum class mapFileRegisterKeys {
 
 // Associate json key strings with mapFileRegisterKeys enums.
 template<>
-inline const std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFileRegisterKeys>() {
+inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFileRegisterKeys>() {
   static const std::unordered_map<mapFileRegisterKeys, std::string> uMap = {
       // clang-format off
         {mapFileRegisterKeys::WRITE, "write"}, 
@@ -217,7 +215,7 @@ enum class mapFileInteractionInfoKeys {
 
 // Associate json key strings with mapFileInteractionInfoKeys enums.
 template<>
-inline const std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum<mapFileInteractionInfoKeys>() {
+inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum<mapFileInteractionInfoKeys>() {
   static const std::unordered_map<mapFileInteractionInfoKeys, std::string> uMap = {
       // clang-format off
         {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
@@ -271,7 +269,7 @@ enum class TransportLayerType {
 };
 
 template<>
-inline const boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
+inline boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
   static const auto bmap = makeBimap<TransportLayerType, std::string>({
       // clang-format off
             {TransportLayerType::DEC_INT, "dec"},

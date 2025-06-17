@@ -10,8 +10,7 @@
 
 #include <boost/process.hpp>
 
-#include <signal.h>
-
+#include <csignal>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -149,7 +148,7 @@ void DummyServer::mainLoop() {
 
       if(_debug) {
         std::cout << "DummyServer: rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
-        if(data.size() == 0) {
+        if(data.empty()) {
           std::cout << "DummyServer: WARNING: This may indication that a delimiter was incorrectly appended to the "
                        "previous command."
                     << std::endl;
@@ -169,7 +168,7 @@ void DummyServer::mainLoop() {
           std::cout << "DummyServer: Received debug clear command" << std::endl;
         }
       }
-    else if((data.size() == 1) && (data[0] == 0x18)) {
+      else if((data.size() == 1) && (data[0] == 0x18)) {
         voidCounter++;
         if(_debug) {
           std::cout << "DummyServer: Received Emergency Stop Movement command. voidCounter = " << voidCounter
@@ -321,7 +320,7 @@ void DummyServer::mainLoop() {
           sendDelimited("12347 Syntax error in argument: " + data.substr(4));
         }
       }
-      else if(data.find("\u0007") == 0) {
+      else if(data.find('\u0007') == 0) {
         if(_debug) {
           std::cout << "DummyServer: register 0007" << std::endl;
         }
@@ -358,7 +357,7 @@ void DummyServer::mainLoop() {
           sendDelimited(dat);
         }
       }
-    }      // end if line mode
+    } // end if line mode
     else { // byte mode
       if(_debug) {
         std::cout << "DummyServer is patiently listening in byte mode to read " << bytesToRead << " bytes (" << nIter++
@@ -371,7 +370,7 @@ void DummyServer::mainLoop() {
       }
       std::string data = readValue.value();
 
-      if((data.find("\x10") == 0)) { // go back to line mode
+      if((data.find('\x10') == 0)) { // go back to line mode
                                      // this exercises sending bytes and reading lines
         if(_debug) {
           std::cout << "DummyServer: Registering x10 setLineMode?" << std::endl;

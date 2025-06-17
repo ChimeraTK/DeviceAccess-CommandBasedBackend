@@ -8,11 +8,11 @@
 #include "stringUtils.h"
 
 #include <inja/inja.hpp>
-#include <type_traits>
 
 #include <regex>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 namespace ChimeraTK {
 
@@ -34,7 +34,7 @@ namespace ChimeraTK {
    * @throws inja::ParserError
    */
   static std::regex getResponseRegex(
-      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail);
+      const InteractionInfo& info, size_t requiredElements, const std::string& errorMessageDetail);
 
   /** Return the functional for the given TransportLayerType for converting data from the transport layer format to
    * UserType representation*/
@@ -83,12 +83,12 @@ namespace ChimeraTK {
 
     this->_exceptionBackend = dev;
 
-    if(_registerInfo.isWriteable()) {
+    if(isWriteableImpl()) {
       _transportLayerTypeFromUserType =
           getToTransportLayerFunction<UserType>(_registerInfo.writeInfo.getTransportLayerType());
     }
 
-    if(_registerInfo.isReadable()) {
+    if(isReadableImpl()) {
       _userTypeFromTransportLayerType = getToUserTypeFunction<UserType>(_registerInfo.readInfo.getTransportLayerType());
 
       // We seek registerInfo.getNumberOfElements() matches in the response regex,
@@ -106,7 +106,7 @@ namespace ChimeraTK {
     if(!_backend->isOpen() && !_isRecoveryTestAccessor) {
       throw ChimeraTK::logic_error("Device not opened.");
     }
-    if(!_registerInfo.isReadable()) {
+    if(!isReadable()) {
       throw ChimeraTK::logic_error(
           "CommandBasedBackend: Commanding read to a non-readable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
@@ -145,7 +145,7 @@ namespace ChimeraTK {
     if(updateDataBuffer) {
       // For technical reasons the response has been read line by line.
       // Combine them here back into a single response string.
-      std::string combinedReadString = "";
+      std::string combinedReadString{};
       if(_registerInfo.readInfo.usesReadLines()) {
         std::string delim = *_registerInfo.readInfo.getResponseLinesDelimiter();
         if(_registerInfo.readInfo.isBinary()) {
@@ -193,7 +193,7 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error("Device not opened.");
     }
 
-    if(!_registerInfo.isWriteable()) {
+    if(!isWriteable()) {
       throw ChimeraTK::logic_error(
           "CommandBasedBackend: Writing to a non-writeable register is not allowed (Register name: " +
           _registerInfo.getRegisterName() + ").");
@@ -222,7 +222,7 @@ namespace ChimeraTK {
     }
 
     // remember this register as the last used one if the register is readable
-    if(_registerInfo.isReadable()) {
+    if(isReadable()) {
       _backend->_lastWrittenRegister = _registerInfo.registerPath;
     }
     else { // if not readable use the default read register
@@ -249,7 +249,7 @@ namespace ChimeraTK {
   static std::string getRegexString(const InteractionInfo& info) {
     TransportLayerType type = info.getTransportLayerType();
 
-    std::string valueRegex = "";
+    std::string valueRegex{};
     if(info.fixedRegexCharacterWidthOpt) { // a fixedSizeNumberWidth is specified
       std::string width = std::to_string(*(info.fixedRegexCharacterWidthOpt));
       if(type == TransportLayerType::DEC_INT) {
@@ -293,7 +293,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static std::regex getResponseRegex(
-      const InteractionInfo& info, const size_t requiredElements, const std::string errorMessageDetail) {
+      const InteractionInfo& info, const size_t requiredElements, const std::string& errorMessageDetail) {
     std::string valueRegex = getRegexString(info);
 
     inja::json replacePatterns;
@@ -387,9 +387,7 @@ namespace ChimeraTK {
       }
       return *maybeInt;
     }
-    else {
-      return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str); // only supports unsigned conversion
-    }
+    return ChimeraTK::userTypeToUserType<UserType, std::string>("0x" + str); // only supports unsigned conversion
   }
   /********************************************************************************************************************/
 

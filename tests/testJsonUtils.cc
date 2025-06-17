@@ -8,12 +8,13 @@
 using namespace boost::unit_test_framework;
 
 #include "jsonUtils.h"
-#include <nlohmann/json.hpp>
-#include <unordered_map>
 
 #include <ChimeraTK/Exception.h>
 
+#include <nlohmann/json.hpp>
+
 #include <optional>
+#include <unordered_map>
 
 /**********************************************************************************************************************/
 using json = nlohmann::json;

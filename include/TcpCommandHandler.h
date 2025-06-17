@@ -25,14 +25,7 @@ namespace ChimeraTK {
      * @param[in] timeoutInMilliseconds The timeout duration in ms.
      */
     TcpCommandHandler(const std::string& host, const std::string& port,
-        const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, const ulong timeoutInMilliseconds = 1000);
-
-    std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
-        const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
-        const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) override;
-
-    std::string sendCommandAndReadBytes(
-        std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) override;
+        const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
     /**
      * Writes a string cmd to the device.
@@ -46,6 +39,12 @@ namespace ChimeraTK {
     }
 
    protected:
+    std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
+        const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) override;
+
+    std::string sendCommandAndReadBytesImpl(
+        std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) override;
+
     std::unique_ptr<TcpSocket> _tcpDevice;
   };
 

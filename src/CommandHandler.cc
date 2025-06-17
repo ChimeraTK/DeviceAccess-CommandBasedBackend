@@ -10,9 +10,9 @@
 
 std::string CommandHandler::toString(const WritableDelimiter& delimOption) const noexcept {
   if(std::holds_alternative<CommandHandlerDefaultDelimiter>(delimOption)) {
-    return _delimiter;
+    return delimiter;
   }
-  else if(std::holds_alternative<std::string>(delimOption)) {
+  if(std::holds_alternative<std::string>(delimOption)) {
     return std::get<std::string>(delimOption);
   }
   // else delimOption is NoDelimiter
@@ -23,11 +23,10 @@ std::string CommandHandler::toString(const WritableDelimiter& delimOption) const
 
 std::string CommandHandler::toString(const ReadableDelimiter& delimOption) const noexcept {
   if(std::holds_alternative<CommandHandlerDefaultDelimiter>(delimOption)) {
-    return _delimiter;
+    return delimiter;
   }
-  else { // delimOption is a string
-    std::string s = std::get<std::string>(delimOption);
-    assert(not s.empty());
-    return s;
-  }
+  // delimOption is a string
+  std::string s = std::get<std::string>(delimOption);
+  assert(not s.empty());
+  return s;
 }

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef> //Added by ninja fix-linter, maybe for size_t. Likely not needed.
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -110,8 +111,10 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, c
   * So we need isSigned to tell us whether to move the signed bit.
   */
 
-  const std::function<char(char)> binCharFromHexChar = [](char hex) noexcept -> char {
-    return hex - (hex <= '9' ? '0' : hex <= 'F' ? 'A' - 10 : 'a' - 10);
+  const std::function<unsigned char(char)> binCharFromHexChar = [](char hex) noexcept -> char {
+    constexpr char offsetA = 'A' - 10;
+    constexpr char offseta = 'a' - 10;
+    return static_cast<char>(hex - (hex <= '9' ? '0' : hex <= 'F' ? offsetA : offseta));
     /* More verbosely, this does:
       if((hex >='0') and (hex <='9')){
         return hex - '0';
@@ -127,26 +130,38 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, c
 
   if(hexLengthIsOdd) {
     if(padLeft) {
-      binOut[0] = binCharFromHexChar(hexStr[0]);
+      binOut[0] = static_cast<char>(binCharFromHexChar(hexStr[0]));
       if(isSigned and (binOut[0] >= 0x08)) { // signed and negative
-        binOut[0] += 0xF0;                   // Left-pack with F.
+        binOut[0] += '\xF0';                 // Left-pack with F.
       }
     }
     else { // pad right
-      binOut.back() = (binCharFromHexChar(hexStr[hexStr.length() - 1]) << 4);
+      binOut.back() = static_cast<char>(binCharFromHexChar(hexStr[hexStr.length() - 1]) << 4U);
     }
   }
 
-  const size_t bStart = static_cast<size_t>(hexLengthIsOdd and padLeft); // = (hexLengthIsOdd and padLeft) ? 1 : 0;
+  const auto bStart = static_cast<size_t>(hexLengthIsOdd and padLeft); // = (hexLengthIsOdd and padLeft) ? 1 : 0;
   const size_t bEnd = binOut.length() -
       static_cast<size_t>(hexLengthIsOdd and
           not padLeft); // = (hexLengthIsOdd and not padLeft) ? (binOut.length() - 1) : binOut.length();
 
   for(size_t b = bStart; b < bEnd; ++b) {
-    binOut[b] = (binCharFromHexChar(hexStr[(2 * b) - bStart]) << 4);
-    binOut[b] |= binCharFromHexChar(hexStr[(2 * b) + 1 - bStart]);
+    const unsigned char hiNibble = (binCharFromHexChar(hexStr[(2 * b) - bStart]) << 4U);
+    const unsigned char loNibble = binCharFromHexChar(hexStr[(2 * b) + 1 - bStart]);
+    binOut[b] = static_cast<char>(hiNibble | loNibble);
   }
   return binOut;
+}
+
+/**********************************************************************************************************************/
+
+/*
+ * Returns the pair of hexidecimal chars for {high nibble, low nibble"
+ */
+inline std::pair<char, char> getHexDigitsFromByte(unsigned char byte) {
+  char upper = "0123456789ABCDEF"[(static_cast<unsigned>(byte) >> 4U) & 0xFU];
+  char lower = "0123456789ABCDEF"[static_cast<unsigned>(byte) & 0xFU]; // char array isn't store 2x
+  return {upper, lower};
 }
 
 /**********************************************************************************************************************/
@@ -158,8 +173,9 @@ std::string hexStrFromBinaryStr(const std::string& byteStr) noexcept {
   std::string hexOut(2 * byteStr.length(), '0');
   auto hexIt = hexOut.begin();
   for(unsigned char byte : byteStr) {
-    *hexIt++ = "0123456789ABCDEF"[(byte >> 4) & 0xF]; // set the high nibble
-    *hexIt++ = "0123456789ABCDEF"[byte & 0xF];        // set the low nibble, char array isn't store 2x
+    auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
+    *hexIt++ = highNibble;
+    *hexIt++ = lowNibble;
   }
   return hexOut;
 }
@@ -177,20 +193,21 @@ std::string hexStrFromBinaryStr(const std::string& byteStr, size_t nHexChars, bo
     return hexOut;
   }
 
-  int hexStrIndexLeft =
-      nHexChars - 2; // The hexOut index of the left of the two hex digits resulting from the byte at byteStrIndex.
+  int64_t hexStrIndexLeft = static_cast<int64_t>(nHexChars) -
+      2L; // The hexOut index of the left of the two hex digits resulting from the byte at byteStrIndex.
   for(int byteStrIndex = byteStrLength - 1; byteStrIndex >= 0; byteStrIndex--) {
-    char byte = byteStr[byteStrIndex];
-    hexStrIndexLeft = nHexChars - (2 * (byteStrLength - byteStrIndex));
+    auto byte = static_cast<unsigned char>(byteStr[byteStrIndex]);
+    hexStrIndexLeft = static_cast<int64_t>(nHexChars) - (2L * (byteStrLength - byteStrIndex));
 
-    if(hexStrIndexLeft >= -1) { // If the right hex digit doesn't hit index 0
-      hexOut[hexStrIndexLeft + 1] = "0123456789ABCDEF"[byte & 0xF];
+    auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
+    if(hexStrIndexLeft >= -1L) { // If the right hex digit doesn't hit index 0
+      hexOut[hexStrIndexLeft + 1L] = lowNibble;
     }
     else {
       break; // nHexChars is shorter than 2*byteStringSize and nHexChars is odd
     }
-    if(hexStrIndexLeft >= 0) {
-      hexOut[hexStrIndexLeft] = "0123456789ABCDEF"[(byte >> 4) & 0xF];
+    if(hexStrIndexLeft >= 0L) {
+      hexOut[hexStrIndexLeft] = highNibble;
     }
     else {
       break; // nHexChars is shorter than 2*byteStringSize and nHexChars is even
@@ -198,10 +215,11 @@ std::string hexStrFromBinaryStr(const std::string& byteStr, size_t nHexChars, bo
   }
 
   // nHexChars is longer than byteStr, left pack with F if byteStr
-  if(isSigned and hexStrIndexLeft > 0) {
-    bool bit0 = static_cast<bool>((byteStr[0] >> 15) & 0x01);
+  if(isSigned and hexStrIndexLeft > 0L) {
+    bool bit0 = static_cast<bool>(
+        (byteStr[0] >> 15U) & 0x01U); // NOLINT(hicpp-signed-bitwise) Behavior relies on signed integer bit shift
     if(bit0) {
-      for(int h = 0; h < hexStrIndexLeft; h++) {
+      for(int64_t h = 0L; h < hexStrIndexLeft; h++) {
         hexOut[h] = 'F';
       }
     }
@@ -222,9 +240,9 @@ std::string replaceAll(const std::string& s, const char charToBeReplaced, const 
   size_t nOccurences = std::count(s.begin(), s.end(), charToBeReplaced);
   std::string result;
   result.reserve(s.size() + nOccurences * replacement.size());
-  for(size_t i = 0; i < s.size(); ++i) {
-    if(s[i] != charToBeReplaced) {
-      result += s[i];
+  for(char i : s) {
+    if(i != charToBeReplaced) {
+      result += i;
     }
     else {
       result += replacement;
@@ -242,9 +260,9 @@ std::string replaceAll(
   std::string result = s; // copy
 
   size_t pos = 0;
-  long limiter = 0;
-  long limit = std::max(defaultLimit, s.size());
-  size_t repSize = replacement.size();
+  size_t limiter = 0;
+  const size_t limit = std::max(defaultLimit, s.size());
+  const size_t repSize = replacement.size();
   int nOccurences = 0;
   while(((pos = result.find(strToBeReplaced, pos)) != std::string::npos) and (limit > limiter++)) {
     result.replace(pos, strToBeReplaced.size(), replacement);

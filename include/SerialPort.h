@@ -10,7 +10,7 @@
 
 namespace ChimeraTK {
 
-  constexpr const char SERIAL_DEFAULT_DELIMITER[] = "\r\n";
+  const std::string SERIAL_DEFAULT_DELIMITER = "\r\n";
   /**
    * The SerialPort class handles, opens, closes, and
    * gives read/write access to a specified serial port.
@@ -62,7 +62,7 @@ namespace ChimeraTK {
      * @param[in] nBytesToRead The number of bytes that it will attempt to read.
      * @returns an empty optional if terminateRead() has been called.
      */
-    std::optional<std::string> readBytes(const size_t nBytesToRead);
+    std::optional<std::string> readBytes(size_t nBytesToRead);
 
     /**
      * @brief Read a delimiter delimited line from the serial port. Result does NOT end in delimiter
@@ -82,7 +82,7 @@ namespace ChimeraTK {
      * @return The response as a sting
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
-    std::string readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout);
+    std::string readBytesWithTimeout(size_t nBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
      * Terminate a blocking read call.

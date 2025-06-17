@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-#include <type_traits>
-
 #include <ChimeraTK/SupportedUserTypes.h>
 
 #include <cassert>
 #include <cstring> //for memcpy
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -72,7 +71,7 @@ void toLowerCase(std::string& str) noexcept;
  * @returns A string containing the corresponding binary data, with characters like \xFF, of length ceil(input.ceil / 2).
  */
 [[nodiscard]] std::string binaryStrFromHexStr(
-    const std::string& hexStr, const bool padLeft = true, const bool isSigned = false) noexcept;
+    const std::string& hexStr, bool padLeft = true, bool isSigned = false) noexcept;
 
 /**
  * @brief Convert a string container of bytes into the string hexidecimal representation of that data.
@@ -107,15 +106,15 @@ void toLowerCase(std::string& str) noexcept;
 
 // Returns a string with all instance of the character charToBeReplaced in string s replace with the replacement string.
 [[nodiscard]] std::string replaceAll(
-    const std::string& s, const char charToBeReplaced, const std::string& replacement) noexcept;
+    const std::string& s, char charToBeReplaced, const std::string& replacement) noexcept;
 
 // Returns a string with all instance of the string strToBeReplaced in string s replace with the replacement string.
 [[nodiscard]] std::string replaceAll(
     const std::string& s, const std::string& strToBeReplaced, const std::string& replacement) noexcept;
 
 // Placeholder tag for null characters with secure randomly generated 60b constant in base 64.
-constexpr const char NULL_TAG[] = "NULLCHAR_E0xUr3HTw@_";
-constexpr size_t NULL_TAG_SIZE = sizeof(NULL_TAG) - 1;
+const std::string NULL_TAG = "NULLCHAR_E0xUr3HTw@_";
+const size_t NULL_TAG_SIZE = NULL_TAG.size() - 1;
 
 /**
  * Replaces null characters in s with '\'+'0', to make them printable.
@@ -157,8 +156,8 @@ using enableIfNonBoolNumeric = std::enable_if_t<std::is_arithmetic<T>::value && 
 // Get the bit that would be the sign bit if it i were signed.
 template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 inline static bool getFirstBit(const intType i) {
-  using SignedIntType = typename std::make_signed<intType>::type;
-  return (static_cast<SignedIntType>(i) < 0);
+  using signedIntType = typename std::make_signed<intType>::type;
+  return (static_cast<signedIntType>(i) < 0);
 }
 
 /**********************************************************************************************************************/
@@ -166,18 +165,22 @@ inline static bool getFirstBit(const intType i) {
 template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 static size_t getIntNaturalByteWidth(
     const intType payload, const bool isSigned = std::is_signed<intType>::value) noexcept {
-  using SignedIntType = typename std::make_signed<intType>::type;
+  using signedIntType = typename std::make_signed<intType>::type;
+  using unsignedIntType = typename std::make_unsigned<intType>::type;
 
   // Normalize to positives
-  SignedIntType signedPayload = static_cast<SignedIntType>(payload);
+  auto signedPayload = static_cast<signedIntType>(payload);
   if(isSigned and (signedPayload < 0)) {
     signedPayload *= -1;
   }
+  auto unsignedPayload = static_cast<unsignedIntType>(signedPayload);
   // Count leading 0 bytes
   constexpr size_t start = sizeof(intType) - 1;
   size_t naturalWidth = 1;
   for(size_t i = start; i > 0; --i) {
-    if(((signedPayload >> (8 * i)) & 0xFF) != 0) {
+    uint64_t shiftAmount = 8U * i;
+    uint64_t mask = 0xFFU;
+    if(((static_cast<uint64_t>(unsignedPayload) >> shiftAmount) & mask) != 0U) {
       // located the first byte that's non-zero.
       naturalWidth = i + 1;
       break;
@@ -185,10 +188,15 @@ static size_t getIntNaturalByteWidth(
   }
 
   // Figure if an extra byte is needed for a the sign bit
-  bool extraSignByte = 0;
+  bool extraSignByte = false; // 0
   if(isSigned) {
-    bool signBit = getFirstBit(payload);
-    bool lastPayloadBit = static_cast<bool>((payload >> (8 * naturalWidth - 1)) & 0x01);
+    bool signBit = getFirstBit(payload); // can't use signed payload because of the -1
+    unsignedIntType mask = 0x1U;
+    unsignedIntType shiftAmount = 8U * naturalWidth - 1U;
+    // NOLINTBEGIN(hicpp-signed-bitwise)
+    bool lastPayloadBit = static_cast<bool>((payload >> shiftAmount) & mask);
+    // Behavior relies on shifting the payload without converting to unsigned.
+    // NOLINTEND(hicpp-signed-bitwise)
     extraSignByte = signBit xor lastPayloadBit;
   }
 
@@ -223,7 +231,7 @@ template<typename numType>
 [[nodiscard]] static std::optional<std::string> binaryStrFromNumber(const numType payload,
     const std::variant<size_t, WidthOption>& width = WidthOption::COMPACT,
     bool isSigned = std::is_signed<numType>::value, const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT,
-    enableIfNonBoolNumeric<numType>* = nullptr) noexcept {
+    enableIfNonBoolNumeric<numType>* = nullptr) {
   constexpr size_t numTypeWidth = sizeof(numType);
   static_assert(sizeof(numType) <= sizeof(uint64_t));
 
@@ -249,7 +257,7 @@ template<typename numType>
         if(overflowBehavior == OverflowBehavior::NULLOPT) {
           return std::nullopt;
         }
-        else if(overflowBehavior == OverflowBehavior::EXPAND) {
+        if(overflowBehavior == OverflowBehavior::EXPAND) {
           strWidth = naturalWidth;
         }
         else if((overflowBehavior == OverflowBehavior::TRUNCATE) and (strWidth == 0)) {
@@ -257,14 +265,14 @@ template<typename numType>
         }
         // else the following truncates.
       }
-    }      // end fixed width
+    } // end fixed width
     else { // width = WidthOption::COMPACT
       strWidth = naturalWidth;
     }
 
     result = std::string(strWidth, leftPackChar);
     const size_t nLeftPackBytes = static_cast<size_t>(
-        std::max(static_cast<long>(0), static_cast<long>(strWidth) - static_cast<long>(numTypeWidth)));
+        std::max(static_cast<int64_t>(0), static_cast<int64_t>(strWidth) - static_cast<int64_t>(numTypeWidth)));
     bytesToTransfer = strWidth - nLeftPackBytes;
   }
 
@@ -274,7 +282,7 @@ template<typename numType>
 
   for(size_t i = 0; i < bytesToTransfer; i++) {
     // Transfer digits from least significant to most, populating the string from back to front
-    result[strWidth - 1 - i] = static_cast<char>((shiftablePayload >> (8 * i)) & 0xFF);
+    result[strWidth - 1 - i] = static_cast<char>((shiftablePayload >> (8 * i)) & 0xFFU);
   }
   return result;
 }
@@ -299,7 +307,7 @@ template<typename numType>
 template<typename boolType>
 [[nodiscard]] static std::optional<std::string> binaryStrFromNumber(const boolType payload,
     const std::variant<size_t, WidthOption>& width = WidthOption::COMPACT, [[maybe_unused]] bool isSigned = false,
-    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT, enableIfBool<boolType>* = nullptr) noexcept {
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT, enableIfBool<boolType>* = nullptr) {
   std::string ret;
   if(std::holds_alternative<size_t>(width)) {
     size_t strWidth = std::get<std::size_t>(width);
@@ -307,7 +315,7 @@ template<typename boolType>
       if(overflowBehavior == OverflowBehavior::NULLOPT) {
         return std::nullopt;
       }
-      else if(overflowBehavior == OverflowBehavior::TRUNCATE) {
+      if(overflowBehavior == OverflowBehavior::TRUNCATE) {
         return std::string("\0", 1);
       }
       // else overflowBehavior == OverflowBehavior::EXPAND
@@ -357,7 +365,7 @@ template<typename floatType, typename = enableIfFloat<floatType>>
  */
 template<typename intType, typename = enableIfIntegral<intType>>
 [[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload,
-    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) noexcept {
+    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) {
   return binaryStrFromNumber<intType>(payload, width, isSigned);
 }
 
@@ -383,7 +391,7 @@ template<typename intType, typename = enableIfIntegral<intType>>
 template<typename intType, typename = enableIfIntegral<intType>>
 [[nodiscard]] std::optional<std::string> binaryStrFromInt(const intType payload, const size_t width,
     bool isSigned = std::is_signed<intType>::value,
-    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) {
   return binaryStrFromNumber<intType>(payload, width, isSigned, overflowBehavior);
 }
 
@@ -405,8 +413,8 @@ template<typename floatType, typename = enableIfFloat<floatType>>
  * Returns true if the 0th
  */
 static inline bool zerothNibbleCanBeRemoved(bool isSigned, bool isNegative, uint8_t byte0) {
-  return ((isSigned and (((not isNegative) and (byte0 <= 0x07)) or (isNegative and (byte0 >= 0xF8)))) or
-      ((not isSigned) and (byte0 <= 0x0F)));
+  return ((isSigned and (((not isNegative) and (byte0 <= 0x07U)) or (isNegative and (byte0 >= 0xF8U)))) or
+      ((not isSigned) and (byte0 <= 0x0FU)));
 }
 /**********************************************************************************************************************/
 
@@ -422,7 +430,7 @@ static inline bool zerothNibbleCanBeRemoved(bool isSigned, bool isNegative, uint
  */
 template<typename intType, typename = enableIfIntegral<intType>>
 [[nodiscard]] std::optional<std::string> hexStrFromInt(const intType payload,
-    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) noexcept {
+    const WidthOption width = WidthOption::COMPACT, bool isSigned = std::is_signed<intType>::value) {
   auto byteStrOpt = binaryStrFromInt<intType>(payload, width, isSigned);
   if(not byteStrOpt) {
     return std::nullopt;
@@ -451,7 +459,7 @@ template<typename intType, typename = enableIfIntegral<intType>>
 template<typename intType, typename = enableIfIntegral<intType>>
 [[nodiscard]] std::optional<std::string> hexStrFromInt(const intType payload, const size_t nHexChars,
     bool isSigned = std::is_signed<intType>::value,
-    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) noexcept {
+    const OverflowBehavior overflowBehavior = OverflowBehavior::NULLOPT) {
   if((nHexChars == 0) and (overflowBehavior == OverflowBehavior::TRUNCATE)) {
     return "";
   }
@@ -474,11 +482,11 @@ template<typename intType, typename = enableIfIntegral<intType>>
   else {
     result = hexStrFromBinaryStr(*byteStrOpt, nHexChars, isSigned);
     if((overflowBehavior == OverflowBehavior::NULLOPT) and nHexCharIsOdd) {
-      unsigned int byte0 =
-          (*byteStrOpt)[0]; // could use uint8_t but then multiple implicit casts are needed in the conditional
+      auto byte0 = static_cast<unsigned int>(static_cast<unsigned char>((*byteStrOpt)[0]));
+      // We could use uint8_t but then multiple implicit casts are needed in the conditional
 
-      if((((not isSigned) or (payload > 0)) and (byte0 & 0xF0)) or
-          (isSigned and (payload < 0) and ((byte0 & 0xF0) != 0xF0))) {
+      if((((not isSigned) or (payload > 0)) and (byte0 & 0xF0U)) or
+          (isSigned and (payload < 0) and ((byte0 & 0xF0U) != 0xF0U))) {
         /* nHexChars is odd, but binaryStrFromNumber returns an even byteWidth number of nibbles >= nHexChars.
          * binaryStrFromNumber will go nullopt if payload exceeds byteWidth, but there could still be meaningful content
          * in the first nibble of byteStrOpt that is truncated away in result. So we check that this nibble has no
@@ -500,11 +508,13 @@ template<typename intType, typename = enableIfIntegral<intType>>
  * param[in] interpretAsPositive Whether or not to binaryContainer as positive or negative.
  */
 static inline size_t getStrNaturalByteWidth(
-    const std::string binaryContainer, const bool interpretAsPositive = true) noexcept {
+    const std::string& binaryContainer, const bool interpretAsPositive = true) noexcept {
   const char leftpackChar = (interpretAsPositive ? '\0' : '\xFF');
   size_t naturalWidth = binaryContainer.find_first_not_of(leftpackChar);
   return ((naturalWidth == std::string::npos) ? 1 : binaryContainer.size() - naturalWidth);
 }
+
+/*--------------------------------------------------------------------------------------------------------------------*/
 
 /**
  * @brief Interprets the data in the string as a binary representation of an integer
@@ -525,7 +535,8 @@ template<typename intType>
     return 0;
   }
 
-  bool isNegative = (std::is_signed<intType>::value) and (static_cast<unsigned char>((binaryContainer[0]) & 0x80) != 0);
+  bool isNegative =
+      (std::is_signed<intType>::value) and ((static_cast<unsigned char>(binaryContainer[0]) & 0x80U) != 0);
   size_t naturalWidth = getStrNaturalByteWidth(binaryContainer, not isNegative);
   const size_t maxBytes = sizeof(intType);
 
@@ -534,16 +545,17 @@ template<typename intType>
     return std::nullopt;
   }
 
-  intType result = 0;
+  using uintType = typename std::make_unsigned<intType>::type;
+  uintType result = 0;
 
   // Calculate how many leading F's we need to add if the string is shorter than expected
   const size_t nLeftPackBytes = static_cast<size_t>(
-      std::max(static_cast<long>(0), static_cast<long>(maxBytes) - static_cast<long>(binaryContainer.size())));
+      std::max(static_cast<int64_t>(0), static_cast<int64_t>(maxBytes) - static_cast<int64_t>(binaryContainer.size())));
   if(isNegative) {
-    uint64_t ff = 0xFF;
+    uint64_t ff = 0xFFU;
     for(size_t i = 0; i < nLeftPackBytes; i++) {
       size_t shift = 8 * (maxBytes - 1 - i);
-      result |= static_cast<intType>(ff << shift);
+      result |= static_cast<uintType>(ff << shift);
     }
   }
 
@@ -552,11 +564,15 @@ template<typename intType>
   const size_t truncationBytes = binaryContainer.size() - bytesToTransfer;
   for(size_t i = 0; i < bytesToTransfer; ++i) {
     size_t shift = 8 * (bytesToTransfer - 1 - i);
-    result |= static_cast<intType>(static_cast<unsigned char>(binaryContainer[i + truncationBytes])) << shift;
+    result |= static_cast<uintType>(
+        static_cast<uintType>(static_cast<unsigned char>(binaryContainer[i + truncationBytes]))
+        << shift); // Double cast necessary to keep left most bit of the char from binaryContainer from filling left.
   }
 
-  return result;
+  return static_cast<intType>(result);
 }
+
+/*--------------------------------------------------------------------------------------------------------------------*/
 
 template<typename boolType>
 [[nodiscard]] std::optional<boolType> intFromBinaryStr(const std::string& binaryContainer,
@@ -565,15 +581,13 @@ template<typename boolType>
     return false; // TODO FIXME overflowBehavior
   }
   if(truncateIfOverflow) {
-    return static_cast<boolType>(binaryContainer[0] & 0x01);
+    return static_cast<boolType>(static_cast<unsigned char>(binaryContainer[0]) & 0x01U);
   }
-  else {
-    unsigned int orOfBytes = 0;
-    for(char b : binaryContainer) {
-      orOfBytes |= static_cast<unsigned char>(b);
-    }
-    return (orOfBytes != 0);
+  unsigned int orOfBytes = 0;
+  for(char b : binaryContainer) {
+    orOfBytes |= static_cast<unsigned char>(b);
   }
+  return (orOfBytes != 0);
 }
 
 /**********************************************************************************************************************/
