@@ -16,7 +16,11 @@ using namespace ChimeraTK;
 
 /**********************************************************************************************************************/
 
-static DummyServer dummyServer;
+constexpr bool DEBUG = false;
+
+/**********************************************************************************************************************/
+
+static DummyServer dummyServer{true, DEBUG};
 
 std::string cdd() {
   return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)";

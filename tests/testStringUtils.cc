@@ -831,6 +831,8 @@ BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
   BOOST_CHECK_EQUAL(intFromBinaryStr<int8_t>(s, truncateIfOverflow).has_value(), /*==*/false);
 }
 
+/**********************************************************************************************************************/
+
 BOOST_AUTO_TEST_CASE(hexStrFromInt_test) {
   // This tests the mechanics of toTransportLayerHexInt, which is also used for binary int.
 
