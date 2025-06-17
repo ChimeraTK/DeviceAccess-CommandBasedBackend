@@ -10,9 +10,9 @@
 #include <termios.h> //For termain IO interface
 #include <unistd.h>  //POSIX OS API
 
+#include <cerrno>  //for errno
 #include <chrono>  //Needed for timeout
-#include <cstring> //Used for memset
-#include <errno.h> //for errno
+#include <cstring> //Used for memset, strerrorname_np, strerrordesc_np
 #include <future>  //Needed for timeout
 #include <iomanip>
 #include <iostream>
@@ -130,7 +130,7 @@ namespace ChimeraTK {
     std::string outputBuffer;
     outputBuffer.reserve(nBytesToRead);
     std::string readBuffer(nBytesToRead, '\0');
-    size_t bytesRead;
+    ssize_t bytesRead;
 
     for(size_t totalBytesRead = 0; totalBytesRead < nBytesToRead; totalBytesRead += bytesRead) {
       bytesRead = read(_fileDescriptor, &readBuffer[0], nBytesToRead - totalBytesRead); // unistd::read
@@ -144,15 +144,16 @@ namespace ChimeraTK {
         outputBuffer.append(readBuffer.data(), bytesRead);
 
         // Reset readBuffer for next iteration
-        std::fill(readBuffer.begin(), readBuffer.begin() + bytesRead, '\0');
+        std::fill(readBuffer.begin(),
+            std::next(readBuffer.begin(), static_cast<std::string::difference_type>(bytesRead)), '\0');
       }
       else if(bytesRead == 0) { // read EOF, wait for reconnection.
         usleep(1000);
       }
       else {
-        char errorMsg[256];
-        sprintf(errorMsg, "Read error: %s (%s)", strerrorname_np(errno), strerrordesc_np(errno));
-        throw ChimeraTK::runtime_error(std::string(errorMsg));
+        std::ostringstream errorMsg;
+        errorMsg << "Read error: " << strerrorname_np(errno) << " (" << strerrordesc_np(errno) << ")";
+        throw ChimeraTK::runtime_error(errorMsg.str());
       }
     }
 

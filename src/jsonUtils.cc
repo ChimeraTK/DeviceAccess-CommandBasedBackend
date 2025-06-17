@@ -4,17 +4,16 @@
 #include "jsonUtils.h"
 
 #include <nlohmann/json.hpp>
-#include <unordered_map>
 
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 namespace ChimeraTK {
   /********************************************************************************************************************/
 
-  std::optional<json> caseInsensitiveGetValueOption(
-      const json& j, const std::string& caseInsensitiveKeyString) noexcept {
-    for(auto& [jsonKey, value] : j.items()) {
+  std::optional<json> caseInsensitiveGetValueOption(const json& j, const std::string& caseInsensitiveKeyString) {
+    for(const auto& [jsonKey, value] : j.items()) {
       if(caseInsensitiveStrCompare(jsonKey, caseInsensitiveKeyString)) {
         return value;
       }

@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(testBinary) {
 
   // We're in line mode, so Dummy server is expecting lines. So here we have to use the default delimiter.
   if(DEBUG) {
-    std::cout << "testSerial: sentByteMode" + std::to_string(bytesToRead) << std::endl;
+    std::cout << "testSerial: sentByteMode " + std::to_string(bytesToRead) << std::endl;
   }
   std::string status1 =
       s.sendCommandAndReadBytes("setByteMode " + std::to_string(bytesToRead), 2, CommandHandlerDefaultDelimiter{});

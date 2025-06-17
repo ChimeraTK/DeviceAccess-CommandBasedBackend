@@ -27,13 +27,6 @@ class SerialCommandHandler : public CommandHandler {
 
   ~SerialCommandHandler() override = default;
 
-  std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
-      const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
-      const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) override;
-
-  std::string sendCommandAndReadBytes(
-      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) override;
-
   /**
    * @brief Simply sends the command cmd to the serial port with no readback.
    * @param[in] cmd The command to be sent
@@ -58,6 +51,12 @@ class SerialCommandHandler : public CommandHandler {
       const ReadableDelimiter& delimiter = CommandHandlerDefaultDelimiter{}) const;
 
  protected:
+  std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
+      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) override;
+
+  std::string sendCommandAndReadBytesImpl(
+      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) override;
+
   /**
    * The SerialPort handle
    */

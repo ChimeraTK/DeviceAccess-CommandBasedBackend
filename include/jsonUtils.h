@@ -3,15 +3,16 @@
 #pragma once
 
 #include "stringUtils.h"
-#include <nlohmann/json.hpp>
-#include <type_traits>
-#include <unordered_map>
 
 #include <ChimeraTK/Exception.h>
+
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 using json = nlohmann::json;
@@ -28,7 +29,7 @@ namespace ChimeraTK {
    * @returns an optional of the json-wrapped value.
    */
   [[nodiscard]] std::optional<json> caseInsensitiveGetValueOption(
-      const json& j, const std::string& caseInsensitiveKeyString) noexcept;
+      const json& j, const std::string& caseInsensitiveKeyString);
 
   /********************************************************************************************************************/
   /**
@@ -40,14 +41,14 @@ namespace ChimeraTK {
    */
   template<typename T>
   [[nodiscard]] inline T caseInsensitiveGetValueOr(
-      const json& j, const std::string& caseInsensitiveKeyString, T defaultValue) noexcept {
+      const json& j, const std::string& caseInsensitiveKeyString, T defaultValue) {
     auto optJsonValue = caseInsensitiveGetValueOption(j, caseInsensitiveKeyString);
     return optJsonValue ? optJsonValue->get<T>() : defaultValue;
   }
 
   // Handle the case that a string literal is passed, which would make T = const char*, which get can't take.
   [[nodiscard]] inline std::string caseInsensitiveGetValueOr(
-      const json& j, const std::string& caseInsensitiveKeyString, const char* defaultValue) noexcept {
+      const json& j, const std::string& caseInsensitiveKeyString, const char* defaultValue) {
     return caseInsensitiveGetValueOr(j, caseInsensitiveKeyString, std::string(defaultValue));
   }
 

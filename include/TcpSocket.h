@@ -1,10 +1,9 @@
 // SPDX-FileCopyrightText: Deutsches Elektronen-Synchrotron DESY, MSK, ChimeraTK Project <chimeratk-support@desy.de>
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
-#include <condition_variable>
-
 #include <boost/asio.hpp>
 
+#include <condition_variable>
 #include <iostream>
 #include <mutex>
 #include <string>
@@ -14,7 +13,7 @@ namespace ChimeraTK {
   using AsyncReadFn = std::function<void(boost::asio::ip::tcp::socket&, boost::asio::streambuf&,
       std::function<void(const boost::system::error_code&, std::size_t)>)>;
 
-  constexpr const char TCP_DEFAULT_DELIMITER[] = "\r\n";
+  const std::string TCP_DEFAULT_DELIMITER = "\r\n";
   /**
    * @class TcpSocket
    * @brief A TCP socket wrapper for communication with a specified host and port.
@@ -61,7 +60,7 @@ namespace ChimeraTK {
      * @param[in] timeout the timeout in milliseconds
      * @return The response as a string.
      * @throws ChimeraTK::runtime_error if timeout exceeded.     */
-    std::string readBytesWithTimeout(const size_t nBytesToRead, const std::chrono::milliseconds& timeout);
+    std::string readBytesWithTimeout(size_t nBytesToRead, const std::chrono::milliseconds& timeout);
 
     /**
      * @brief Establishes a connection to the specified host and port.
@@ -103,7 +102,7 @@ namespace ChimeraTK {
      * @param[in] asyncReadFn A lambda wrapping the async read function to be used.
      * @throws ChimeraTK::runtime_error if timeout exceeded.
      */
-    std::string readWithTimeout(const std::chrono::milliseconds& timeout, AsyncReadFn asyncReadFn);
+    std::string readWithTimeout(const std::chrono::milliseconds& timeout, const AsyncReadFn& asyncReadFn);
   };
 
 } // namespace ChimeraTK

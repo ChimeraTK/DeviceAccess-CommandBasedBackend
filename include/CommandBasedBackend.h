@@ -49,7 +49,7 @@ namespace ChimeraTK {
      * @throws ChimeraTK::runtime_error if any line of reply doesn't come before a timeout for that line.
      */
     std::vector<std::string> sendCommandAndRead(
-        const std::string cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
+        const std::string& cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo);
 
     /**
      * @brief Send a single command through and receive a vector (of length nLinesToRead) responses.

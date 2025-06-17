@@ -79,7 +79,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string TcpSocket::readlineWithTimeout(const std::chrono::milliseconds& timeout, const std::string& delimiter) {
-    AsyncReadFn asyncReadFn = [this, delimiter](auto& stream, auto& buffer, auto doOnReadFinish) {
+    AsyncReadFn asyncReadFn = [delimiter](auto& stream, auto& buffer, auto doOnReadFinish) {
       boost::asio::async_read_until(stream, buffer, delimiter, doOnReadFinish);
     };
     return readWithTimeout(timeout, asyncReadFn);
@@ -91,7 +91,7 @@ namespace ChimeraTK {
     if(nBytesToRead == 0) {
       return "";
     }
-    AsyncReadFn asyncReadFn = [this, nBytesToRead](auto& stream, auto& buffer, auto doOnReadFinish) {
+    AsyncReadFn asyncReadFn = [nBytesToRead](auto& stream, auto& buffer, auto doOnReadFinish) {
       boost::asio::async_read(stream, buffer, boost::asio::transfer_exactly(nBytesToRead), doOnReadFinish);
     };
     return readWithTimeout(timeout, asyncReadFn);
@@ -106,7 +106,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::string TcpSocket::readWithTimeout(const std::chrono::milliseconds& timeout, AsyncReadFn asyncReadFn) {
+  std::string TcpSocket::readWithTimeout(const std::chrono::milliseconds& timeout, const AsyncReadFn& asyncReadFn) {
     assert(_opened);
     /*----------------------------------------------------------------------------------------------------------------*/
     // Set a timer, with doOnTimeout executing when it expires.
@@ -147,7 +147,7 @@ namespace ChimeraTK {
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // Extract the data from the streambuf
-    return std::string(std::istreambuf_iterator<char>(&buffer), {});
+    return std::string{std::istreambuf_iterator<char>(&buffer), {}};
   }
 
   /********************************************************************************************************************/

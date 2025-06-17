@@ -36,11 +36,12 @@ namespace ChimeraTK {
         CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfElements,
         size_t elementOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
 
-    [[nodiscard]] bool isReadOnly() const override { return _registerInfo.isReadable() && !isWriteable(); }
+    // Overridden functions should use Impl version if they may ever be called from the constructor.
+    [[nodiscard]] bool isReadOnly() const override { return isReadOnlyImpl(); }
 
-    [[nodiscard]] bool isReadable() const override { return _registerInfo.isReadable(); }
+    [[nodiscard]] bool isReadable() const override { return isReadableImpl(); }
 
-    [[nodiscard]] bool isWriteable() const override { return _registerInfo.isWriteable(); }
+    [[nodiscard]] bool isWriteable() const override { return isWriteableImpl(); }
 
     std::vector<boost::shared_ptr<TransferElement>> getHardwareAccessingElements() override {
       return {TransferElement::shared_from_this()}; // Returns a shared pointer to `this`
@@ -61,6 +62,10 @@ namespace ChimeraTK {
     size_t _numberOfElements;
     size_t _elementOffsetInRegister;
     CommandBasedBackendRegisterInfo _registerInfo;
+
+    [[nodiscard]] bool isReadOnlyImpl() const { return _registerInfo.isReadable() && !isWriteable(); }
+    [[nodiscard]] bool isReadableImpl() const { return _registerInfo.isReadable(); }
+    [[nodiscard]] bool isWriteableImpl() const { return _registerInfo.isWriteable(); }
 
     /**
      *  Flag whether the accessor is used internally to test functionality during open().

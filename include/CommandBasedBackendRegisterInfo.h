@@ -3,10 +3,11 @@
 #pragma once
 
 #include "mapFileKeys.h"
-#include <nlohmann/json.hpp>
 
 #include <ChimeraTK/BackendRegisterInfoBase.h>
 #include <ChimeraTK/DataDescriptor.h>
+
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 #include <memory>
@@ -37,12 +38,12 @@ namespace ChimeraTK {
        * Default=ResponseLinesInfo
        * responseInfo variant type order indicies must match the SendCommandType enum values
        */
-      std::variant<ResponseLinesInfo, ResponseBytesInfo> responseInfo;
-      std::optional<TransportLayerType> transportLayerType = std::nullopt;
+      std::variant<ResponseLinesInfo, ResponseBytesInfo> _responseInfo;
+      std::optional<TransportLayerType> _transportLayerType = std::nullopt;
 
      public:
-      std::string commandPattern = "";
-      std::string responsePattern = "";
+      std::string commandPattern;
+      std::string responsePattern;
       std::string cmdLineDelimiter;
       /*
        * fixedRegexCharacterWidthOpt is the hexidecimal character width of the object to be searched for by the regex
@@ -62,7 +63,7 @@ namespace ChimeraTK {
       bool isSigned = false;
 
       /*--------------------------------------------------------------------------------------------------------------*/
-      InteractionInfo() : responseInfo(ResponseLinesInfo{}) {}
+      InteractionInfo() : _responseInfo(ResponseLinesInfo{}) {}
 
       // Set the entire InteractionInfo from json,
       // transportLayerType is exceptional: it typically needs to be set at all levels before other
@@ -75,36 +76,40 @@ namespace ChimeraTK {
        * For example, if readInfo.isActive() is true, then the register is readable;
        * but if readInfo.isActive is false, then it is write-only.
        */
-      inline bool isActive() const { return not commandPattern.empty(); }
-      inline bool isBinary() const { return _isBinary; }
+      [[nodiscard]] inline bool isActive() const { return not commandPattern.empty(); }
+      [[nodiscard]] inline bool isBinary() const { return _isBinary; }
 
-      inline TransportLayerType getTransportLayerType() const {
+      [[nodiscard]] inline TransportLayerType getTransportLayerType() const {
         if(not hasTransportLayerType()) {
           throw ChimeraTK::logic_error("Attempting to get a TransportLayerType that has not been set");
         }
-        return transportLayerType.value();
+        return _transportLayerType.value();
       }
       /*
        * These getters return the corresponding responceInfo member, if the corresponding
        * SendCommandType is used, otherwise return nullopt.
        */
-      std::optional<size_t> getResponseNLines() const noexcept;
-      std::optional<std::string> getResponseLinesDelimiter() const noexcept;
-      std::optional<size_t> getResponseBytes() const noexcept;
+      [[nodiscard]] std::optional<size_t> getResponseNLines() const noexcept;
+      [[nodiscard]] std::optional<std::string> getResponseLinesDelimiter() const noexcept;
+      [[nodiscard]] std::optional<size_t> getResponseBytes() const noexcept;
 
       /*
        * These set the struct members if responceInfo is already in the corresponding
        * SendCommandType, otherwise they destructively set the SendCommandType,
        * overwriting responseInfo, and then set the struct members.
        */
-      void setResponseDelimiter(std::string delimiter) noexcept;
-      void setResponseNLines(size_t nLines) noexcept;
-      void setResponseBytes(size_t nBytes) noexcept { responseInfo = ResponseBytesInfo{nBytes}; }
+      void setResponseDelimiter(std::string delimiter);
+      void setResponseNLines(size_t nLines);
+      void setResponseBytes(size_t nBytes) { _responseInfo = ResponseBytesInfo{nBytes}; }
       void setTransportLayerType(TransportLayerType& type) noexcept;
 
-      inline bool usesReadLines() const { return std::holds_alternative<ResponseLinesInfo>(responseInfo); }
-      inline bool usesReadBytes() const { return std::holds_alternative<ResponseBytesInfo>(responseInfo); }
-      inline bool hasTransportLayerType() const { return transportLayerType.has_value(); }
+      [[nodiscard]] inline bool usesReadLines() const {
+        return std::holds_alternative<ResponseLinesInfo>(_responseInfo);
+      }
+      [[nodiscard]] inline bool usesReadBytes() const {
+        return std::holds_alternative<ResponseBytesInfo>(_responseInfo);
+      }
+      [[nodiscard]] inline bool hasTransportLayerType() const { return _transportLayerType.has_value(); }
       /*--------------------------------------------------------------------------------------------------------------*/
      protected:
       bool _isBinary = false;
@@ -131,12 +136,12 @@ namespace ChimeraTK {
 
     ~CommandBasedBackendRegisterInfo() override = default;
 
-    [[nodiscard]] inline RegisterPath getRegisterName() const override { return registerPath; }
-
     CommandBasedBackendRegisterInfo& operator=(const CommandBasedBackendRegisterInfo& other) = default;
 
-    [[nodiscard]] inline unsigned int getNumberOfElements() const override { return nElements; }
-    [[nodiscard]] inline unsigned int getNumberOfChannels() const override { return nChannels; }
+    // An Impl versions must be used internally, for anything that might be used by the constructor.
+    [[nodiscard]] inline RegisterPath getRegisterName() const override { return getRegisterNameImpl(); }
+    [[nodiscard]] inline unsigned int getNumberOfElements() const override { return getNumberOfElementsImpl(); }
+    [[nodiscard]] inline unsigned int getNumberOfChannels() const override { return getNumberOfChannelsImpl(); }
     [[nodiscard]] inline const DataDescriptor& getDataDescriptor() const override { return dataDescriptor; }
     [[nodiscard]] inline bool isReadable() const override { return readInfo.isActive(); }
     [[nodiscard]] inline bool isWriteable() const override { return writeInfo.isActive(); }
@@ -153,6 +158,11 @@ namespace ChimeraTK {
     InteractionInfo writeInfo;
 
     DataDescriptor dataDescriptor;
+
+   protected:
+    [[nodiscard]] inline RegisterPath getRegisterNameImpl() const { return registerPath; }
+    [[nodiscard]] inline unsigned int getNumberOfElementsImpl() const { return nElements; }
+    [[nodiscard]] inline unsigned int getNumberOfChannelsImpl() const { return nChannels; }
   }; // end CommandBasedBackendRegisterInfo
 
   // Operators for cout:
