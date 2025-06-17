@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
     std::vector<std::tuple<uint16_t, size_t, std::string>> fixedWidthEqualSizeTestCases = {
         {0, 1, ZERO_STR},
         {0x11, 1, "\x11"},
-        {0x7B, 1, "\x7B"}, // Use leading 7 so the signed case doesn't prepend \x00
+        {0x7B, 1, "\x7B"}, // NOLINT(modernize-raw-string-literal) Use leading 7 so the signed case doesn't prepend \x00
         {0x7BCD, 2, "\x7B\xCD"},
         {std::numeric_limits<uint16_t>::max(), 2, "\xFF\xFF"},
     };
@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
     std::vector<std::pair<uint16_t, std::string>> fixedWidthTestCases = {
         {0, ZERO_STR},
         {5, "\x05"},
-        {0x7B, "\x7B"},
+        {0x7B, "\x7B"}, // NOLINT(modernize-raw-string-literal)
         {0xABC, "\x0A\xBC"},
         {0x7BCD, "\x7B\xCD"},
     };
@@ -510,7 +510,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
     std::vector<std::pair<uint16_t, std::string>> fixedWidthTestCases = {
         {0, ZERO_STR},
         {5, "\x05"},
-        {0x7B, "\x7B"},
+        {0x7B, "\x7B"}, // NOLINT(modernize-raw-string-literal)
         {0xABC, "\x0A\xBC"},
         {0x7BCD, "\x7B\xCD"},
     };
@@ -590,7 +590,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
         {0x8000000000000000, std::string("\x80\x00\x00\x00\x00\x00\x00\x00", nBytes)},
         {0x7BCD, "\x7B\xCD"},
         {0xABC, "\x0A\xBC"},
-        {0x7B, "\x7B"},
+        {0x7B, "\x7B"}, // NOLINT(modernize-raw-string-literal)
         {5, "\x05"},
         {0, ZERO_STR},
     };
@@ -927,7 +927,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
         {"", 0},          // Case: trivial
     };
     for(const auto& [inputStr, ans] : testCases) {
-      uint16_t test = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + inputStr);
+      auto test = ChimeraTK::userTypeToUserType<uint16_t, std::string>("0x" + inputStr);
       BOOST_CHECK_EQUAL(test, ans);
 
       BOOST_CHECK_EQUAL(intFromBinaryStr<uint16_t>(binaryStrFromHexStr(inputStr)).value_or(-1), ans);
@@ -938,7 +938,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
   // TODO
   // Why do we even have the above?
   // Why do we bother with the combination of intFromBinaryStr<int16_t>(binaryStrFromHexStr when we have the
-  // userTypeToUserType for hex? Why not break this off into a different
+  // userTypeToUserType for hex? Why not break this off into a different test
 
   // Signed int cases:
   { // int16
@@ -963,13 +963,13 @@ BOOST_AUTO_TEST_CASE(floatBinary_test) {
   // binary. Check that each round trip works.
   std::string b, b2, h;
 
-  std::vector<float> floatTestCases = {0.f, 0.25, -0.25, FLT_MAX, FLT_TRUE_MIN, FLT_EPSILON};
+  std::vector<float> floatTestCases = {0.F, 0.25, -0.25, FLT_MAX, FLT_TRUE_MIN, FLT_EPSILON};
   for(float f : floatTestCases) {
     b = binaryStrFromFloat(f);
-    float f2 = floatFromBinaryStr<float>(b).value_or(-1.f);
+    float f2 = floatFromBinaryStr<float>(b).value_or(-1.F);
     h = hexStrFromFloat(f);
     b2 = binaryStrFromHexStr(h);
-    float f3 = floatFromBinaryStr<float>(b2).value_or(-1.f);
+    float f3 = floatFromBinaryStr<float>(b2).value_or(-1.F);
     BOOST_CHECK_EQUAL(f, f2);
     BOOST_CHECK_EQUAL(f, f3);
   }

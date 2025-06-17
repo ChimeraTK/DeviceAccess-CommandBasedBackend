@@ -10,7 +10,7 @@
 
 #include <boost/process.hpp>
 
-#include <signal.h>
+#include <csignal>
 
 #include <iostream>
 #include <sstream>
@@ -149,7 +149,7 @@ void DummyServer::mainLoop() {
 
       if(_debug) {
         std::cout << "DummyServer: rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
-        if(data.size() == 0) {
+        if(data.empty()) {
           std::cout << "DummyServer: WARNING: This may indication that a delimiter was incorrectly appended to the "
                        "previous command."
                     << std::endl;
@@ -321,7 +321,7 @@ void DummyServer::mainLoop() {
           sendDelimited("12347 Syntax error in argument: " + data.substr(4));
         }
       }
-      else if(data.find("\u0007") == 0) {
+      else if(data.find('\u0007') == 0) {
         if(_debug) {
           std::cout << "DummyServer: register 0007" << std::endl;
         }
@@ -371,7 +371,7 @@ void DummyServer::mainLoop() {
       }
       std::string data = readValue.value();
 
-      if((data.find("\x10") == 0)) { // go back to line mode
+      if((data.find('\x10') == 0)) { // go back to line mode
                                      // this exercises sending bytes and reading lines
         if(_debug) {
           std::cout << "DummyServer: Registering x10 setLineMode?" << std::endl;

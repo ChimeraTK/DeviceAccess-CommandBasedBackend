@@ -12,9 +12,8 @@
 namespace ChimeraTK {
   /********************************************************************************************************************/
 
-  std::optional<json> caseInsensitiveGetValueOption(
-      const json& j, const std::string& caseInsensitiveKeyString) noexcept {
-    for(auto& [jsonKey, value] : j.items()) {
+  std::optional<json> caseInsensitiveGetValueOption(const json& j, const std::string& caseInsensitiveKeyString) {
+    for(const auto& [jsonKey, value] : j.items()) {
       if(caseInsensitiveStrCompare(jsonKey, caseInsensitiveKeyString)) {
         return value;
       }
