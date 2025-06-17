@@ -10,8 +10,14 @@ using namespace boost::unit_test_framework;
 
 #include <string>
 
+/**********************************************************************************************************************/
+
+constexpr bool DEBUG = false;
+
+/**********************************************************************************************************************/
+
 struct SerialCommandHandlerFixture {
-  DummyServer dummy;
+  DummyServer dummy{true, DEBUG};
   SerialCommandHandler s;
 
   SerialCommandHandlerFixture() : s(dummy.deviceNode) {}
@@ -133,16 +139,31 @@ BOOST_AUTO_TEST_CASE(testBinary) {
   int bytesToRead = 11;                   // Must be >= 11 because "setLineMode" is 11 characters long
 
   // We're in line mode, so Dummy server is expecting lines. So here we have to use the default delimiter.
+  if(DEBUG) {
+    std::cout << "testSerial: sentByteMode" + std::to_string(bytesToRead) << std::endl;
+  }
   std::string status1 =
       s.sendCommandAndReadBytes("setByteMode " + std::to_string(bytesToRead), 2, CommandHandlerDefaultDelimiter{});
 
+  if(DEBUG) {
+    std::cout << "testSerial: sentByteMode returned" << std::endl;
+  }
   // send pure bytes, receive bytes
   std::string packet = "0123456789A"; // 11 bytes.
+  if(DEBUG) {
+    std::cout << "testSerial: send cmd" << std::endl;
+  }
   std::string echo = s.sendCommandAndReadBytes(packet, bytesToRead);
 
   // Send bytes with a special command (so NoDelimter on write) to switch back to line mode.
   // The reply comes back line delimited.
+  if(DEBUG) {
+    std::cout << "testSerial: cmd returned, setLineMode" << std::endl;
+  }
   std::string status2 = s.sendCommandAndReadLines("setLineMode", 1, NoDelimiter{})[0];
+  if(DEBUG) {
+    std::cout << "testSerial: setLineMode returned" << std::endl;
+  }
 
   BOOST_TEST(status1 == "ok");
   BOOST_TEST(echo == packet);

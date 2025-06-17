@@ -15,8 +15,14 @@ using namespace boost::unit_test_framework;
 
 #include <iostream>
 
+/**********************************************************************************************************************/
+
+constexpr bool DEBUG = false;
+
+/**********************************************************************************************************************/
+
 struct TestFixture {
-  DummyServer dummyServer{true, true};
+  DummyServer dummyServer{true, DEBUG};
   ChimeraTK::Device device;
 
   TestFixture() : device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)") { device.open(); }
@@ -43,10 +49,16 @@ BOOST_AUTO_TEST_CASE(testBinFloat) {
   auto accessor = device.getScalarRegisterAccessor<float>("/binFloatTest");
   auto byteModeAccessor = device.getScalarRegisterAccessor<uint32_t>("/setByteMode");
 
+  if(DEBUG) {
+    std::cout << "testBinary: testBinFloat. write 9" << std::endl;
+  }
   // Put the Dummy in binary mode, and have it read 9 bytes
   byteModeAccessor = 9;
   byteModeAccessor.write();
 
+  if(DEBUG) {
+    std::cout << "testBinary: testBinFloat. write 2.5" << std::endl;
+  }
   float fIn = 2.5;
   accessor = fIn;
   accessor.write(); // runs //No accompanying signal from Dummy server showing it ever got the signal. This reg. has no
@@ -54,11 +66,21 @@ BOOST_AUTO_TEST_CASE(testBinFloat) {
 
   // Now the Dummy server puts its self back into line mode, but we're going to read bytes back:
   // Configure it to read the 5 byte read command
+  if(DEBUG) {
+    std::cout << "testBinary: testBinFloat. write 5" << std::endl;
+  }
   byteModeAccessor = 5;
   byteModeAccessor.write();
 
+  if(DEBUG) {
+    std::cout << "testBinary: testBinFloat. read" << std::endl;
+  }
   accessor.read();
   // Now the Dummy server puts its self back into line mode
+
+  if(DEBUG) {
+    std::cout << "testBinary: testBinFloat. done" << std::endl;
+  }
   float fOut = accessor;
   BOOST_CHECK_EQUAL(fIn, fOut);
 }
@@ -67,8 +89,14 @@ BOOST_AUTO_TEST_CASE(testBinFloat) {
 
 BOOST_AUTO_TEST_CASE(testReadStatus) {
   auto accessor = device.getScalarRegisterAccessor<uint32_t>("/controllerReadyStatus");
+  if(DEBUG) {
+    std::cout << "testBinary: testReadStatus. Send read" << std::endl;
+  }
 
   accessor.read();
+  if(DEBUG) {
+    std::cout << "testBinary: read returned" << std::endl;
+  }
   uint32_t out = accessor;
   BOOST_CHECK_EQUAL(out, 0xB0);
 }
@@ -76,17 +104,32 @@ BOOST_AUTO_TEST_CASE(testReadStatus) {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testULog) {
+  if(DEBUG) {
+    std::cout << "testBinary: testULog write" << std::endl;
+  }
   auto byteModeAccessor = device.getScalarRegisterAccessor<uint32_t>("/setByteMode");
   auto uLogAccessor = device.getScalarRegisterAccessor<uint32_t>("/uLog");
   uint32_t w = 8;
   byteModeAccessor = w;
+  if(DEBUG) {
+    std::cout << "testBinary: testULog write 8" << std::endl;
+  }
   byteModeAccessor.write();
+  if(DEBUG) {
+    std::cout << "testBinary: testULog write 999" << std::endl;
+  }
 
   uint32_t in = 999;
   uLogAccessor = in;
   uLogAccessor.write();
   // The Dummy server stays in binary mode after this write, and will again look to read 8 bytes.
+  if(DEBUG) {
+    std::cout << "testBinary: testULog read" << std::endl;
+  }
   uLogAccessor.read();
+  if(DEBUG) {
+    std::cout << "testBinary: testULog done" << std::endl;
+  }
   uint32_t out = uLogAccessor;
   BOOST_CHECK_EQUAL(in, out);
 }
