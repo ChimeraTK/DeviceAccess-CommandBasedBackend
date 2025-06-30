@@ -2,55 +2,127 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
-// Each of these will take in a std::string of the hexidecimal representation of data, and return the hex representation
-// of the checksum.
-std::string CheckSum8(std::string binData);
-std::string CheckSum32(std::string binData);
-std::string CheckSumSha256(std::string binData);
-std::string CheckSumCrcCcit(std::string binData);
+#include <algorithm>
+#include <cctype>
+#include <functional>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-// The common denominator is a list of values
-// ok, make your life easier:
-//   initial validation: See if there's a constant odd number of characters, and if so, throw logic_error
-//   at run time, if the number of characters is odd, throw a runtime error.
-//   so no left/right packign mess
-//   and no nesting: inital validation prevents all insertions inside other start-stop phrases.
+/**
+ * Copy-paste the daughters of AutoRegisteredChecksum in the .cc file to add more checksum types.
+ *
+ * Application:
+ * std::string binData = binaryStrFromHexStr(hexData, padLeft); //If you are starting from a string of hexidecimal
+ * std::string checksumTag = "myChecksum"; // configuration, case insensitive
+ * auto checksumer = makeChecksumer(checksumTag);
+ * std::string hexidecimalChecksumResult = (*checksumer)(binData);
+ */
 
-// How to get the bytes from binData? leftPad? RighPad? throw?
+/**
+ * @brief Abstract base class for checksum calculators.
+ * Each derived class must implement the checksum calculation operator and provide a name.
+ */
+class Checksum {
+ public:
+  virtual ~Checksum() = default;
+  virtual std::string operator()(const std::string data) const = 0;
+  virtual std::string name() const = 0; // Stored case sensitive, but evaluated case insensitive.
+                                        // static std::string staticName() is also required for each implementation.
+};
 
-// CheckSum(std::string hexData, CheckSumEnum whichCheckSum);
+/**********************************************************************************************************************/
 
-//////////////////////////////////
-// Decision: do one-pass only. Then it's easier to check too. Save nested checksums for a later implementation
-// ok, so the register info is going to have a vector of some sort of checksum thing T[]
-// Startup time
-//   screen the validity of the pattern,
-//   There is no execution order.
-//
-// Run time:
-// first we inja the data into the string.
-// next, we want to locathe the places where all the checksums start and end locations are to go. This is to produce a
-// bunch of substrings Then we process them through the corresponding checksum. Then we put the resulting checksums back
-// through inja to get the result
+inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name);
 
-//////////////////////////////////
-// Multi-pass design
-// Startup time
-//   screen the validity of the pattern,
-//   determin the order of execution. For now, just make the user do it, but leave space for reordering in the form of
-//   an array of indicies. may determin whether to do a single pass or a multi-pass.
-//
-// Run time:
-// first we inja the data into the string.
-// next, we want to locathe the places where all the checksums start and end locations are to go. This is to produce a listing of
-// We fill in the first one, levaing all others blank. We
-// we need the order in which to insert the checksums, and to make sure they make sense:
-//   the checksum cannot be within its own start-end range.
-//   Why not just make the user do it, such that 0 is the location of the first one to be evaluated, 1 is the next one, etc.
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
+/**********************************************************************************************************************/
 
-// Then we're locating where the
-// We can then reinterpret the checksums as processors, that take data in the process, and itteratively apply it.
+/**
+ * @brief Singleton factory for creating checksum implementations by name.
+ * This class maintains a registry of available checksum types,
+ * and allows creation based on string names (case-insensitive).
+ */
+class ChecksumFactory {
+ public:
+  using ChecksumCreator = std::function<std::unique_ptr<Checksum>()>;
 
-// and then, we want to have a checksum comparison, so in addition to CsStart.0, CsEnd.0, Cs.0, we need CsCheckStart.0,
-// CsCheckEnd.0 So we only use Cs.0 on write, and only use CsCheck on readback. CsStart..CsEnd cannot contain a Cs.0,
-// CsCheckStart, or Cs.CheckEnd.
+  /**
+   * @brief Get the singleton instance of the factory.
+   * @return Reference to the static ChecksumFactory instance.
+   */
+  static ChecksumFactory& getStaticInstance() {
+    static ChecksumFactory instance;
+    return instance;
+  }
+
+  /**
+   * @brief Register a new checksum type with a name.
+   * @param name Name of the checksum (case-insensitive).
+   * @param creator Function that creates a new instance of the checksum.
+   * @throws ChimeraTK::logic_error if the name is already registered.
+   */
+  void registerChecksumer(const std::string& name, ChecksumCreator creator);
+
+  /**
+   * @brief Create a checksum instance by name.
+   * @param name Case-insensitive name of the checksum.
+   * @return A unique pointer to the checksum implementation.
+   * @throws ChimeraTK::logic_error if the name is not found.
+   */
+  std::unique_ptr<Checksum> makeChecksumer(const std::string& name) const;
+
+ private:
+  std::unordered_map<std::string, ChecksumCreator> _registry;
+};
+
+/**********************************************************************************************************************/
+
+/**
+ * @brief CRTP base class for automatic registration of checksum implementations.
+ *
+ * Derived classes must implement:
+ * - static std::string staticName();
+ * - the checksum operator()
+ * - the name() method (typically returning staticName())
+ *
+ * The constructor of this class automatically registers the derived class
+ * with the ChecksumFactory under its staticName.
+ *
+ * @tparam Derived The derived checksum class.
+ */
+template<typename Derived>
+class AutoRegisteredChecksum : public Checksum {
+ protected:
+  AutoRegisteredChecksum() {
+    /*
+     * This line ensures that the actual type of the class being defined (*this) is exactly equal to the Derived
+     * template argument. It protect from copy-paste mistakes in derrived class signitures like class XorChecksum :
+     * public AutoRegisteredChecksum<XorChecksum> So that the first and second instance of the term XorChecksum must
+     * match.
+     */
+    static_assert(std::is_same<Derived, std::decay_t<decltype(*this)>>::value,
+        "CRTP misused: Derived type doesn't match class definition.");
+
+    // Verify that Derived inherits from AutoRegisteredChecksum
+    static_assert(std::is_base_of<AutoRegisteredChecksum<Derived>, Derived>::value,
+        "CRTP misused: class must inherit AutoRegisteredChecksum<ExactSameType>");
+  }
+
+ private:
+  struct ChecksumerRegistrar {
+    ChecksumerRegistrar() {
+      ChecksumFactory::getStaticInstance().registerChecksumer(
+          Derived::staticName(), [] { return std::make_unique<Derived>(); });
+    }
+  };
+  static inline ChecksumerRegistrar _registrar;
+};
+
+/**********************************************************************************************************************/
+
+inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name) {
+  return ChecksumFactory::getStaticInstance().makeChecksumer(name);
+}
