@@ -11,7 +11,7 @@
 #include <cctype>
 //#include <openssl/sha.h>
 #include <boost/crc.hpp>
-
+#include <iostream> //DEBUG
 #include <optional>
 
 // Implementations of checksum classes below. Just copy-paste classes to make a new one since they register themselves.
@@ -102,15 +102,27 @@ void ChecksumFactory::registerChecksumer(const std::string& name, ChecksumCreato
   if(_registry.count(lowerName) != 0) {
     throw ChimeraTK::logic_error("Checksum name already registered: " + lowerName);
   }
+  std::cout<<"Registering "<<lowerName <<std::endl;
   _registry[lowerName] = std::move(creator);
 }
 
 /**********************************************************************************************************************/
 
 std::unique_ptr<Checksum> ChecksumFactory::makeChecksumer(const std::string& name) const {
-  auto it = _registry.find(toLowerCase(name));
+  std::string lowerName = toLowerCase(name);
+  auto it = _registry.find(lowerName );
+  std::cout<<"Attempting to fetch "<<lowerName <<std::endl;
   if(it == _registry.end()) {
     throw ChimeraTK::logic_error("Unknown checksum: " + name);
   }
   return it->second();
+}
+
+/**********************************************************************************************************************/
+
+/*
+ * This needs to be in the .cc file after all of the AutoRegisteredChecksum child classes in oder for the t
+ */
+std::unique_ptr<Checksum> makeChecksumer(const std::string& name) {
+  return ChecksumFactory::getStaticInstance().makeChecksumer(name);
 }

@@ -34,7 +34,7 @@ class Checksum {
 
 /**********************************************************************************************************************/
 
-inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name);
+std::unique_ptr<Checksum> makeChecksumer(const std::string& name);
 
 /**********************************************************************************************************************/
 /**********************************************************************************************************************/
@@ -120,9 +120,3 @@ class AutoRegisteredChecksum : public Checksum {
   };
   static inline ChecksumerRegistrar _registrar;
 };
-
-/**********************************************************************************************************************/
-
-inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name) {
-  return ChecksumFactory::getStaticInstance().makeChecksumer(name);
-}
