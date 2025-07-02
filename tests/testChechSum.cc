@@ -29,25 +29,25 @@ BOOST_AUTO_TEST_CASE(testCheckSum8) {
   bool padLeft = true;
   std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
   checksumFunction checksum = getChecksumer("CS8");
-  std::string CsOutHex = checksum(binInput); // comes out 9E
-  std::string CsAnsHex = "DC";
-
-  // CS8 xor: F2
-  // CS8 mod 256: DC
-  // CS2 2's compliment: 24
+    // Our function is summing the bytes and taking the mod. 
+  std::string CsOutHex = checksum(binInput); 
+  std::string CsAnsHex = "9E";
+  // CS8 xor: 9A
+  // CS8 mod 256: 9E
+  // CS2 2's compliment: 62
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
 
-/*BOOST_AUTO_TEST_CASE(testCheckSum32) {
+BOOST_AUTO_TEST_CASE(testCheckSum32) {
     std::string hexInput = "3132A33B343C5363D738EF39";
     bool padLeft = true;
     std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
     checksumFunction checksum = getChecksumer("CS32");
     std::string CsOutHex = checksum(binInput);
-    std::string CsAnsHex = "";
+    std::string CsAnsHex = "0000049E";
 
     BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
-}*/
+}
 
 BOOST_AUTO_TEST_CASE(testCheckSumCrcCcit16) {
   // https://codebeautify.org/checksum-calculator
