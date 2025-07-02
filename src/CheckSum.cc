@@ -20,7 +20,7 @@
 
 /**********************************************************************************************************************/
 
-class CheckSum8 : public AutoRegisteredChecksum<CheckSum8> {
+class Checksum8 : public Checksum {
  public:
   static std::string staticName() { return "cs8"; }
   std::string name() const override { return staticName(); }
@@ -33,10 +33,11 @@ class CheckSum8 : public AutoRegisteredChecksum<CheckSum8> {
     return hexStrFromInt<uint8_t>(sum, WidthOption::TYPE_WIDTH).value();
   }
 };
+static ChecksumRegistrar<Checksum8> regCs8; //registration
 
 /**********************************************************************************************************************/
 
-class CheckSum32 : public AutoRegisteredChecksum<CheckSum32> {
+class Checksum32 : public Checksum {
  public:
   static std::string staticName() { return "cs32"; }
   std::string name() const override { return staticName(); }
@@ -49,10 +50,11 @@ class CheckSum32 : public AutoRegisteredChecksum<CheckSum32> {
     return hexStrFromInt<uint32_t>(sum, WidthOption::TYPE_WIDTH).value();
   }
 };
+static ChecksumRegistrar<Checksum32> regCs32; //registration
 
 /**********************************************************************************************************************/
 
-class CheckSumCrcCcit16 : public AutoRegisteredChecksum<CheckSumCrcCcit16> {
+class ChecksumCrcCcit16 : public Checksum {
  public:
   static std::string staticName() { return "CrcCcit16"; }
   std::string name() const override { return staticName(); }
@@ -64,10 +66,11 @@ class CheckSumCrcCcit16 : public AutoRegisteredChecksum<CheckSumCrcCcit16> {
     return hexStrFromInt<uint16_t>(result, WidthOption::TYPE_WIDTH).value();
   }
 };
+static ChecksumRegistrar<ChecksumCrcCcit16> regCc16; //registration
 
 /**********************************************************************************************************************/
 
-/*class CheckSumSha256: public AutoRegisteredChecksum<CheckSumSha256> {
+/*class ChecksumSha256: public Checksum {
 public:
     static std::string staticName() { return "SHA256"; }
     std::string name() const override { return staticName(); }
@@ -83,7 +86,9 @@ char*>(&result[0])
         return hexStrFromBinaryStr(result);
     }
 
-};*/
+};
+static ChecksumRegistrar<ChecksumSha256> regSha256; //registration
+*/
 
 // Add more checksum classes here
 
@@ -118,11 +123,3 @@ std::unique_ptr<Checksum> ChecksumFactory::makeChecksumer(const std::string& nam
   return it->second();
 }
 
-/**********************************************************************************************************************/
-
-/*
- * This needs to be in the .cc file after all of the AutoRegisteredChecksum child classes in oder for the t
- */
-std::unique_ptr<Checksum> makeChecksumer(const std::string& name) {
-  return ChecksumFactory::getStaticInstance().makeChecksumer(name);
-}

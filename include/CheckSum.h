@@ -34,7 +34,7 @@ class Checksum {
 
 /**********************************************************************************************************************/
 
-std::unique_ptr<Checksum> makeChecksumer(const std::string& name);
+inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name);
 
 /**********************************************************************************************************************/
 /**********************************************************************************************************************/
@@ -80,43 +80,17 @@ class ChecksumFactory {
 
 /**********************************************************************************************************************/
 
-/**
- * @brief CRTP base class for automatic registration of checksum implementations.
- *
- * Derived classes must implement:
- * - static std::string staticName();
- * - the checksum operator()
- * - the name() method (typically returning staticName())
- *
- * The constructor of this class automatically registers the derived class
- * with the ChecksumFactory under its staticName.
- *
- * @tparam Derived The derived checksum class.
- */
-template<typename Derived>
-class AutoRegisteredChecksum : public Checksum {
- protected:
-  AutoRegisteredChecksum() {
-    /*
-     * This line ensures that the actual type of the class being defined (*this) is exactly equal to the Derived
-     * template argument. It protect from copy-paste mistakes in derrived class signitures like class XorChecksum :
-     * public AutoRegisteredChecksum<XorChecksum> So that the first and second instance of the term XorChecksum must
-     * match.
-     */
-    static_assert(std::is_same<Derived, std::decay_t<decltype(*this)>>::value,
-        "CRTP misused: Derived type doesn't match class definition.");
-
-    // Verify that Derived inherits from AutoRegisteredChecksum
-    static_assert(std::is_base_of<AutoRegisteredChecksum<Derived>, Derived>::value,
-        "CRTP misused: class must inherit AutoRegisteredChecksum<ExactSameType>");
-  }
-
- private:
-  struct ChecksumerRegistrar {
-    ChecksumerRegistrar() {
-      ChecksumFactory::getStaticInstance().registerChecksumer(
-          Derived::staticName(), [] { return std::make_unique<Derived>(); });
+//Helper template for concise registration
+template<typename T>
+struct ChecksumRegistrar {
+    ChecksumRegistrar() {
+        ChecksumFactory::getStaticInstance().registerChecksumer(
+            T::staticName(), [] { return std::make_unique<T>(); });
     }
-  };
-  static inline ChecksumerRegistrar _registrar;
 };
+
+/**********************************************************************************************************************/
+
+inline std::unique_ptr<Checksum> makeChecksumer(const std::string& name) {
+  return ChecksumFactory::getStaticInstance().makeChecksumer(name);
+}
