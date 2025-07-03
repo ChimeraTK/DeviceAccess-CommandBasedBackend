@@ -13,8 +13,8 @@
 #include <boost/crc.hpp>
 
 #include <iostream> //DEBUG
+#include <memory>   // For std::unique_ptr
 #include <optional>
-//#include <memory>   // For std::unique_ptr
 
 // First put the hex through
 // std::string binData = binaryStrFromHexStr(hexData, padLeft);
@@ -58,104 +58,20 @@ static const checksumFunction checksumCrcCcit16 = [](const std::string binData) 
 /**********************************************************************************************************************/
 
 static const checksumFunction checksumSha256 = [](const std::string binData) -> std::string {
-  std::string result;
-  result.resize(SHA256_DIGEST_LENGTH);
-
-  EVP_MD_CTX* ctx = EVP_MD_CTX_new();
-  if(ctx == nullptr) {
+  std::string binResult(SHA256_DIGEST_LENGTH, '\0');
+  std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), &EVP_MD_CTX_free);
+  if(not ctx) {
     throw ChimeraTK::runtime_error("Failed to create EVP_MD_CTX");
   }
 
-  if(EVP_DigestInit_ex(ctx, EVP_sha256(), nullptr) != 1 || EVP_DigestUpdate(ctx, binData.data(), binData.size()) != 1 ||
-      EVP_DigestFinal_ex(ctx, reinterpret_cast<unsigned char*>(&result[0]), nullptr) != 1) {
-    EVP_MD_CTX_free(ctx);
+  if(EVP_DigestInit_ex(ctx.get(), EVP_sha256(), nullptr) != 1 ||
+      EVP_DigestUpdate(ctx.get(), binData.data(), binData.size()) != 1 ||
+      EVP_DigestFinal_ex(ctx.get(), reinterpret_cast<unsigned char*>(&binResult[0]), nullptr) != 1) {
     throw ChimeraTK::runtime_error("SHA256 computation failed");
   }
 
-  EVP_MD_CTX_free(ctx);
-  return hexStrFromBinaryStr(result);
+  return hexStrFromBinaryStr(binResult);
 };
-
-/*
-static const checksumFunction checksumSha256 = [](const std::string binData) -> std::string {
-    // SHA256_DIGEST_LENGTH is typically 32 bytes
-    // We can still use this macro from openssl/sha.h or define 32 directly
-    std::string result_binary(SHA256_DIGEST_LENGTH, '\0');
-    unsigned int md_len = 0; // To store the actual length written by EVP_DigestFinal_ex
-
-    // 1. Create a message digest context
-    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-    if (mdctx == nullptr) {
-        // Handle error: could not create context
-        throw std::runtime_error("Failed to create EVP_MD_CTX");
-    }
-
-    // 2. Initialize the digest operation for SHA256
-    // EVP_sha256() returns the EVP_MD structure for SHA256
-    if (1 != EVP_DigestInit_ex(mdctx, EVP_sha256(), nullptr)) {
-        EVP_MD_CTX_free(mdctx); // Ensure cleanup on error
-        throw std::runtime_error("Failed to initialize SHA256 digest");
-    }
-
-    // 3. Update the digest with the input data
-    if (1 != EVP_DigestUpdate(mdctx, binData.c_str(), binData.length())) {
-        EVP_MD_CTX_free(mdctx); // Ensure cleanup on error
-        throw std::runtime_error("Failed to update SHA256 digest");
-    }
-
-    // 4. Finalize the digest operation and get the result
-    // The hash bytes are written directly into result_binary.data()
-    if (1 != EVP_DigestFinal_ex(mdctx, reinterpret_cast<unsigned char*>(result_binary.data()), &md_len)) {
-        EVP_MD_CTX_free(mdctx); // Ensure cleanup on error
-        throw std::runtime_error("Failed to finalize SHA256 digest");
-    }
-
-    // 5. Clean up the context
-    EVP_MD_CTX_free(mdctx);
-
-    // Verify the length (optional but good for debugging/robustness)
-    if (md_len != SHA256_DIGEST_LENGTH) {
-        throw std::runtime_error("SHA256 digest length mismatch");
-    }
-
-    return hexStrFromBinaryStr(result_binary);
-};
-*/
-
-/*static const checksumFunction checksumSha256 = [](const std::string binData) -> std::string {
-    std::string result_binary(SHA256_DIGEST_LENGTH, '\0');
-    unsigned int md_len = 0;
-
-    // Use std::unique_ptr with our custom deleter for automatic resource management
-    // The mdctx will be automatically freed when it goes out of scope.
-    std::unique_ptr<EVP_MD_CTX, EVP_MD_CTX_Deleter> mdctx(EVP_MD_CTX_new());
-    if (!mdctx) { // Check if allocation failed
-        throw ChimeraTK::runtime_error("Failed to create EVP_MD_CTX");
-    }
-
-    // Initialize the digest operation for SHA256
-    // Use mdctx.get() to pass the raw pointer to OpenSSL functions
-    if (1 != EVP_DigestInit_ex(mdctx.get(), EVP_sha256(), nullptr)) {
-        throw ChimeraTK::runtime_error("Failed to initialize SHA256 digest");
-    }
-
-    // Update the digest with the input data
-    if (1 != EVP_DigestUpdate(mdctx.get(), binData.c_str(), binData.length())) {
-        throw ChimeraTK::runtime_error("Failed to update SHA256 digest");
-    }
-
-    // Finalize the digest operation and get the result
-    if (1 != EVP_DigestFinal_ex(mdctx.get(), reinterpret_cast<unsigned char*>(result_binary.data()), &md_len)) {
-        throw ChimeraTK::runtime_error("Failed to finalize SHA256 digest");
-    }
-
-    // Verify the length (optional but good for robustness)
-    if (md_len != SHA256_DIGEST_LENGTH) {
-        throw ChimeraTK::runtime_error("SHA256 digest length mismatch");
-    }
-
-    return hexStrFromBinaryStr(result_binary);
-};*/
 
 // Add more checksum functions here
 
