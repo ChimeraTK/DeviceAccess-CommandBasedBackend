@@ -24,6 +24,7 @@ find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
 #find_package(nlohmann_json 03.07.0 REQUIRED) 
 
 find_package(inja 03.04.0 REQUIRED)
+find_package(OpenSSL 3.0 REQUIRED) 
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 file(GLOB_RECURSE headers "${CMAKE_SOURCE_DIR}/include/*")
@@ -32,7 +33,7 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/src library_sources)
 
 add_library(${PROJECT_NAME} SHARED ${library_sources} ${headers})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${${PROJECT_NAME}_FULL_LIBRARY_VERSION} SOVERSION ${${PROJECT_NAME}_SOVERSION})
-target_link_libraries(${PROJECT_NAME} PRIVATE ChimeraTK::ChimeraTK-DeviceAccess pantor::inja)
+target_link_libraries(${PROJECT_NAME} PRIVATE ChimeraTK::ChimeraTK-DeviceAccess pantor::inja OpenSSL::Crypto)
 
 # --no-as-needed: force linking against this library. This is required for proper registering.
 target_link_options(${PROJECT_NAME} PUBLIC "-Wl,--no-as-needed")

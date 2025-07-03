@@ -50,15 +50,13 @@ BOOST_AUTO_TEST_CASE(testCheckSumCrcCcit16) {
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
 
-/*
 BOOST_AUTO_TEST_CASE(testSha256) {
-    // https://codebeautify.org/checksumer-calculator
-    std::string hexInput = "3132A33B343C5363D738EF39"; //ascii "12?;4<Sc?8?9"
-    constexpr bool padLeft = true;
-    std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
-    checksumFunction checksumer = getChecksumer("Sha256");
-    std::string CsOutHex = checksumer(binInput); // comes out 9E
-    std::string CsAnsHex = "CAB66D3FC5C02E110B0A75CB5B36DF8F378A97C8CFEA6E44CEBE501AF734409C";
-
-    BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
-}*/
+  std::string hexInput = "3132A33B343C5363D738EF39"; // ascii "12?;4<Sc?8?9"
+  constexpr bool padLeft = true;
+  std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
+  checksumFunction checksumer = getChecksumer("Sha256");
+  std::string CsOutHex = checksumer(binInput);
+  std::string CsAnsHex = "CAB66D3FC5C02E110B0A75CB5B36DF8F378A97C8CFEA6E44CEBE501AF734409C";
+  // see https://codebeautify.org/checksumer-calculator
+  BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
+}
