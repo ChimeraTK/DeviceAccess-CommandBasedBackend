@@ -19,7 +19,7 @@
 static const checksumFunction checksum8 = [](const std::string binData) -> std::string {
   uint8_t sum = 0;
   for(unsigned char c : binData) {
-    sum = ((sum + c) % 256);
+    sum += c;
   }
   return hexStrFromInt<uint8_t>(sum, WidthOption::TYPE_WIDTH).value();
 };
@@ -38,6 +38,15 @@ static const checksumFunction checksum32 = [](const std::string binData) -> std:
 
 static const checksumFunction checksumCrcCcit16 = [](const std::string binData) -> std::string {
   boost::crc_optimal<16, 0x1021, 0xFFFF, 0x0000, false, false> crc;
+  /*
+   * see https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
+   * 16: CRC width is 16 bits.
+   * 0x1021: Polynomial.
+   * 0xFFFF: Initial value.
+   * 0x0000: Final XOR value.
+   * false: ReflectIn - input data bits are not reflected.
+   * false: ReflectOut - output CRC bits are not reflected.
+   */
   crc.process_bytes(binData.data(), binData.size());
   uint16_t result = crc.checksum();
   return hexStrFromInt<uint16_t>(result, WidthOption::TYPE_WIDTH).value();
