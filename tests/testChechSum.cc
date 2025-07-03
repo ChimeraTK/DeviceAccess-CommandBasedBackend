@@ -15,12 +15,9 @@ using namespace boost::unit_test_framework;
 #include <ChimeraTK/Device.h>
 #include <ChimeraTK/UnifiedBackendTest.h>
 
-// static DummyServer dummyServer;
-
 BOOST_AUTO_TEST_CASE(testCheckSum8) {
   std::string hexInput = "3132A33B343C5363D738EF39";
-  constexpr bool padLeft = true;
-  std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
+  std::string binInput = binaryStrFromHexStr(hexInput);
   checksumFunction checksumer = getChecksumer("CS8");
   std::string CsOutHex = checksumer(binInput);
   std::string CsAnsHex = "9E";
@@ -28,27 +25,30 @@ BOOST_AUTO_TEST_CASE(testCheckSum8) {
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
 
+/**********************************************************************************************************************/
+
 BOOST_AUTO_TEST_CASE(testCheckSum32) {
   std::string hexInput = "3132A33B343C5363D738EF39";
-  constexpr bool padLeft = true;
-  std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
+  std::string binInput = binaryStrFromHexStr(hexInput);
   checksumFunction checksumer = getChecksumer("CS32");
   std::string CsOutHex = checksumer(binInput);
   std::string CsAnsHex = "0000049E";
-
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
+
+/**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testCheckSumCrcCcit16) {
   std::string hexInput = "313233343536373839";
-  constexpr bool padLeft = true;
-  std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
+  std::string binInput = binaryStrFromHexStr(hexInput);
   checksumFunction checksumer = getChecksumer("CrcCcit16");
   std::string CsOutHex = checksumer(binInput);
-  std::string CsAnsHex =
-      "29B1"; // see https://www.boost.org/doc/libs/latest/libs/crc/test/crc_test.cpp under "Global data".
+  std::string CsAnsHex = "29B1";
+  // see https://www.boost.org/doc/libs/latest/libs/crc/test/crc_test.cpp under "Global data".
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
+
+/**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(testSha256) {
   std::string binInput = "Old McDonnald had a farm, E-I-E-I-O. And on that farm he had a hash function, E-I-E-I-O";
@@ -59,3 +59,5 @@ BOOST_AUTO_TEST_CASE(testSha256) {
   // see https://md5calc.com/hash/sha256/Old+McDonnald+had+a+farm%2C+E-I-E-I-O.+And+on+that+farm+he+had+a+hash+function%2C+E-I-E-I-O
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
+
+/**********************************************************************************************************************/

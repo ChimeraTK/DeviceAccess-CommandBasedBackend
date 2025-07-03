@@ -12,8 +12,7 @@
 
 #include <boost/crc.hpp>
 
-#include <iostream> //DEBUG
-#include <memory>   // For std::unique_ptr
+#include <memory> // For std::unique_ptr
 #include <optional>
 
 // First put the hex through
@@ -108,7 +107,6 @@ bool isValidChecksumName(std::string name) {
 /**********************************************************************************************************************/
 
 checksumFunction getChecksumer(std::string name) {
-  std::cout << "Attempting to fetch " << name << std::endl; // DEBUG
   toLowerCase(name);
   if(not isValidChecksumName(name)) {
     throw ChimeraTK::logic_error("Unknown checksum: " + name);
