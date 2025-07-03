@@ -51,12 +51,11 @@ BOOST_AUTO_TEST_CASE(testCheckSumCrcCcit16) {
 }
 
 BOOST_AUTO_TEST_CASE(testSha256) {
-  std::string hexInput = "3132A33B343C5363D738EF39"; // ascii "12?;4<Sc?8?9"
-  constexpr bool padLeft = true;
-  std::string binInput = binaryStrFromHexStr(hexInput, padLeft);
+  std::string binInput = "Old McDonnald had a farm, E-I-E-I-O. And on that farm he had a hash function, E-I-E-I-O";
+
   checksumFunction checksumer = getChecksumer("Sha256");
   std::string CsOutHex = checksumer(binInput);
-  std::string CsAnsHex = "CAB66D3FC5C02E110B0A75CB5B36DF8F378A97C8CFEA6E44CEBE501AF734409C";
-  // see https://codebeautify.org/checksumer-calculator
+  std::string CsAnsHex = "D4D2AA4F1328BA94477B1FC217E1D25C15268263C3CB11F2327674A979F4F6F4";
+  // see https://md5calc.com/hash/sha256/Old+McDonnald+had+a+farm%2C+E-I-E-I-O.+And+on+that+farm+he+had+a+hash+function%2C+E-I-E-I-O
   BOOST_CHECK_EQUAL(CsOutHex, CsAnsHex);
 }
