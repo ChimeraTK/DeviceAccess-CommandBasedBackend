@@ -5,30 +5,30 @@
     "delimiter":"\r\n"
   },
   "registers": {
-      "/cwFrequency":{"write":{"cmd":"SOUR:FREQ:CW {{x.0}}"}, "read":{"cmd":"SOUR:FREQ:CW?", "resp":"{{x.0}}\r\n"}, "type":"dec"},
-      "/cwFrequencyRO":{"read":{"cmd":"SOUR:FREQ:CW?", "resp":"{{x.0}}\r\n", "type":"dec"}},
-      "/ACC":{"write":{"cmd":"ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}"}, "read":{"cmd":"ACC?", "resp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nRespLines":2}, "nElem":2, "type":"float"},
+      "/cwFrequency":{"write":{"cmd":"SOUR:FREQ:CW {{x.0}}"}, "read":{"cmd":"SOUR:FREQ:CW?", "resp":"{{x.0}}\r\n"}, "type":"decInt"},
+      "/cwFrequencyRO":{"read":{"cmd":"SOUR:FREQ:CW?", "resp":"{{x.0}}\r\n", "type":"DecInt"}},
+      "/ACC":{"write":{"cmd":"ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}}"}, "read":{"cmd":"ACC?", "resp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nRespLines":2}, "nElem":2, "type":"decFloat"},
 
-      "/ACCRO":{"read":{"cmd":"ACC?", "resp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nRespLines":2, "type":"float"}, "nElem":2},
+      "/ACCRO":{"read":{"cmd":"ACC?", "resp":"AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\n", "nRespLines":2, "type":"decFloat"}, "nElem":2},
 
       "/SAI":{"read":{"cmd":"SAI?", "resp":"{{x.0}}\r\n{{x.1}}\r\n", "nRespLines":2, "type":"STRING"}, "nElem":2},
 
-      "/myData":{"read":{"cmd":"CALC1:DATA:TRAC? 'myTrace' SDAT", "resp":"{% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n"}, "nElem":10, "nRespLines":1, "type":"float"},
+      "/myData":{"read":{"cmd":"CALC1:DATA:TRAC? 'myTrace' SDAT", "resp":"{% for val in x %}{{val}}{% if not loop.is_last %},{% endif %}{% endfor %}\r\n"}, "nElem":10, "nRespLines":1, "type":"decFloat"},
 
       "/IDN":{"read":{"cmd":"*IDN?", "resp":"{{x.0}}\r\n"}, "nElem":1, "type":"STRING"},
       "/emergencyStopMovement":{"write":{"cmd":"\u0018"},"type":"VOID"},
-      "/ACC1":{"write":{"cmd":"ACC 1 {{x.0}}"}, "read":{"cmd":"ACC?", "resp":"1={{x.0}}\n\r\n"}, "nElem":1, "nRespLines":1, "type":"float"},
-      "/myHex":{"write":{"cmd":"HEX 0x{{x.0}} 0x{{x.1}} {{x.2}}"}, "read":{"cmd":"HEX?", "resp":"0x{{x.0}}\r\n0x{{x.1}}\r\n{{x.2}}\r\n", "nRespLines":3},"nElem":3, "type":"hex"},
+      "/ACC1":{"write":{"cmd":"ACC 1 {{x.0}}"}, "read":{"cmd":"ACC?", "resp":"1={{x.0}}\n\r\n"}, "nElem":1, "nRespLines":1, "type":"decfloat"},
+      "/myHex":{"write":{"cmd":"HEX 0x{{x.0}} 0x{{x.1}} {{x.2}}"}, "read":{"cmd":"HEX?", "resp":"0x{{x.0}}\r\n0x{{x.1}}\r\n{{x.2}}\r\n", "nRespLines":3},"nElem":3, "type":"hexInt"},
   
-      "/floatTest":{"read":{"cmd":"FLT?", "resp":"{{x.0}}\r\n"},"write":{"cmd":"FLT {{x.0}}"}, "type":"float"},
-      "/controllerReadyStatus":{"read":{"Cmd":"07" /*hex for u0007*/, "cmdDelim":"\r\n", "Resp":"{{x.0}}\r\n", "type":"fixed", "bitWidth":8}},
+      "/floatTest":{"read":{"cmd":"FLT?", "resp":"{{x.0}}\r\n"},"write":{"cmd":"FLT {{x.0}}"}, "type":"decFloat"},
+      "/controllerReadyStatus":{"read":{"Cmd":"07" /*hex for u0007*/, "cmdDelim":"\r\n", "Resp":"{{x.0}}\r\n", "type":"binInt", "bitWidth":8}},
       
       "/setByteModeVoid":{"write":{"cmd":"setByteMode", "resp":"ok", "nRespBytes":2},"type":"VOID"},
-      "/setByteMode":{"write":{"cmd":"setByteMode {{x.0}}", "resp":"ok", "nRespBytes":2},"type":"dec"},
-      "/binFloatTest":{"read":{"cmd":"42464C543F" /*ASCII HEX for "BFLT?"*/, "resp":"{{x.0}}", "nRespBytes":4},"write":{"cmd":"42464C5420{{x.0}}" /*ASCII hex for "BFLT {{x.0}}"*/}, "type":"ieee754","bitWidth":32},
+      "/setByteMode":{"write":{"cmd":"setByteMode {{x.0}}", "resp":"ok", "nRespBytes":2},"type":"decInt"},
+      "/binFloatTest":{"read":{"cmd":"42464C543F" /*ASCII HEX for "BFLT?"*/, "resp":"{{x.0}}", "nRespBytes":4},"write":{"cmd":"42464C5420{{x.0}}" /*ASCII hex for "BFLT {{x.0}}"*/}, "type":"binFloat","bitWidth":32},
       "/uLog":{"read":{"Cmd":"F503ADD500000000", "Resp":"F504ADD5{{x.0}}"},
                "write":{"Cmd":"F501ADD5{{x.0}}", "Resp":"F502ADD5.*"},
-			   "nRespBytes":8, "bitWidth":32, "type":"fixed" }
+			   "nRespBytes":8, "bitWidth":32, "type":"binInt" }
   }
 }
 
