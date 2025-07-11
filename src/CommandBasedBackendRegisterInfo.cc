@@ -30,6 +30,7 @@ namespace ChimeraTK {
    * @throws ChimeraTK::logic_error
    */
   static void throwIfBadCommandAndResponsePatterns(
+
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
@@ -54,6 +55,15 @@ namespace ChimeraTK {
    * Doing this synchronization simplifies later logic, such as throwIfBadNElements.
    */
   static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo);
+
+  /**
+   * @brief Validates the line endings for the interaction info.
+   * Enforces that responseLinesDelimiter is not empty if the interaction uses read lines.
+   * @param[in] iInfo The InteractionInfo to validate.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if invalid.
+   */
+  static void throwIfBadEndings(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
 
   /**
    * @brief Validates nElements, particularly its interaction with VOID type.
@@ -195,6 +205,8 @@ namespace ChimeraTK {
     throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
     throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail);
     throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
+    throwIfBadEndings(writeInfo, errorMessageDetailWrite);
+    throwIfBadEndings(readInfo, errorMessageDetailWrite);
     throwIfBadNElements(writeInfo, getNumberOfElementsImpl(), errorMessageDetail);
     throwIfBadFixedWidth(writeInfo, errorMessageDetailWrite);
     throwIfBadFixedWidth(readInfo, errorMessageDetailRead);
@@ -444,6 +456,15 @@ namespace ChimeraTK {
       }
     }
   } // end throwIfBadCommandAndResponsePatterns
+
+  /********************************************************************************************************************/
+
+  static void throwIfBadEndings(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
+    if(iInfo.usesReadLines() and iInfo.getResponseLinesDelimiter() == "") {
+      throw ChimeraTK::logic_error(
+          FUNC_NAME + "Illegally set response delimiter to empty string for" + errorMessageDetail);
+    }
+  } // end throwIfBadEndings
 
   /********************************************************************************************************************/
 
