@@ -818,12 +818,19 @@ namespace ChimeraTK {
     bool explicitlySetToReadLines = false;
     std::string keyStr;
     /*----------------------------------------------------------------------------------------------------------------*/
-    if(defaultDelimOpt) {
+    if(iInfo.isBinary()) { // If binary mode and no command delimiter is set, we default to undelimited.
+      if(iInfo.usesReadBytes()) {
+        iInfo.cmdLineDelimiter = "";
+      }
+      else {
+        iInfo.setResponseBytes(0);
+      }
+    }
+    else if(defaultDelimOpt) {
+      // If we're in a binary mode, don't allow the use of the default line delimiter.
+      // Line delimination must be explicitly set.
       iInfo.cmdLineDelimiter = *defaultDelimOpt;
       iInfo.setResponseDelimiter(*defaultDelimOpt);
-    }
-    if(iInfo.isBinary()) { // If binary mode and no command delimiter is set, we default to undelimited.
-      iInfo.cmdLineDelimiter = "";
     }
     // DELIMITER
     keyStr = toStr(EnumType::DELIMITER);
