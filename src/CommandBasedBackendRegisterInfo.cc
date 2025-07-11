@@ -658,7 +658,7 @@ namespace ChimeraTK {
     const auto& map = (isSigned ? signedTransportLayerTypeToDataTypeMap : unsignedTransportLayerTypeToDataTypeMap);
     auto it = map.find(type); // std::unordered_map<TransportLayerType, DataType>::const_iterator it;
 
-    if(it == unsignedTransportLayerTypeToDataTypeMap.end()) {
+    if(it == map.end()) {
       throw ChimeraTK::logic_error(FUNC_NAME + "Type " + toStr(type) + " is not in " + (isSigned ? "" : "un") +
           "signedtransportLayerTypeToDataTypeMap. Fix it in mapFileKeys.h");
     }
