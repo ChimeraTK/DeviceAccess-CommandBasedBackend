@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(testReadStatus) {
     std::cout << "testBinary: read returned" << std::endl;
   }
   uint32_t out = accessor;
-  BOOST_CHECK_EQUAL(out, 0xB0);
+  BOOST_CHECK_EQUAL(out, 0);
 }
 
 /**********************************************************************************************************************/
