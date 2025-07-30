@@ -7,6 +7,7 @@
 #include "mapFileKeys.h"
 
 #include <array>
+#include <map>
 #include <optional>
 #include <utility>
 
@@ -636,8 +637,17 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
+  static DataType getDataTypeFromSizeCode(int sizeCode, const std::map<DataType, int>& map) {
+    for(const auto& [key, value] : map) {
+      if(value == sizeCode) {
+        return key;
+      }
+    }
+    throw ChimeraTK::logic_error(FUNC_NAME + " No DataType corresponds to size code " + std::to_string(sizeCode));
+  }
+
   // Size codes have absoute value = bit depth of the type, and are negative if the type is signed.
-  static const auto dataTypeSizeCodeBimap = makeBimap<DataType, int>({
+  static const std::map<DataType, int> dataTypeSizeCodeMap = {
       {DataType::Boolean, 1},
       {DataType::int8, -8},
       {DataType::uint8, 8},
@@ -647,7 +657,9 @@ namespace ChimeraTK {
       {DataType::uint32, 32},
       {DataType::int64, -64},
       {DataType::uint64, 64},
-  });
+  };
+
+  /********************************************************************************************************************/
 
   /*
    * Given some number of bits, minBits, get the next largest number of bits corresponding to a DataType.
@@ -721,7 +733,7 @@ namespace ChimeraTK {
 
           // Use the smallest size that fits
           int newSizeCode = (minimumFixedWidthContainerSizeInBits * (isSigned ? -1 : 1));
-          d = dataTypeSizeCodeBimap.right.at(newSizeCode);
+          d = getDataTypeFromSizeCode(newSizeCode, dataTypeSizeCodeMap);
         }
       }
       else if((type == TransportLayerType::DEC_FLOAT) or (type == TransportLayerType::BIN_FLOAT)) {
@@ -786,11 +798,11 @@ namespace ChimeraTK {
     if(a.isIntegral()) { // b is also integral
       // Figure out a DataType that's large enough for both and has a sign bit if one of the two needs it.
       bool mergedIsSigned = (a.isSigned() or b.isSigned());
-      int aSizeCode = std::abs(dataTypeSizeCodeBimap.left.at(a));
-      int bSizeCode = std::abs(dataTypeSizeCodeBimap.left.at(b));
+      int aSizeCode = std::abs(dataTypeSizeCodeMap.at(a));
+      int bSizeCode = std::abs(dataTypeSizeCodeMap.at(b));
       int mergedSizeCode =
           std::max(aSizeCode, bSizeCode) * (mergedIsSigned ? -1 : 1); // Use the larger of the two bit depths.
-      return dataTypeSizeCodeBimap.right.at(mergedSizeCode);
+      return getDataTypeFromSizeCode(mergedSizeCode, dataTypeSizeCodeMap);
     }
     // a and b are both floating point and not equal, therefore one is float64.
     return DataType::float64;
