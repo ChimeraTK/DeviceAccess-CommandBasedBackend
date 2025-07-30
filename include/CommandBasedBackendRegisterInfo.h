@@ -143,8 +143,6 @@ namespace ChimeraTK {
 
     ~CommandBasedBackendRegisterInfo() override = default;
 
-    CommandBasedBackendRegisterInfo& operator=(const CommandBasedBackendRegisterInfo& other) = default;
-
     // An Impl versions must be used internally, for anything that might be used by the constructor.
     [[nodiscard]] inline RegisterPath getRegisterName() const override { return getRegisterNameImpl(); }
     [[nodiscard]] inline unsigned int getNumberOfElements() const override { return getNumberOfElementsImpl(); }
