@@ -99,10 +99,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  constexpr boost::system::error_code timeoutError() noexcept {
-    // Rename 'operation_aborted' to 'timeoutError' for readability.
-    return boost::asio::error::operation_aborted;
-  }
+  constexpr auto timeoutError = boost::asio::error::operation_aborted;
 
   /********************************************************************************************************************/
 
@@ -115,7 +112,7 @@ namespace ChimeraTK {
     bool readCompleted = false;
     auto doOnTimeout = [&](const boost::system::error_code& error) {
       if(not(readCompleted or error)) {
-        _socket.cancel(); // Causes error = errorCode = timeoutError()
+        _socket.cancel(); // Causes error = errorCode = timeoutError
       }
     };
     timer.async_wait(doOnTimeout);
@@ -125,7 +122,7 @@ namespace ChimeraTK {
     boost::system::error_code errorCode;
 
     /* doOnReadFinish is the callback handler, executing when the read operation ends, successfully or not.
-     * If there's a timeout, doOnTimeout is called before this, with _socket.cancel() causing error = timeoutError()
+     * If there's a timeout, doOnTimeout is called before this, with _socket.cancel() causing error = timeoutError
      */
     auto doOnReadFinish = [&](const boost::system::error_code& error, std::size_t /*bytesTransferred*/) {
       readCompleted = true;
@@ -140,7 +137,7 @@ namespace ChimeraTK {
     _io_context.reset();
     /*----------------------------------------------------------------------------------------------------------------*/
     if(errorCode) {
-      if(errorCode == timeoutError()) {
+      if(errorCode == timeoutError) {
         throw ChimeraTK::runtime_error("Readline operation timed out");
       }
       throw ChimeraTK::runtime_error(errorCode.message());
