@@ -6,8 +6,6 @@
 
 #include <ChimeraTK/BackendRegisterCatalogue.h>
 
-#include <boost/bimap.hpp>
-
 #include <array>
 #include <optional>
 #include <string>
@@ -72,14 +70,6 @@ inline std::unordered_map<EnumType, std::string> getMapForEnum();
 
 /**********************************************************************************************************************/
 // Static functions for internal use only
-
-/*
- * For making boost::bimap literals.
- */
-template<typename L, typename R>
-boost::bimap<L, R> makeBimap(std::initializer_list<typename boost::bimap<L, R>::value_type> list) {
-  return boost::bimap<L, R>(list.begin(), list.end());
-}
 
 /*
  * This does the reverse look-up on the map.
