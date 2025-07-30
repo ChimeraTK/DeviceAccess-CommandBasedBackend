@@ -102,6 +102,14 @@ void toLowerCase(std::string& str) noexcept {
 
 /**********************************************************************************************************************/
 
+std::string getLower(const std::string& str) noexcept {
+  std::string copy = str;
+  toLowerCase(copy);
+  return copy;
+}
+
+/**********************************************************************************************************************/
+
 std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, const bool isSigned) noexcept {
   /* Use case: writing to device. We fill in the hexidecimal of interest with the regex, then convert to binary for sending.
   * If h is odd, the first byte or last will be special, requiring padding
