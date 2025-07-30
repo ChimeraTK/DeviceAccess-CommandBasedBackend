@@ -70,10 +70,6 @@ const int requiredMapFileFormatVersion = 2;
 template<typename EnumType>
 inline std::unordered_map<EnumType, std::string> getMapForEnum();
 
-// Strictly speaking we don't need templates for this, but templating improves extensibility and style consistency.
-template<typename EnumType>
-inline boost::bimap<EnumType, std::string> getBimapForEnum();
-
 /**********************************************************************************************************************/
 // Static functions for internal use only
 
@@ -86,17 +82,18 @@ boost::bimap<L, R> makeBimap(std::initializer_list<typename boost::bimap<L, R>::
 }
 
 /*
- * Takes a bimap<enums,string>, and a string, and returns an optional to the enum at bimap[str],
- * That optional is the enum if str is in the bimap, and nullopt if not.
- * The string-lookup is case insensitive
+ * This does the reverse look-up on the map.
+ * It takes an unordered_map<enums,string>, and a string, and returns an optional to the enum such that map[enum] is
+ * that string. That optional is the enum if str is in the map, and nullopt if not. The string-lookup is case
+ * insensitive
  */
 template<typename EnumType>
-static std::optional<EnumType> getEnumOptFromStrBimapCaseInsensitive(
-    std::string str, const boost::bimap<EnumType, std::string> bmap) noexcept {
+static std::optional<EnumType> getEnumOptFromStrMapCaseInsensitive(
+    std::string str, const std::unordered_map<EnumType, std::string>& map) noexcept {
   toLowerCase(str);
-  for(const auto& pair : bmap.left) {
-    if(caseInsensitiveStrCompare(str, pair.second)) {
-      return pair.first;
+  for(const auto& [key, value] : map) {
+    if(getLower(value) == str) {
+      return key;
     }
   }
   return std::nullopt; // Return empty optional if no match is found
@@ -269,33 +266,20 @@ enum class TransportLayerType {
 };
 
 template<>
-inline boost::bimap<TransportLayerType, std::string> getBimapForEnum<TransportLayerType>() {
-  static const auto bmap = makeBimap<TransportLayerType, std::string>({
+inline std::unordered_map<TransportLayerType, std::string> getMapForEnum<TransportLayerType>() {
+  static const std::unordered_map<TransportLayerType, std::string> uMap = {
       // clang-format off
-            {TransportLayerType::DEC_INT, "decInt"},
-            {TransportLayerType::HEX_INT, "hexInt"},
-            {TransportLayerType::BIN_INT, "binInt"},
-            {TransportLayerType::BIN_FLOAT, "binFloat"},
-            {TransportLayerType::DEC_FLOAT, "decFloat"},
-            {TransportLayerType::STRING, "string"},
-            {TransportLayerType::VOID, "void"},
+    {TransportLayerType::DEC_INT, "decInt"},
+    {TransportLayerType::HEX_INT, "hexInt"},
+    {TransportLayerType::BIN_INT, "binInt"},
+    {TransportLayerType::BIN_FLOAT, "binFloat"},
+    {TransportLayerType::DEC_FLOAT, "decFloat"},
+    {TransportLayerType::STRING, "string"},
+    {TransportLayerType::VOID, "void"},
       // clang-format on
-  });
-  return bmap;
+  };
+  return uMap;
 }
-
-template<>
-inline std::string toStr<TransportLayerType>(TransportLayerType keyEnum) {
-  auto bimap = getBimapForEnum<TransportLayerType>();
-  auto it = bimap.left.find(keyEnum);
-  if(it == bimap.left.end()) {
-    throw ChimeraTK::logic_error("Unable to convert TransportLayerType enum " +
-        std::to_string(static_cast<int>(keyEnum)) + " to string; Check getBimapForEnum.");
-  }
-  return it->second; // Safe access
-}
-// To get a std::optional<TransportLayerType> from a string, use
-// strToEnumOpt<TransportLayerType>(std::string typeString)
 
 /*
  * signedTransportLayerTypeToDataTypeMap and unsignedTransportLayerTypeToDataTypeMap
@@ -331,9 +315,14 @@ namespace ChimeraTK {
 
 /**********************************************************************************************************************/
 
+/*
+ * Gets a std::optional<TransportLayerType> from a string
+ * strToEnumOpt<TransportLayerType>(std::string typeString)
+ * The return option is nullopt if the string isn't in the map for that type.
+ */
 template<typename EnumType>
 [[nodiscard]] std::optional<TransportLayerType> strToEnumOpt(const std::string& str) noexcept {
-  return getEnumOptFromStrBimapCaseInsensitive(str, getBimapForEnum<EnumType>());
+  return getEnumOptFromStrMapCaseInsensitive(str, getMapForEnum<EnumType>());
 }
 
 /**********************************************************************************************************************/
