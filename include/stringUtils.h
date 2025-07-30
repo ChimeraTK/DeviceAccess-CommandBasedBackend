@@ -63,6 +63,11 @@ bool strCmp(const std::string& a, const std::string& b) noexcept; // DEBUG
 void toLowerCase(std::string& str) noexcept;
 
 /**
+ * Returns a lower case copy of str.
+ */
+std::string getLower(const std::string& str) noexcept;
+
+/**
  * @brief Convert the string of hexidecimal into a string containing the corresponding binary data.
  * @param[in] hexData A string of hexidecimal such as "B0B", case insensitive.
  * @param[in] padLeft If hexStr has odd length, then the output must be padded with an extra nibble.
