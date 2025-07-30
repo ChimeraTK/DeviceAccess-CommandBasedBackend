@@ -196,8 +196,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void CommandBasedBackendRegisterInfo::init() {
-    std::string errorMessageDetail = "register " + registerPath;
+  void CommandBasedBackendRegisterInfo::validate(std::string& errorMessageDetail) {
     std::string errorMessageDetailRead = errorMessageDetail + " for read";
     std::string errorMessageDetailWrite = errorMessageDetail + " for write";
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -214,8 +213,15 @@ namespace ChimeraTK {
     throwIfBadFractionalBits(readInfo, errorMessageDetailRead);
     throwIfBadSigned(writeInfo, errorMessageDetailWrite);
     throwIfBadSigned(readInfo, errorMessageDetailRead);
+  }
 
-    /*----------------------------------------------------------------------------------------------------------------*/
+  /********************************************************************************************************************/
+
+  void CommandBasedBackendRegisterInfo::finalize() {
+    std::string errorMessageDetail = "register " + registerPath;
+
+    validate(errorMessageDetail);
+
     // Check that the data types are compatible and set dataDescriptor
     dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
   } // end init
@@ -234,7 +240,7 @@ namespace ChimeraTK {
     writeInfo(std::move(writeInfo_)) {
     if(not registerPathIsEmpty(registerPath)) {
       // Don't validate data if CommandBasedBackendRegisterInfo is initalized as an empty placeholder.
-      init();
+      finalize(); // performs data validation
     }
   }
 
@@ -246,7 +252,7 @@ namespace ChimeraTK {
     /*
      * Here we extract data from the json,
      * Checking only that we don't have invalid json keys or unpassable negative numbers.
-     * Then call init() for data validation and tasks common to all constructors.
+     * Then call finalize() for data validation and tasks common to all constructors.
      */
     std::string errorMessageDetail = "register " + registerPath;
     std::string errorMessageDetailRead = errorMessageDetail + " read";
@@ -307,7 +313,7 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write response from pattern; Ticket 13531
 
-    init(); // data validation
+    finalize(); // performs data validation
   } // end constructor
 
   /********************************************************************************************************************/
