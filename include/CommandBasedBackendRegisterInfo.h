@@ -130,9 +130,16 @@ namespace ChimeraTK {
         const RegisterPath& registerPath_, const json& j, const std::string& defaultSerialDelimiter);
 
     /**
-     * @brief Init must be run at the end of each constructor. It sets the dataDescriptor and validates the data.
+     * @brief Validates the data
+     * @param[in] errorMessageDetail Fills error strings for logic_erros as needed. It should mention which register this is.
+     * @throws a ChimeraTK::logic_error if something is invalid
      */
-    void init();
+    void validate(std::string& errorMessageDetail);
+
+    /**
+     * @brief finalize must be run at the end of each constructor. It sets the dataDescriptor and validate()'s the data.
+     */
+    void finalize();
 
     ~CommandBasedBackendRegisterInfo() override = default;
 
