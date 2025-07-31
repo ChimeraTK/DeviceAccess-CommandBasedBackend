@@ -425,7 +425,7 @@ void DummyServer::mainLoop() {
           }
         }
         else {
-          std::cout << "DummyServer: BFLT needs a valid second argument" << std::endl;
+          std::cout << "DummyServer: BFLT needs a valid argument" << std::endl;
         }
         byteMode = false; // go back to line mode at the end of this command
         if(_debug) {
