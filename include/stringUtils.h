@@ -617,11 +617,10 @@ template<typename floatType, typename = enableIfFloat<floatType>>
   if(nBytes != binaryContainer.size()) {
     return std::nullopt;
   }
+  // Construct a uint64_t from big-endian data
   uint64_t result_uint = 0;
-  for(size_t i = 0; i < nBytes; ++i) {
-    size_t shift = 8 * (nBytes - 1 - i);
-    result_uint |= static_cast<uint64_t>(static_cast<unsigned char>(binaryContainer[i])) << shift;
-  }
+  std::memcpy(reinterpret_cast<char*>(&result_uint) + (sizeof(result_uint) - nBytes), binaryContainer.data(), nBytes);
+  result_uint = __builtin_bswap64(result_uint);
 
   floatType result;
   std::memcpy(&result, &result_uint, nBytes);
