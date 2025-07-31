@@ -92,13 +92,12 @@ namespace ChimeraTK {
   std::optional<std::string> SerialPort::readline(const std::string& delimiter) noexcept {
     size_t delimPos;
     static constexpr int readBufferLen = 256;
-    std::vector<char> readBuffer(readBufferLen, '\0'); // Initialize with zeros
+    std::vector<char> readBuffer(readBufferLen);
 
     _terminateRead = false;
     // Search for delimiter in persistentBufferStr. While it's not there, read into persistentBufferStr and try again.
     for(delimPos = _persistentBufferStr.find(delimiter); delimPos == std::string::npos;
         delimPos = _persistentBufferStr.find(delimiter)) {
-      std::fill(readBuffer.begin(), readBuffer.end(), '\0');
       ssize_t __attribute__((unused)) bytesRead =
           read(_fileDescriptor, readBuffer.data(), readBuffer.size() - 1); // unistd::read
 
@@ -116,7 +115,7 @@ namespace ChimeraTK {
     // Now the delimiter has been found at position delimPos.
     std::string outputStr = _persistentBufferStr.substr(0, delimPos);
     _persistentBufferStr = _persistentBufferStr.substr(delimPos + delimiter.size());
-    return std::make_optional(outputStr);
+    return outputStr;
   } // end readline
 
   /********************************************************************************************************************/
@@ -129,11 +128,11 @@ namespace ChimeraTK {
 
     std::string outputBuffer;
     outputBuffer.reserve(nBytesToRead);
-    std::string readBuffer(nBytesToRead, '\0');
+    std::vector<char> readBuffer(nBytesToRead);
     ssize_t bytesRead;
 
     for(size_t totalBytesRead = 0; totalBytesRead < nBytesToRead; totalBytesRead += bytesRead) {
-      bytesRead = read(_fileDescriptor, &readBuffer[0], nBytesToRead - totalBytesRead); // unistd::read
+      bytesRead = read(_fileDescriptor, readBuffer.data(), nBytesToRead - totalBytesRead); // unistd::read
 
       if(_terminateRead) {
         return std::nullopt;
@@ -142,10 +141,6 @@ namespace ChimeraTK {
       if(bytesRead > 0) {
         // Append the read bytes to outputBuffer
         outputBuffer.append(readBuffer.data(), bytesRead);
-
-        // Reset readBuffer for next iteration
-        std::fill(readBuffer.begin(),
-            std::next(readBuffer.begin(), static_cast<std::string::difference_type>(bytesRead)), '\0');
       }
       else if(bytesRead == 0) { // read EOF, wait for reconnection.
         usleep(1000);
@@ -157,7 +152,7 @@ namespace ChimeraTK {
       }
     }
 
-    return std::make_optional(outputBuffer);
+    return outputBuffer;
   }
 
   /********************************************************************************************************************/
