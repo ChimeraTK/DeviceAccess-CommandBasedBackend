@@ -409,7 +409,7 @@ void DummyServer::mainLoop() {
       if((data.find('\x10') == 0)) { // go back to line mode
                                      // this exercises sending bytes and reading lines
         if(_debug) {
-          std::cout << "DummyServer: Registering x10 setLineMode?" << std::endl;
+          std::cout << "DummyServer: Registering x10 setLineMode" << std::endl;
         }
         byteMode = false;
         if(_debug) {
@@ -420,7 +420,7 @@ void DummyServer::mainLoop() {
       if((data.find("setLineMode") == 0)) { // go back to line mode
                                             // this exercises sending bytes and reading lines
         if(_debug) {
-          std::cout << "DummyServer: Registering setLineMode?" << std::endl;
+          std::cout << "DummyServer: Registering setLineMode" << std::endl;
         }
         byteMode = false;
         if(_debug) {
