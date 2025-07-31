@@ -371,4 +371,7 @@ template<typename EnumType>
   return getEnumOptFromStrMapCaseInsensitive(str, getMapForEnum<EnumType>());
 }
 
+
 /**********************************************************************************************************************/
+
+inline constexpr std::array<std::string, 3> delimiterSymbols = {"d", "delim", "delimiter"};
