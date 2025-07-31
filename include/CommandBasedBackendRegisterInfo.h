@@ -78,13 +78,8 @@ namespace ChimeraTK {
        */
       [[nodiscard]] inline bool isActive() const { return not commandPattern.empty(); }
       [[nodiscard]] inline bool isBinary() const { return _isBinary; }
+      [[nodiscard]] TransportLayerType getTransportLayerType() const;
 
-      [[nodiscard]] inline TransportLayerType getTransportLayerType() const {
-        if(not hasTransportLayerType()) {
-          throw ChimeraTK::logic_error("Attempting to get a TransportLayerType that has not been set");
-        }
-        return _transportLayerType.value();
-      }
       /*
        * These getters return the corresponding responceInfo member, if the corresponding
        * SendCommandType is used, otherwise return nullopt.

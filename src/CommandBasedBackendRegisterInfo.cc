@@ -365,6 +365,15 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  TransportLayerType InteractionInfo::getTransportLayerType() const {
+    if(not hasTransportLayerType()) {
+      throw ChimeraTK::logic_error("Attempting to get a TransportLayerType that has not been set");
+    }
+    return _transportLayerType.value();
+  }
+
+  /********************************************************************************************************************/
+
   std::optional<size_t> InteractionInfo::getResponseNLines() const noexcept {
     if(usesReadLines()) {
       return std::get<ResponseLinesInfo>(_responseInfo).nLines;
