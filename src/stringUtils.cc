@@ -119,18 +119,15 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, c
   * So we need isSigned to tell us whether to move the signed bit.
   */
 
-  const std::function<unsigned char(char)> binCharFromHexChar = [](char hex) noexcept -> char {
-    constexpr char offsetA = 'A' - 10;
-    constexpr char offseta = 'a' - 10;
-    return static_cast<char>(hex - (hex <= '9' ? '0' : hex <= 'F' ? offsetA : offseta));
-    /* More verbosely, this does:
-      if((hex >='0') and (hex <='9')){
-        return hex - '0';
-    } else if((hex >='A') and (hex <='F')) {
-        return hex + 10 - 'A';
-    } else if((hex >='a') and (hex <='f')) {
-        return hex + 10 - 'a';
-    } */
+  const std::function<unsigned char(unsigned char)> binCharFromHexChar = [](unsigned char hex) noexcept -> unsigned char {
+    if((hex >= '0') && (hex <= '9')) {
+      return hex - '0';
+    }
+    if((hex >= 'A') && (hex <= 'F')) {
+      return hex + 10 - 'A';
+    }
+    //else 'a'-'f'
+    return hex + 10 - 'a';
   };
 
   std::string binOut((hexStr.length() + 1) / 2, '\x00');
