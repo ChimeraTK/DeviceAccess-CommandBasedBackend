@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <regex>
 #include <variant>
 
 using json = nlohmann::json;
@@ -93,6 +94,12 @@ namespace ChimeraTK {
       [[nodiscard]] std::optional<std::string> getResponseLinesDelimiter() const noexcept;
       [[nodiscard]] std::optional<size_t> getResponseBytes() const noexcept;
 
+      /**
+       * @brief Gets the regex pattern string for this InteractionInfo
+       * @returns the string regex pattern
+       */
+      [[nodiscard]] std::string getRegexString() const;
+
       /*
        * These set the struct members if responceInfo is already in the corresponding
        * SendCommandType, otherwise they destructively set the SendCommandType,
@@ -156,6 +163,21 @@ namespace ChimeraTK {
       return std::make_unique<CommandBasedBackendRegisterInfo>(*this);
     }
 
+    /**
+     * @brief: Fetches the read response regex given the TransportLayerType
+     * @throws std::regex_error or inja::ParserError
+     */
+    [[nodiscard]] std::regex getReadResponseRegex() const {
+      return getResponseRegex(readInfo, "read for " + registerPath);
+    }
+    /**
+     * @brief: Fetches the write response regex given the TransportLayerType
+     * @throws std::regex_error or inja::ParserError
+     */
+    [[nodiscard]] std::regex getWriteResponseRegex() const {
+      return getResponseRegex(writeInfo, "write for " + registerPath);
+    }
+
     unsigned int nChannels{1};
     unsigned int nElements{1};
     RegisterPath registerPath; // can be converted to string
@@ -168,6 +190,15 @@ namespace ChimeraTK {
     [[nodiscard]] inline RegisterPath getRegisterNameImpl() const { return registerPath; }
     [[nodiscard]] inline unsigned int getNumberOfElementsImpl() const { return nElements; }
     [[nodiscard]] inline unsigned int getNumberOfChannelsImpl() const { return nChannels; }
+
+    /**
+     * @brief: Fetches the appropriate regex given the TransportLayerType.
+     * @param[in] InteractionInfo
+     * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
+     * @throws std::regex_error or inja::ParserError
+     */
+    [[nodiscard]] std::regex getResponseRegex(const InteractionInfo& info, const std::string& errorMessageDetail) const;
+
   }; // end CommandBasedBackendRegisterInfo
 
   // Operators for cout:
