@@ -28,7 +28,7 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(std::
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesToRead);
 
-  write(cmd, writeDelimiter);
+  _serialPort->send(cmd + toString(writeDelimiter));
 
   if(nLinesToRead == 0) {
     return outputStrVec;
@@ -57,7 +57,7 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(std::
 
 std::string SerialCommandHandler::sendCommandAndReadBytesImpl(
     std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
-  write(cmd, writeDelimiter);
+  _serialPort->send(cmd + toString(writeDelimiter));
   return _serialPort->readBytesWithTimeout(nBytesToRead, timeout);
 }
 

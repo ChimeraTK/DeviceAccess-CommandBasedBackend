@@ -28,18 +28,6 @@ class SerialCommandHandler : public CommandHandler {
   ~SerialCommandHandler() override = default;
 
   /**
-   * @brief Simply sends the command cmd to the serial port with no readback.
-   * @param[in] cmd The command to be sent
-   * @param[in] writeDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is
-   * used. Setting this to a string overrides that delimiter. Set to "" or (preferably) NoDelimiter{} to send cmd as a
-   * pure binary sequence.
-   */
-  inline void write(
-      std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
-    _serialPort->send(cmd + toString(writeDelimiter));
-  }
-
-  /**
    * @brief A simple blocking readline with no timeout. This can wait forever.
    * @param[in] delimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this
    * string setting overrides that delimiter.
