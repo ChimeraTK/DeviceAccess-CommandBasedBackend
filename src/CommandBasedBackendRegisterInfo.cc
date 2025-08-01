@@ -231,20 +231,16 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static bool registerPathIsEmpty(const RegisterPath& registerPath) noexcept {
-    return (std::string(registerPath).empty() or (std::string(registerPath) == "/"));
-  }
-
-  /********************************************************************************************************************/
-
   CommandBasedBackendRegisterInfo::CommandBasedBackendRegisterInfo(
       const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
   : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
     writeInfo(std::move(writeInfo_)) {
-    if(not registerPathIsEmpty(registerPath)) {
-      // Don't validate data if CommandBasedBackendRegisterInfo is initalized as an empty placeholder.
-      finalize(); // performs data validation
+    std::string registerPathStr = std::string(registerPath);
+    if(registerPathStr.empty() or (registerPath == "/")) { // if registerPath is empty
+      // CommandBasedBackendRegisterInfo is initalized as an empty placeholder, so don't validate its data.
+      return;
     }
+    finalize(); // Performs data validation
   }
 
   /********************************************************************************************************************/
