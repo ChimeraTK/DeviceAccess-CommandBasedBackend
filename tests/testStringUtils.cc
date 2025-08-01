@@ -88,24 +88,14 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
   BOOST_CHECK_EQUAL(h2, h2V1);
   BOOST_CHECK_EQUAL(h2, h2V2);
 
-  std::string h3 = "ABCDE";                               // odd, pad left
-  std::string b3L = binaryStrFromHexStr(h3, true, false); // pad left with 0 like a uint
+  std::string h3 = "ABCDE"; // odd
+  std::string b3L = binaryStrFromHexStr(h3, false);
   NICE_CHECK_EQUAL(b3L, "\x0A\xBC\xDE");
 
-  std::string b3R = binaryStrFromHexStr(h3, false); // pad right
-  NICE_CHECK_EQUAL(b3R, "\xAB\xCD\xE0");
-  std::string h3V1 = hexStrFromBinaryStr(b3L, h3.length());
-  // hexStrFromBinaryStr doesn't support right-padding, so no test
-  NICE_CHECK_EQUAL(h3, h3V1);
-
-  std::string h4 = "0ABC0";                  // odd, pad left, building nulls
-  std::string b4L = binaryStrFromHexStr(h4); // pad left to null
+  std::string h4 = "0ABC0"; // odd, building nulls
+  std::string b4L = binaryStrFromHexStr(h4);
   std::string b4L_cmp{"\0\xAB\xC0", 3};
   NICE_CHECK_EQUAL(printable(b4L), "\\0\xAB\xC0");
-
-  std::string b4R = binaryStrFromHexStr(h4, false); // pad right to null
-  std::string b4R_cmp{"\x0A\xBC\0", 3};
-  NICE_CHECK_EQUAL(b4R, b4R_cmp);
 
   std::string h4V1 = hexStrFromBinaryStr(b4L, h4.length());
   // hexStrFromBinaryStr doesn't support right-padding, so no test
@@ -641,7 +631,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
     // TODO
 
     // OLD
-    //  Test left packing. Put an 8-bit number into a 10 byte string
+    // Put an 8-bit number into a 10 byte string
     width = 10;
     NICE_CHECK_EQUAL(
         binaryStrFromInt<int8_t>(5, width).value_or(NO), std::string("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05", 10));
@@ -807,7 +797,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
 /**********************************************************************************************************************/
 
 BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
-  // Test conversion from binary string, as well as left-packing.
+  // Test conversion from binary string
   BOOST_CHECK_EQUAL(intFromBinaryStr<int32_t>({"\0\x05", 2}).value_or(-999), /*==*/5);
 
   BOOST_CHECK_EQUAL(intFromBinaryStr<int32_t>({"\xFF\xFE"}).value_or(-999), /*==*/-2);
@@ -951,7 +941,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
         {"A0B", -1 * static_cast<int16_t>(0x5F5), true},   // negative odd
     };
     for(const auto& [inputStr, ans, isSigned] : testCases) {
-      BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>(binaryStrFromHexStr(inputStr, true, isSigned)).value_or(-1), ans);
+      BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>(binaryStrFromHexStr(inputStr, isSigned)).value_or(-1), ans);
     }
     BOOST_CHECK_EQUAL(intFromBinaryStr<int16_t>("").value_or(-1), 0);
   }

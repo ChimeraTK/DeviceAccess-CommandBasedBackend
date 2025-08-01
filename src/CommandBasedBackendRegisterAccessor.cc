@@ -124,10 +124,7 @@ namespace ChimeraTK {
     // FIXME: properly create the read command through the template engine //TODO make sure this is done as we think it is
     std::string readCommand;
     if(_registerInfo.readInfo.isBinary()) {
-      readCommand = binaryStrFromHexStr(_registerInfo.readInfo.commandPattern, /*padLeft*/ false, /*isSigned*/ false);
-      /* TODO What to do if _registerInfo.readInfo.commandPattern has an odd
-       number of characters? Pad left, pad right, or throw?
-       currently set padLeft=false to pad right. */
+      readCommand = binaryStrFromHexStr(_registerInfo.readInfo.commandPattern, /*isSigned*/ false);
     }
     else {
       readCommand = _registerInfo.readInfo.commandPattern;
@@ -215,10 +212,7 @@ namespace ChimeraTK {
     }
 
     if(_registerInfo.writeInfo.isBinary()) {
-      _writeTransferBuffer = binaryStrFromHexStr(_writeTransferBuffer, /*padLeft*/ false, /*isSigned*/ false);
-      /* TODO What to do if _writeTransferBuffer has an odd
-       number of characters? Pad left, pad right, or throw?
-       Currently set to padLeft = false for pad right. */
+      _writeTransferBuffer = binaryStrFromHexStr(_writeTransferBuffer, /*isSigned*/ false);
     }
 
     // remember this register as the last used one if the register is readable
@@ -381,7 +375,7 @@ namespace ChimeraTK {
   template<typename UserType, typename = enableIfIntegral<UserType>>
   static UserType toUserTypeHexInt(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
     if(iInfo.isSigned) {
-      auto maybeInt = intFromBinaryStr<UserType>(binaryStrFromHexStr(str, true, iInfo.isSigned));
+      auto maybeInt = intFromBinaryStr<UserType>(binaryStrFromHexStr(str, iInfo.isSigned));
       if(not maybeInt) {
         throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType for writint");
       }
@@ -393,9 +387,7 @@ namespace ChimeraTK {
 
   template<typename UserType, typename = enableIfFloat<UserType>>
   static UserType toUserTypeHexFloat(const std::string& str, [[maybe_unused]] const InteractionInfo& iInfo) {
-    auto maybeFloat = floatFromBinaryStr<UserType>(
-        binaryStrFromHexStr(str, false, false)); // binaryStrFromHex will right-pack a 0 fractional nibble str.length is
-                                                 // odd. If that doesn't make it fit into the float type, we throw.
+    auto maybeFloat = floatFromBinaryStr<UserType>(binaryStrFromHexStr(str, false));
     if(not maybeFloat) {
       throw ChimeraTK::runtime_error("Unable to fit the value " + str + " into the UserType for writing");
     }
