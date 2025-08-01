@@ -6,6 +6,8 @@
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
 
+#include <inja/inja.hpp>
+
 #include <array>
 #include <map>
 #include <optional>
@@ -388,6 +390,52 @@ namespace ChimeraTK {
       return std::get<ResponseBytesInfo>(_responseInfo).nBytesReadResponse;
     }
     return std::nullopt;
+  }
+
+  /********************************************************************************************************************/
+
+  std::string InteractionInfo::getRegexString() const {
+    TransportLayerType type = getTransportLayerType();
+
+    std::string valueRegex{};
+    if(fixedRegexCharacterWidthOpt) { // a fixedSizeNumberWidth is specified
+      std::string width = std::to_string(*fixedRegexCharacterWidthOpt);
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]{" + width + "})";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]{" + width + "})";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.{" + width + "})";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
+    }
+    else { // no fixedSizeNumberWidth is specified
+      if(type == TransportLayerType::DEC_INT) {
+        valueRegex = "([+-]?[0-9]+)";
+      }
+      else if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_FLOAT or
+          type == TransportLayerType::BIN_INT) {
+        valueRegex = "([0-9A-Fa-f]+)";
+      }
+      else if(type == TransportLayerType::DEC_FLOAT) {
+        valueRegex = "([+-]?[0-9]+\\.?[0-9]*)";
+      }
+      else if(type == TransportLayerType::STRING) {
+        valueRegex = "(.*)";
+      }
+      else if(type != TransportLayerType::VOID) {
+        assert(!valueRegex.empty());
+      }
+    }
+    return valueRegex;
   }
 
   /********************************************************************************************************************/
@@ -1062,6 +1110,40 @@ namespace ChimeraTK {
               << (iInfo.fixedRegexCharacterWidthOpt ? (int)iInfo.fixedRegexCharacterWidthOpt.value() : -1)
               << ", fractionalBitsOpt: " << (iInfo.fractionalBitsOpt ? (int)iInfo.fractionalBitsOpt.value() : -1);
   }
+
+  /********************************************************************************************************************/
+
+  std::regex CommandBasedBackendRegisterInfo::getResponseRegex(
+      const InteractionInfo& info, const std::string& errorMessageDetail) const {
+    std::string valueRegex = info.getRegexString();
+
+    inja::json replacePatterns;
+    replacePatterns["x"] = {};
+    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns["x"].push_back(valueRegex);
+    }
+
+    std::regex returnRegex;
+    try {
+      auto regexText = inja::render(info.responsePattern, replacePatterns);
+      returnRegex = regexText;
+    }
+    catch(std::regex_error& e) {
+      throw ChimeraTK::logic_error("Regex error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+    }
+    catch(inja::ParserError& e) {
+      throw ChimeraTK::logic_error(
+          "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+    }
+    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
+    if(returnRegex.mark_count() != getNumberOfElements()) {
+      throw ChimeraTK::logic_error("Wrong number of capture groups " + std::to_string(returnRegex.mark_count()) + "(" +
+          std::to_string(getNumberOfElements()) + " required) in responsePattern \"" + info.responsePattern +
+          "\" for " + errorMessageDetail);
+    }
+    return returnRegex;
+  } // end getResponseRegex
 
   /********************************************************************************************************************/
 
