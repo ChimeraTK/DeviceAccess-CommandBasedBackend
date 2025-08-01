@@ -167,7 +167,8 @@ std::string hexStrFromBinaryStr(const std::string& byteStr) noexcept {
   // Requires the byteStr.length() to be accurate, despite the expected presence of null characters.
   // So something needs to ensure it is the correct length, such as with a resize() command.
 
-  std::string hexOut(2 * byteStr.length(), '0');
+  std::string hexOut;
+  hexOut.resize(2 * byteStr.length());
   auto hexIt = hexOut.begin();
   for(unsigned char byte : byteStr) {
     auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
