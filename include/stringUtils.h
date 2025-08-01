@@ -76,16 +76,6 @@ std::string getLower(const std::string& str) noexcept;
 [[nodiscard]] std::string binaryStrFromHexStr(const std::string& hexStr, bool isSigned = false) noexcept;
 
 /**
- * @brief Convert a string container of bytes into the string hexidecimal representation of that data.
- * @param[in] byteStr A string container of bytes (like "\xFF"). It must have the length set accurately, since without
- * intervention it will terminate on the furst null character.
- * @returns the hexidecimal representation string of the input, like "FF". Capitals are used for A-F. The output length
- * is fully determined by the length of byteStr: return length = 2 byteStr.length. string is guarenteed to be exactly
- * twice as long as the input string.
- */
-[[nodiscard]] std::string hexStrFromBinaryStr(const std::string& byteStr) noexcept;
-
-/**
  * @brief Convert a string container of bytes into the string hexidecimal representation of that data. The hex output
  * and byteStr input can be different lengths.
  * @param[in] byteStr A string container of bytes (like "\xFF"). It must have the length set accurately, since without
@@ -93,12 +83,13 @@ std::string getLower(const std::string& str) noexcept;
  * @param[in] nHexChars Is the length of the output in hexidecimal character count (nibbles).
  * @param[in] isSigned Whether or not to treat the binary input as a signed input - in case the output needs to be
  * left-padded.
- * @returns the hexidecimal representation string of the input, like "FF". Capitals are used for A-F. If nHexChars <
- * 2*byteStr.length(), the byte string is left truncated. If nHexChar is larger, it is left padded. string is guarenteed
- * to be exactly twice as long as the input string.
+ * @returns the hexidecimal representation string of the input, like "FF". Capitals are used for A-F.
+ * If nHexChars is not specified, the return length is 2 x byteStr.length.
+ * If nHexChars < 2*byteStr.length(), the byte string is left truncated. If nHexChar is larger, it is left padded.
+ * string is guarenteed to be exactly twice as long as the input string.
  */
 [[nodiscard]] std::string hexStrFromBinaryStr(
-    const std::string& byteStr, size_t nHexChars, bool isSigned = false) noexcept;
+    const std::string& byteStr, std::optional<size_t> nHexChars = std::nullopt, bool isSigned = false) noexcept;
 
 /**
  * @brief Case insensitive equality comparison of two strings.
