@@ -27,17 +27,6 @@ namespace ChimeraTK {
     TcpCommandHandler(const std::string& host, const std::string& port,
         const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
-    /**
-     * Writes a string cmd to the device.
-     * Typically cmd is a command.
-     * @param[in] cmd The string to be written to the device.
-     * @param[in] overrideDelimiter: if not set, the default delimiter set in the constructor is used. Otherwise, this is used.
-     */
-    inline void write(
-        const std::string& cmd, const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{}) const {
-      _tcpDevice->send(cmd + toString(writeDelimiter));
-    }
-
    protected:
     std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
         const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) override;
