@@ -110,12 +110,11 @@ std::string getLower(const std::string& str) noexcept {
 
 /**********************************************************************************************************************/
 
-std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, const bool isSigned) noexcept {
+std::string binaryStrFromHexStr(const std::string& hexStr, const bool isSigned) noexcept {
   /* Use case: writing to device. We fill in the hexidecimal of interest with the regex, then convert to binary for sending.
   * If h is odd, the first byte or last will be special, requiring padding
-  * This padding could go on the left or the right (padLeft = false).
 
-  * Problem: if you feed in ABC with padLeft=true, this gets interpreted to 0ABC, loosing the signed bit.
+  * Problem: if you feed in ABC, this gets interpreted to 0ABC, loosing the signed bit.
   * So we need isSigned to tell us whether to move the signed bit.
   */
 
@@ -135,23 +134,15 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool padLeft, c
   const size_t hexLengthIsOdd = hexStr.length() % 2;
 
   if(hexLengthIsOdd) {
-    if(padLeft) {
-      binOut[0] = static_cast<char>(binCharFromHexChar(hexStr[0]));
-      if(isSigned and (binOut[0] >= 0x08)) { // signed and negative
-        binOut[0] += '\xF0';                 // Left-pack with F.
-      }
-    }
-    else { // pad right
-      binOut.back() = static_cast<char>(binCharFromHexChar(hexStr[hexStr.length() - 1]) << 4U);
+    binOut[0] = static_cast<char>(binCharFromHexChar(hexStr[0]));
+    if(isSigned and (binOut[0] >= 0x08)) { // signed and negative
+      binOut[0] += '\xF0';                 // Left-pack with F.
     }
   }
 
-  const auto bStart = static_cast<size_t>(hexLengthIsOdd and padLeft); // = (hexLengthIsOdd and padLeft) ? 1 : 0;
-  const size_t bEnd = binOut.length() -
-      static_cast<size_t>(hexLengthIsOdd and
-          not padLeft); // = (hexLengthIsOdd and not padLeft) ? (binOut.length() - 1) : binOut.length();
+  const auto bStart = static_cast<size_t>(hexLengthIsOdd ? 1 : 0);
 
-  for(size_t b = bStart; b < bEnd; ++b) {
+  for(size_t b = bStart; b < binOut.length(); ++b) {
     const unsigned char hiNibble = (binCharFromHexChar(hexStr[(2 * b) - bStart]) << 4U);
     const unsigned char loNibble = binCharFromHexChar(hexStr[(2 * b) + 1 - bStart]);
     binOut[b] = static_cast<char>(hiNibble | loNibble);
