@@ -155,7 +155,7 @@ std::string binaryStrFromHexStr(const std::string& hexStr, const bool isSigned) 
 /*
  * Returns the pair of hexidecimal chars for {high nibble, low nibble"
  */
-inline std::pair<char, char> getHexDigitsFromByte(unsigned char byte) {
+inline std::pair<char, char> getHexDigitsFromByte(unsigned char byte) noexcept {
   char upper = "0123456789ABCDEF"[(static_cast<unsigned>(byte) >> 4U) & 0xFU];
   char lower = "0123456789ABCDEF"[static_cast<unsigned>(byte) & 0xFU]; // char array isn't store 2x
   return {upper, lower};
@@ -163,62 +163,58 @@ inline std::pair<char, char> getHexDigitsFromByte(unsigned char byte) {
 
 /**********************************************************************************************************************/
 
-std::string hexStrFromBinaryStr(const std::string& byteStr) noexcept {
-  // Requires the byteStr.length() to be accurate, despite the expected presence of null characters.
-  // So something needs to ensure it is the correct length, such as with a resize() command.
-
-  std::string hexOut(2 * byteStr.length(), '0');
-  auto hexIt = hexOut.begin();
-  for(unsigned char byte : byteStr) {
-    auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
-    *hexIt++ = highNibble;
-    *hexIt++ = lowNibble;
-  }
-  return hexOut;
-}
-
-/**********************************************************************************************************************/
-
-std::string hexStrFromBinaryStr(const std::string& byteStr, size_t nHexChars, bool isSigned) noexcept {
+std::string hexStrFromBinaryStr(const std::string& byteStr, std::optional<size_t> nHexChars, bool isSigned) noexcept {
   // Requires the byteStr.length() to be accurate, despite the expected presence of null characters.
   // So something needs to ensure it is the correct length, such as with a resize() command.
 
   int byteStrLength = static_cast<int>(byteStr.length());
-  std::string hexOut(nHexChars, '0'); // Fill hexOut with 00000
+  size_t iHexChars = nHexChars.value_or(2U * byteStr.length());
+  std::string hexOut(iHexChars, '0'); // Fill hexOut with 00000
 
   if(byteStrLength == 0) {
     return hexOut;
   }
 
-  int64_t hexStrIndexLeft = static_cast<int64_t>(nHexChars) -
-      2L; // The hexOut index of the left of the two hex digits resulting from the byte at byteStrIndex.
-  for(int byteStrIndex = byteStrLength - 1; byteStrIndex >= 0; byteStrIndex--) {
-    auto byte = static_cast<unsigned char>(byteStr[byteStrIndex]);
-    hexStrIndexLeft = static_cast<int64_t>(nHexChars) - (2L * (byteStrLength - byteStrIndex));
+  if(nHexChars) { // [[unlikely]]
+    int64_t hexStrIndexLeft = static_cast<int64_t>(iHexChars) - 2L;
+    // The hexOut index of the left of the two hex digits resulting from the byte at byteStrIndex.
+    for(int byteStrIndex = byteStrLength - 1; byteStrIndex >= 0; byteStrIndex--) {
+      auto byte = static_cast<unsigned char>(byteStr[byteStrIndex]);
+      hexStrIndexLeft = static_cast<int64_t>(iHexChars) - (2L * (byteStrLength - byteStrIndex));
 
-    auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
-    if(hexStrIndexLeft >= -1L) { // If the right hex digit doesn't hit index 0
-      hexOut[hexStrIndexLeft + 1L] = lowNibble;
+      auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
+      if(hexStrIndexLeft >= -1L) { // If the right hex digit doesn't hit index 0
+        hexOut[hexStrIndexLeft + 1L] = lowNibble;
+      }
+      else {
+        break; // iHexChars is shorter than 2*byteStringSize and iHexChars is odd
+      }
+      if(hexStrIndexLeft >= 0L) {
+        hexOut[hexStrIndexLeft] = highNibble;
+      }
+      else {
+        break; // iHexChars is shorter than 2*byteStringSize and iHexChars is even
+      }
     }
-    else {
-      break; // nHexChars is shorter than 2*byteStringSize and nHexChars is odd
-    }
-    if(hexStrIndexLeft >= 0L) {
-      hexOut[hexStrIndexLeft] = highNibble;
-    }
-    else {
-      break; // nHexChars is shorter than 2*byteStringSize and nHexChars is even
+
+    // iHexChars is longer than byteStr, left pack with F if byteStr
+    if(isSigned and hexStrIndexLeft > 0L) {
+      bool bit0 = static_cast<bool>(
+          (byteStr[0] >> 15U) & 0x01U); // NOLINT(hicpp-signed-bitwise) Behavior relies on signed integer bit shift
+      if(bit0) {
+        for(int64_t h = 0L; h < hexStrIndexLeft; h++) {
+          hexOut[h] = 'F';
+        }
+      }
     }
   }
-
-  // nHexChars is longer than byteStr, left pack with F if byteStr
-  if(isSigned and hexStrIndexLeft > 0L) {
-    bool bit0 = static_cast<bool>(
-        (byteStr[0] >> 15U) & 0x01U); // NOLINT(hicpp-signed-bitwise) Behavior relies on signed integer bit shift
-    if(bit0) {
-      for(int64_t h = 0L; h < hexStrIndexLeft; h++) {
-        hexOut[h] = 'F';
-      }
+  else { // [[likely]]
+    // no nHexChars is specified so the output is simply 2x the length of the input.
+    auto hexIt = hexOut.begin();
+    for(unsigned char byte : byteStr) {
+      auto [highNibble, lowNibble] = getHexDigitsFromByte(byte);
+      *hexIt++ = highNibble;
+      *hexIt++ = lowNibble;
     }
   }
   return hexOut;
