@@ -10,9 +10,7 @@
 #include <vector>
 
 class CommandHandlerDefaultDelimiter {};
-class NoDelimiter {};
-using ReadableDelimiter = std::variant<CommandHandlerDefaultDelimiter, std::string>;
-using WritableDelimiter = std::variant<CommandHandlerDefaultDelimiter, NoDelimiter, std::string>;
+using Delimiter = std::variant<CommandHandlerDefaultDelimiter, std::string>;
 
 /**********************************************************************************************************************/
 
@@ -37,15 +35,15 @@ class CommandHandler {
    * @param[in] nLinesToRead The number of lines required in the reply to the sent command cmd, and the length of the
    * return vector. If 0, then no read is attempted.
    * @param[in] writeDelimiter if set, this overrides the default delimiter the writing operation in this call.
-   * It can be set to "" or (preferably) to NoDelimiter{} to send a raw binary command.
+   * It can be set to "" to send a raw binary command.
    * @param[in] readDelimiter if set, this overrides the default delimiter for the reading operation in this call.
    * Since empty string cannot be a line delimitier, if overrideReadDelimiter is "", the default delimiter will be used.
    * @returns A vector, of length nLinesToRead, of strings containing the response lines.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
   std::vector<std::string> sendCommandAndReadLines(std::string cmd, size_t nLinesToRead = 1,
-      const WritableDelimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
-      const ReadableDelimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) {
+      const Delimiter& writeDelimiter = CommandHandlerDefaultDelimiter{},
+      const Delimiter& readDelimiter = CommandHandlerDefaultDelimiter{}) {
     return sendCommandAndReadLinesImpl(std::move(cmd), nLinesToRead, writeDelimiter, readDelimiter);
   }
 
@@ -60,8 +58,7 @@ class CommandHandler {
    * @returns A string as a container of bytes containing the response. The return string is not null terminated.
    * @throws ChimeraTK::runtime_error if those returns do not occur within timeout.
    */
-  std::string sendCommandAndReadBytes(
-      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter = NoDelimiter{}) {
+  std::string sendCommandAndReadBytes(std::string cmd, size_t nBytesToRead, const Delimiter& writeDelimiter = "") {
     return sendCommandAndReadBytesImpl(std::move(cmd), nBytesToRead, writeDelimiter);
   }
 
@@ -78,18 +75,18 @@ class CommandHandler {
   std::chrono::milliseconds timeout;
 
   [[nodiscard]] std::string toString(
-      const WritableDelimiter& delimOption) const noexcept; //!< Converts a writeable delimiter option to string
+      const Delimiter& delimOption) const noexcept; //!< Converts a delimiter option to string
 
   /**
-   * @brief Converts a readable delimiter option to string
-   * @param[in] delimOption must never be "", and this case must be externally protected against.
+   * @brief Converts a delimiter option to string, but throws if delimOption is emptyString. Use for readDelimiters.
+   * Asserts delimOption is not ""
    */
-  [[nodiscard]] std::string toString(const ReadableDelimiter& delimOption) const noexcept;
+  [[nodiscard]] std::string toStringGuarded(const Delimiter& delimOption) const;
 
  protected:
-  virtual std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
-      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) = 0;
+  virtual std::vector<std::string> sendCommandAndReadLinesImpl(
+      std::string cmd, size_t nLinesToRead, const Delimiter& writeDelimiter, const Delimiter& readDelimiter) = 0;
 
   virtual std::string sendCommandAndReadBytesImpl(
-      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) = 0;
+      std::string cmd, size_t nBytesToRead, const Delimiter& writeDelimiter) = 0;
 };
