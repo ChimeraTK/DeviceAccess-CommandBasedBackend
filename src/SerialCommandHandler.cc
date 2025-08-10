@@ -23,8 +23,8 @@ SerialCommandHandler::SerialCommandHandler(
 
 /**********************************************************************************************************************/
 
-std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
-    const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) {
+std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(
+    std::string cmd, size_t nLinesToRead, const Delimiter& writeDelimiter, const Delimiter& readDelimiter) {
   std::vector<std::string> outputStrVec;
   outputStrVec.reserve(nLinesToRead);
 
@@ -34,7 +34,7 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(std::
     return outputStrVec;
   }
 
-  std::string delim = toString(readDelimiter);
+  std::string delim = toStringGuarded(readDelimiter);
   std::string readStr;
   for(size_t nLinesFound = 0; nLinesFound < nLinesToRead; ++nLinesFound) {
     try {
@@ -56,15 +56,15 @@ std::vector<std::string> SerialCommandHandler::sendCommandAndReadLinesImpl(std::
 /**********************************************************************************************************************/
 
 std::string SerialCommandHandler::sendCommandAndReadBytesImpl(
-    std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) {
+    std::string cmd, size_t nBytesToRead, const Delimiter& writeDelimiter) {
   _serialPort->send(cmd + toString(writeDelimiter));
   return _serialPort->readBytesWithTimeout(nBytesToRead, timeout);
 }
 
 /**********************************************************************************************************************/
 
-std::string SerialCommandHandler::waitAndReadline(const ReadableDelimiter& readDelimiter) const {
-  std::string delim = toString(readDelimiter);
+std::string SerialCommandHandler::waitAndReadline(const Delimiter& readDelimiter) const {
+  std::string delim = toStringGuarded(readDelimiter);
   auto readData = _serialPort->readline(delim);
   if(not readData.has_value()) {
     throw std::logic_error("FIXME: BAD INTERFACE");

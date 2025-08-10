@@ -35,15 +35,14 @@ class SerialCommandHandler : public CommandHandler {
    * @returns The line read from the serail port.
    * @throws ChimeraTK::logic_error if interface fails to read a value.
    */
-  [[nodiscard]] std::string waitAndReadline(
-      const ReadableDelimiter& delimiter = CommandHandlerDefaultDelimiter{}) const;
+  [[nodiscard]] std::string waitAndReadline(const Delimiter& delimiter = CommandHandlerDefaultDelimiter{}) const;
 
  protected:
-  std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
-      const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) override;
+  std::vector<std::string> sendCommandAndReadLinesImpl(
+      std::string cmd, size_t nLinesToRead, const Delimiter& writeDelimiter, const Delimiter& readDelimiter) override;
 
   std::string sendCommandAndReadBytesImpl(
-      std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) override;
+      std::string cmd, size_t nBytesToRead, const Delimiter& writeDelimiter) override;
 
   /**
    * The SerialPort handle

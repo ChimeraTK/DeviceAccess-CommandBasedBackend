@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(testBinary) {
   if(DEBUG) {
     std::cout << "testSerial: cmd returned, setLineMode" << std::endl;
   }
-  std::string status2 = s.sendCommandAndReadLines("setLineMode", 1, NoDelimiter{})[0];
+  std::string status2 = s.sendCommandAndReadLines("setLineMode", 1, "")[0];
   if(DEBUG) {
     std::cout << "testSerial: setLineMode returned" << std::endl;
   }

@@ -28,11 +28,11 @@ namespace ChimeraTK {
         const std::string& delimiter = ChimeraTK::TCP_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
    protected:
-    std::vector<std::string> sendCommandAndReadLinesImpl(std::string cmd, size_t nLinesToRead,
-        const WritableDelimiter& writeDelimiter, const ReadableDelimiter& readDelimiter) override;
+    std::vector<std::string> sendCommandAndReadLinesImpl(
+        std::string cmd, size_t nLinesToRead, const Delimiter& writeDelimiter, const Delimiter& readDelimiter) override;
 
     std::string sendCommandAndReadBytesImpl(
-        std::string cmd, size_t nBytesToRead, const WritableDelimiter& writeDelimiter) override;
+        std::string cmd, size_t nBytesToRead, const Delimiter& writeDelimiter) override;
 
     std::unique_ptr<TcpSocket> _tcpDevice;
   };
