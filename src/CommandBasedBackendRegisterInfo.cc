@@ -559,6 +559,18 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error(
           FUNC_NAME + "Illegally set response delimiter to empty string for" + errorMessageDetail);
     }
+
+    if(iInfo.usesReadBytes()) {
+      if((not iInfo.responsePattern.empty()) and (iInfo.getResponseBytes().value() == 0)) {
+        throw ChimeraTK::logic_error(FUNC_NAME + "Reading 0 bytes with a non-empty read response pattern \"" +
+            iInfo.responsePattern + "\" for" + errorMessageDetail);
+      }
+    }
+    /*Really want to get registerInfo.getResponseRegex(iInfo, and check if it's compatible with
+        //Validate nBytes in the response pattern
+        //First, count the number of non-field characters
+        That gets a regex. Then ahve
+    }*/
   } // end throwIfBadEndings
 
   /********************************************************************************************************************/
