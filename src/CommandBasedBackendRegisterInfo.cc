@@ -391,6 +391,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string InteractionInfo::getRegexString() const {
+    // Note, these regex's must be parentheses-bound capture groups
     TransportLayerType type = getTransportLayerType();
 
     std::string valueRegex{};

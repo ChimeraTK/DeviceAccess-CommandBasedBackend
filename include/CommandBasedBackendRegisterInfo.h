@@ -95,8 +95,8 @@ namespace ChimeraTK {
       [[nodiscard]] std::optional<size_t> getResponseBytes() const noexcept;
 
       /**
-       * @brief Gets the regex pattern string for this InteractionInfo
-       * @returns the string regex pattern
+       * @brief Gets the regex pattern string for this InteractionInfo's type
+       * @returns the string regex pattern as a capture group
        */
       [[nodiscard]] std::string getRegexString() const;
 
