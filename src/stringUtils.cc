@@ -310,3 +310,43 @@ bool strCmp(const std::string& a, const std::string& b) noexcept {
   }
   return true;
 }
+
+/**********************************************************************************************************************/
+
+std::string toNonCaptureGroupPattern(const std::string& regexStr) noexcept {
+  std::string result = regexStr; // copy
+
+  // Lambda to find the next capture group '(' that is not a "(?" non-capture group or a '\(' escaped parenthesis
+  // If none are found, returns std::string::npos
+  auto findCapturingParen = [&](std::size_t start) -> std::size_t {
+    std::size_t pos = result.find('(', start);
+    while(pos != std::string::npos) { // a position was found
+      // count consecutive backslashes before the '('
+      std::size_t backSlashCount = 0;
+      for(std::size_t i = pos; i > 0 && result[i - 1] == '\\'; --i) {
+        ++backSlashCount;
+      }
+
+      // skip if it's a non-capturing group "(?" or an escaped '\('
+      if(((pos + 1 < result.size()) && (result.compare(pos, 2, "(?") == 0)) // non capture "(?"
+          or (backSlashCount % 2 == 1)) { // Odd number of preceeding backslashes, so an escaped '\('
+        pos = result.find('(', pos + 1);
+        continue;
+      }
+
+      break; // found a true capturing paren
+    }
+    return pos;
+  };
+
+  // For all capturing parentheses
+  std::size_t pos = findCapturingParen(0);
+  while(pos != std::string::npos) {
+    result.replace(pos, 1, "(?:");     // convert to non-capturing
+    pos = findCapturingParen(pos + 3); // move past the inserted "(?:"
+  }
+
+  return result;
+}
+
+/**********************************************************************************************************************/

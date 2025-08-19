@@ -3,10 +3,9 @@
 
 #include "CommandBasedBackendRegisterInfo.h"
 
+#include "injaUtils.h"
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
-
-#include <inja/inja.hpp>
 
 #include <array>
 #include <map>
@@ -17,23 +16,12 @@
 
 namespace ChimeraTK {
 
-  using InteractionInfo = CommandBasedBackendRegisterInfo::InteractionInfo;
-
   /**
    * @brief This enforces that the register is either readable, writeable, or both.
    * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error
    */
   static void throwIfBadActivation(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief This checks for the obvious error of having a command response patterns without corresponding command patterns.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error
-   */
-  static void throwIfBadCommandAndResponsePatterns(
-
       const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
 
   /**
@@ -104,6 +92,16 @@ namespace ChimeraTK {
    * @throws ChimeraTK::logic_error If the signed property is invalid for the type.
    */
   static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
+
+  /**
+   * @brief Validates that the number of checksum entries matches the number of inja checksum payloads in the command
+   * and response pattern.
+   * @param[in] regInfo The CommandBasedBackendRegisterInfo to validate.
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error If there is a size missmatch, or an invalid checksum inja patterns.
+   */
+  static void throwIfBadChecksums(
+      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail);
 
   /*
    * Get the DataType best suited to the InteractionInfo info.
@@ -196,6 +194,16 @@ namespace ChimeraTK {
   template<typename EnumType>
   static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
 
+  /**
+   * @brief Set all checksum relevent members in the iInfo.
+   * @param[in] j nlohmann::json from the map file
+   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
+   * @throws ChimeraTK::logic_error if there are undefined checksum identifiers in the map file, or if the
+   * commandPattern's checksum tags are ill formed.
+   */
+  template<typename EnumType>
+  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
@@ -206,7 +214,7 @@ namespace ChimeraTK {
     // Validite data in readInfo and writeInfo
     throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
     throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail);
-    throwIfBadCommandAndResponsePatterns(writeInfo, readInfo, errorMessageDetail);
+    throwIfBadCommandAndResponsePatterns(*this, errorMessageDetail);
     throwIfBadEndings(writeInfo, errorMessageDetailWrite);
     throwIfBadEndings(readInfo, errorMessageDetailWrite);
     throwIfBadNElements(writeInfo, getNumberOfElementsImpl(), errorMessageDetail);
@@ -216,6 +224,7 @@ namespace ChimeraTK {
     throwIfBadFractionalBits(readInfo, errorMessageDetailRead);
     throwIfBadSigned(writeInfo, errorMessageDetailWrite);
     throwIfBadSigned(readInfo, errorMessageDetailRead);
+    throwIfBadChecksums(*this, errorMessageDetail);
   }
 
   /********************************************************************************************************************/
@@ -281,7 +290,9 @@ namespace ChimeraTK {
     throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail); // DEBUG
 
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
+    readInfo.setResponseNLines(1);
     setEndingsFromJson<mapFileRegisterKeys>(readInfo, j, defaultSerialDelimiter, errorMessageDetail);
+    writeInfo.setResponseNLines(0);
     setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter, errorMessageDetail);
     // NOTE: These delimiter settings may be overrided by populateFromJson below.
 
@@ -359,6 +370,9 @@ namespace ChimeraTK {
 
     // SIGNED
     setSignedFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+
+    // CMD_CHECKSUM, RESP_CHECKSUM
+    setChecksumsFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
   } // populateFromJson
 
   /********************************************************************************************************************/
@@ -391,6 +405,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::string InteractionInfo::getRegexString() const {
+    // Note, these regex's must be parentheses-bound capture groups
     TransportLayerType type = getTransportLayerType();
 
     std::string valueRegex{};
@@ -482,8 +497,10 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadCommandAndResponsePatterns(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+  void throwIfBadCommandAndResponsePatterns(
+      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail) {
+    const InteractionInfo& writeInfo = regInfo.writeInfo;
+    const InteractionInfo& readInfo = regInfo.readInfo;
     bool lacksReadCommand = readInfo.commandPattern.empty();
     bool lacksWriteCommand = writeInfo.commandPattern.empty();
     bool hasReadResponse = not readInfo.responsePattern.empty();
@@ -505,6 +522,33 @@ namespace ChimeraTK {
             toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern + "\" for void-type for " +
             errorMessageDetail);
       }
+    }
+
+    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
+    size_t nReadResponseMarks = regInfo.getReadResponseDataRegex().mark_count();
+    size_t nExpectedMarks;
+    if(readInfo.isActive() and (regInfo.readInfo.getTransportLayerType() != TransportLayerType::VOID)) {
+      nExpectedMarks = regInfo.getNumberOfElementsImpl();
+    }
+    else {
+      /* nElements = 1 when the type is void, even though no return marks are expected.
+       * Also, if it's a write-only register, expect 0 reading marks
+       */
+      nExpectedMarks = 0;
+    }
+
+    if(nReadResponseMarks != nExpectedMarks) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "Wrong number of capture groups " + std::to_string(nReadResponseMarks) +
+          "(" + std::to_string(nExpectedMarks) + " required) in read responsePattern \"" + readInfo.responsePattern +
+          "\" for " + errorMessageDetail);
+    }
+
+    // Ensure no capture groups in the write response.
+    size_t nWriteResponseMarks = regInfo.getWriteResponseDataRegex().mark_count();
+    if(nWriteResponseMarks != 0) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "Write response has " + std::to_string(nReadResponseMarks) +
+          "illegal capture group(s) in write responsePattern \"" + writeInfo.responsePattern + "\" for " +
+          errorMessageDetail);
     }
   } // end throwIfBadCommandAndResponsePatterns
 
@@ -682,6 +726,51 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error(
           FUNC_NAME + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) + "is signed for " + errorMessageDetail);
     }
+  }
+
+  static void throwIfBadChecksum(
+      const InteractionInfo& iInfo, size_t nCsMarks, size_t nCsPayloadMarks, const std::string& errorMessageDetail) {
+    // getNChecksums throws ChimeraTK::logic_error if the validates the checksum patterns are ill-formed..
+    size_t nRespCS = getNChecksums(iInfo.responsePattern, errorMessageDetail + "for response checksum");
+    size_t nCmdCS = getNChecksums(iInfo.commandPattern, errorMessageDetail + "for command checksum");
+
+    // Verify that the number of checksum tags found in the patterns match the size of the checksum name array given in the map file.
+    if(nRespCS != iInfo.responseChecksumEnums.size()) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "The number (" + std::to_string(iInfo.responseChecksumEnums.size()) +
+          ") of " + toStr(mapFileInteractionInfoKeys::RESP_CHECKSUM) + " entries does not match number (" +
+          toStr(mapFileInteractionInfoKeys::RESP_CHECKSUM) + ") of checksum tags in the inja response pattern \"" +
+          iInfo.responsePattern + "\" for " + errorMessageDetail);
+    }
+    if(nCmdCS != iInfo.commandChecksumEnums.size()) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "The number (" + std::to_string(iInfo.commandChecksumEnums.size()) +
+          ") of " + toStr(mapFileInteractionInfoKeys::CMD_CHECKSUM) + " entries does not match number (" +
+          toStr(mapFileInteractionInfoKeys::CMD_CHECKSUM) + ") of checksum tags in the inja command pattern \"" +
+          iInfo.commandPattern + "\" for " + errorMessageDetail);
+    }
+
+    // Verify that the modified regex for capturing checksum insertion points has the right number of captures.
+    size_t nCS = iInfo.commandChecksumEnums.size();
+    if(nCsMarks != nCS) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "The number of capture groups (" + std::to_string(nCsPayloadMarks) +
+          ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_POINT) + " checksum tags (" +
+          std::to_string(nCS) + ") in responsePattern \"" + iInfo.responsePattern + "\" for " + errorMessageDetail);
+    }
+
+    // Verify that the modified regex for capturing checksum payloads has the right number of captures.
+    if(nCsPayloadMarks != nCS) {
+      throw ChimeraTK::logic_error(FUNC_NAME + "The number of capture groups (" + std::to_string(nCsPayloadMarks) +
+          ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_START) + "/" +
+          toStr(injaTemplatePatternKeys::CHECKSUM_END) + "checksum payload tags (" + std::to_string(nCS) +
+          ") in responsePattern \"" + iInfo.responsePattern + "\" for " + errorMessageDetail);
+    }
+  } // end throwIfBadChecksum
+
+  static void throwIfBadChecksums(
+      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail) {
+    throwIfBadChecksum(regInfo.writeInfo, regInfo.getWriteResponseChecksumRegex().mark_count(),
+        regInfo.getWriteResponseChecksumPayloadRegex().mark_count(), errorMessageDetail + " for write");
+    throwIfBadChecksum(regInfo.readInfo, regInfo.getReadResponseChecksumRegex().mark_count(),
+        regInfo.getReadResponseChecksumPayloadRegex().mark_count(), errorMessageDetail + " for read");
   }
 
   /********************************************************************************************************************/
@@ -1084,6 +1173,51 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  template<typename EnumType>
+  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+    const std::string funcName = FUNC_NAME; // keeps the linter happy
+    auto processChecksumField = [&](const EnumType& key, const std::string& pattern) -> std::vector<checksum> {
+      std::vector<checksum> checksumEnums;
+      const std::string keyStr = toStr(key);
+      if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
+        if(opt->is_array()) {
+          for(const auto& csStrJson : *opt) {
+            std::string csStr = csStrJson.get<std::string>();
+            if(auto csEnumOpt = getEnumOptFromStrMapCaseInsensitive<checksum>(csStr, getMapForEnum<checksum>())) {
+              checksumEnums.push_back(*csEnumOpt);
+            }
+            else {
+              throw ChimeraTK::logic_error(
+                  funcName + "Unknown value " + csStr + " for " + keyStr + " - " + errorMessageDetail);
+            }
+          }
+        }
+        else if(opt->is_string()) {
+          std::string csStr = opt->get<std::string>();
+          if(auto csEnumOpt = getEnumOptFromStrMapCaseInsensitive<checksum>(csStr, getMapForEnum<checksum>())) {
+            size_t nCS = getNChecksums(pattern, errorMessageDetail);
+            checksumEnums = std::vector<checksum>(nCS, *csEnumOpt);
+          }
+          else {
+            throw ChimeraTK::logic_error(
+                funcName + "Unknown value " + csStr + " for " + keyStr + " - " + errorMessageDetail);
+          }
+        }
+        else {
+          throw ChimeraTK::logic_error(
+              funcName + "Invalid non-array, non-string type for " + keyStr + " for " + errorMessageDetail);
+        }
+      }
+      return checksumEnums;
+    };
+
+    iInfo.commandChecksumEnums = processChecksumField(EnumType::CMD_CHECKSUM, iInfo.commandPattern);
+    iInfo.responseChecksumEnums = processChecksumField(EnumType::RESP_CHECKSUM, iInfo.responsePattern);
+    iInfo.commandChecksumPayloadStrs = getChecksumPayloadSnippets(iInfo.commandPattern, errorMessageDetail);
+  } // end setChecksumsFromJson
+
+  /********************************************************************************************************************/
+
   // Operators for cout << InteractionInfo
   std::ostream& operator<<(std::ostream& os, const InteractionInfo& iInfo) {
     return os << "isActive: " << iInfo.isActive() << ", isBinary: " << iInfo.isBinary() << ", transportLayerType: "
@@ -1109,37 +1243,104 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::regex CommandBasedBackendRegisterInfo::getResponseRegex(
+  std::regex CommandBasedBackendRegisterInfo::getResponseDataRegex(
       const InteractionInfo& info, const std::string& errorMessageDetail) const {
-    std::string valueRegex = info.getRegexString();
+    std::string valueRegex = info.getRegexString(); // A capture group
 
     inja::json replacePatterns;
-    replacePatterns["x"] = {};
-    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
+    for(size_t i = 0; i < getNumberOfElementsImpl(); ++i) {
+      // NumberOfElements may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
-      replacePatterns["x"].push_back(valueRegex);
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data capture groups
     }
 
-    std::regex returnRegex;
-    try {
-      auto regexText = inja::render(info.responsePattern, replacePatterns);
-      returnRegex = regexText;
+    // Fill checksum components
+    if(not info.commandChecksumEnums.empty()) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as empty.
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
+        // render checksum insertion point tags as non-capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
+            toNonCaptureGroupPattern(getRegexString(cs)));
+      } // end for
     }
-    catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error("Regex error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+
+    return injaRenderRegex(info.responsePattern, replacePatterns, "in response data pattern for " + errorMessageDetail);
+
+  } // end getResponseDataRegex
+
+  /********************************************************************************************************************/
+
+  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumRegex(
+      const InteractionInfo& info, const std::string& errorMessageDetail) const {
+    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+
+    inja::json replacePatterns;
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
+    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+      // getNumberOfElements() may be an overestimate of how many are needed.
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
     }
-    catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error(
-          "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
+
+    // Fill checksum components
+    size_t nCS = info.commandChecksumEnums.size();
+    if(nCS > 0) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as empty.
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
+        // render checksum insertion point tags as capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(getRegexString(cs));
+      } // end for
     }
-    // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
-    if(returnRegex.mark_count() != getNumberOfElements()) {
-      throw ChimeraTK::logic_error("Wrong number of capture groups " + std::to_string(returnRegex.mark_count()) + "(" +
-          std::to_string(getNumberOfElements()) + " required) in responsePattern \"" + info.responsePattern +
-          "\" for " + errorMessageDetail);
+
+    return injaRenderRegex(
+        info.responsePattern, replacePatterns, "in response checksum pattern for " + errorMessageDetail);
+  } // end getResponseChecksumRegex
+
+  /********************************************************************************************************************/
+
+  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumPayloadRegex(
+      const InteractionInfo& info, const std::string& errorMessageDetail) const {
+    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+
+    inja::json replacePatterns;
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
+    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+      // getNumberOfElements() may be an overestimate of how many are needed.
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
     }
-    return returnRegex;
-  } // end getResponseRegex
+
+    // Fill checksum components
+    size_t nCS = info.commandChecksumEnums.size();
+    if(nCS > 0) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as the beginning and end of regex capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("(");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back(")");
+        // render checksum insertion point tags as non-capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
+            toNonCaptureGroupPattern(getRegexString(cs)));
+      } // end for
+    }
+
+    return injaRenderRegex(
+        info.responsePattern, replacePatterns, "in read response checksum payload pattern for " + errorMessageDetail);
+
+  } // end getResponseChecksumPayloadRegex
 
   /********************************************************************************************************************/
 

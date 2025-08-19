@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "DummyServer.h"
 
+#include "Checksum.h"
 #include "SerialPort.h"
 #include "stringUtils.h"
 
@@ -176,6 +177,9 @@ void DummyServer::mainLoop() {
         }
       }
       else if(data == "*IDN?") {
+        if(_debug) {
+          std::cout << "Send IDN? repsonse " << std::endl;
+        }
         sendDelimited("Dummy server for command based serial backend.");
       }
       else if(data == "SAI?") {
@@ -224,33 +228,52 @@ void DummyServer::mainLoop() {
           }
         }
         else {
-          sendDelimited("12345 Syntax error: HEX has wrong number of arguments");
+          if(_debug) {
+            std::cout << "12339 Syntax error: HEX has wrong number of arguments" << std::endl;
+          }
+          sendDelimited("12339 Syntax error: HEX has wrong number of arguments");
         }
       }
       else if(data == "HEX?") {
         if(responseWithDataAndSyntaxError) {
+          if(_debug) {
+            std::cout << "12340 DummyServer: Replying with \"_0x" << getHexStr(hex[0]) << "\"" << std::endl;
+          }
           sendDelimited("_0x" + getHexStr(hex[0]));
         }
         else {
+          if(_debug) {
+            std::cout << "12341 DummyServer: Replying with \"0x" << getHexStr(hex[0]) << "\"" << std::endl;
+          }
           sendDelimited("0x" + getHexStr(hex[0]));
         }
         if(!sendTooFew) {
+          if(_debug) {
+            std::cout << "12342 DummyServer: Replying with \"0x" << getHexStr(hex[1])
+                      << R"(\R\N)" + getHexStr(hex[2]) + R"(\R\N")" << std::endl;
+          }
           sendDelimited("0x" + getHexStr(hex[1]));
           sendDelimited(getHexStr(hex[2]));
         }
       }
       else if(data.find("SOUR:FREQ:CW ") == 0) {
         if(data.size() < 14) {
-          sendDelimited("12345 Syntax error: SOUR:FREQ:CW needs an argument");
+          if(_debug) {
+            std::cout << "12343 Syntax error: SOUR:FREQ:CW needs an argument" << std::endl;
+          }
+          sendDelimited("12343 Syntax error: SOUR:FREQ:CW needs an argument");
           continue;
         }
         try {
           cwFrequency = std::stol(data.substr(13));
           if(_debug) {
-            std::cout << "DummyServer: Setting cwFrequency to " << cwFrequency << std::endl;
+            std::cout << "12344 DummyServer: NORMAL Setting cwFrequency to " << cwFrequency << std::endl;
           }
         }
         catch(...) {
+          if(_debug) {
+            std::cout << "12345 Syntax error in argument: " + data.substr(13) << std::endl;
+          }
           sendDelimited("12345 Syntax error in argument: " + data.substr(13));
         }
       }
@@ -259,8 +282,16 @@ void DummyServer::mainLoop() {
           continue;
         }
         if(responseWithDataAndSyntaxError) {
+          if(_debug) {
+            std::cout << "12346 DummyServer: sending cwFrequency as \"" << "BL" + std::to_string(cwFrequency) << "\""
+                      << std::endl;
+          }
           sendDelimited("BL" + std::to_string(cwFrequency));
           continue;
+        }
+        if(_debug) {
+          std::cout << "12347 DummyServer: NORMAL Replying with cwFrequency as \"" << std::to_string(cwFrequency)
+                    << "\"" << std::endl;
         }
         sendDelimited(std::to_string(cwFrequency));
       }
@@ -298,7 +329,7 @@ void DummyServer::mainLoop() {
       }
       else if(data.find("FLT?") == 0) {
         if(_debug) {
-          std::cout << "DummyServer: register FLT?" << std::endl;
+          std::cout << "DummyServer: register FLT? Replying with \"" << flt << "\"" << std::endl;
         }
         sendDelimited(std::to_string(flt));
       }
@@ -365,7 +396,12 @@ void DummyServer::mainLoop() {
       }
       auto readValue = _serialPort->readBytes(bytesToRead);
       if(!readValue.has_value() || _stopMainLoop) {
-        std::cout << "DummyServer: Byte mode readValue has no value!" << std::endl;
+        if(_stopMainLoop) {
+          std::cout << "DummyServer: Stopping main loop" << std::endl;
+        }
+        else {
+          std::cout << "DummyServer: Byte mode readValue has no value!" << std::endl;
+        }
         return;
       }
       std::string data = readValue.value();
@@ -432,33 +468,46 @@ void DummyServer::mainLoop() {
           std::cout << "DummyServer: Now on line mode" << std::endl;
         }
       }
-      else if((data.find(std::string("\xF5\x03\xAD\xD5\x00\x00\x00\x00", 8)) == 0)) {
+      else if((data.find(std::string("\xF5\x03\xAD\xD5\x00\x00\x00\x00", 8)) == 0)) { // uLog read command
         if(_debug) {
           std::cout << "DummyServer: Registering ulog read cmd" << std::endl; // DEBUG
         }
-        std::string ulogStr("\0\0\0\0", 4);
-        auto maybeStr = binaryStrFromInt(ulog, 4);
-        if(maybeStr) {
-          ulogStr = *maybeStr;
+        char requiredChecksum = '\x7A';
+        if(data[8] == requiredChecksum) { // If correct checksum in the read command
+          std::string ulogStr("\0\0\0\0", 4);
+          auto maybeStr = binaryStrFromInt(ulog, 4);
+          if(maybeStr) {
+            ulogStr = *maybeStr;
+          }
+          else {
+            std::cout << "DummyServer: Unable to convert to int to binary string" << ulog << std::endl;
+          }
+          std::string retStr = std::string("\xF5\x04\xAD\xD5", 4) + ulogStr; // F504 prefaces a read response
+          retStr += binaryStrFromHexStr(ChimeraTK::getChecksumAlgorithm(checksum::CS8)(retStr)); // Append the checksum
+          if(_debug) {
+            std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
+          }
+          _serialPort->send(retStr);
         }
         else {
-          std::cout << "DummyServer: Unable to convert to int to binary string" << ulog << std::endl;
+          std::string requiredChecksumStr = std::string(1, requiredChecksum);
+          std::cout << "DummyServer: Bad checksum (" << hexStrFromBinaryStr(data.substr(8))
+                    << ") on ulog read command: " << hexStrFromBinaryStr(data) << " expected "
+                    << hexStrFromBinaryStr(requiredChecksumStr) << std::endl;
+          _serialPort->send(
+              std::string("\xBA\xDC\x50", 3) + data[8] + std::string("\x0A\x50\x20\xB0", 4) + requiredChecksumStr);
+          // That is to say "BADCheckSum_", what it is, "_hAS_TO_Be_", what it is required to be.
         }
-        std::string retStr = std::string("\xF5\x04\xAD\xD5", 4) + ulogStr;
-        if(_debug) {
-          std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
-        }
-        _serialPort->send(retStr);
         byteMode = false; // go back to line mode at the end of this command
         if(_debug) {
           std::cout << "DummyServer: Now on line mode" << std::endl; // DEBUG
         }
       }
-      else if((data.find(std::string("\xF5\x01\xAD\xD5", 4)) == 0)) {
+      else if((data.find(std::string("\xF5\x01\xAD\xD5", 4)) == 0)) { // uLog write command
         if(_debug) {
           std::cout << "DummyServer: Registering ulog write cmd" << std::endl;
         }
-        auto intOpt = intFromBinaryStr<uint32_t>(data.substr(4));
+        auto intOpt = intFromBinaryStr<uint32_t>(data.substr(4, 4));
         if(intOpt) {
           ulog = *intOpt;
           if(_debug) {
@@ -466,14 +515,27 @@ void DummyServer::mainLoop() {
           }
         }
         else {
-          std::cout << "DummyServer: Unable to convert to int from binary 0x" << hexStrFromBinaryStr(data.substr(4))
+          std::cout << "DummyServer: Unable to convert to int from binary 0x" << hexStrFromBinaryStr(data.substr(4, 4))
                     << std::endl;
         }
-        std::string retStr = std::string("\xF5\x02\xAD\xD5", 4) + data.substr(4);
-        if(_debug) {
-          std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
+        std::string requiredChecksumStr =
+            binaryStrFromHexStr(ChimeraTK::getChecksumAlgorithm(checksum::CS8)(data.substr(0, 8)));
+        if(data[8] == requiredChecksumStr[0]) { // If the checksum is correct
+          std::string retStr = std::string("\xF5\x02\xAD\xD5", 4) + data.substr(4, 4);
+          retStr += binaryStrFromHexStr(ChimeraTK::getChecksumAlgorithm(checksum::CS8)(retStr)); // Append the checksum
+          if(_debug) {
+            std::cout << "DummyServer: Writing back " << hexStrFromBinaryStr(retStr) << std::endl; // DEBUG
+          }
+          _serialPort->send(retStr);
         }
-        _serialPort->send(retStr);
+        else {
+          std::cout << "DummyServer: Bad checksum (" << hexStrFromBinaryStr(data.substr(8))
+                    << ") on ulog write command: " << hexStrFromBinaryStr(data) << " expected "
+                    << hexStrFromBinaryStr(requiredChecksumStr) << std::endl;
+          _serialPort->send(
+              std::string("\xBA\xD0\xC5", 3) + data[8] + std::string("\x0A\x50\x20\xB0", 4) + requiredChecksumStr);
+          // That is to say "BAD_CheckSum", what it is, "_hAS_TO_Be_", what it is required to be.
+        }
       }
 
       else {
