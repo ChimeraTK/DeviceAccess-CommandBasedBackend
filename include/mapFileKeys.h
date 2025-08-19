@@ -158,6 +158,7 @@ enum class mapFileRegisterKeys {
   BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
+  CHECKSUM,
 };
 
 // Associate json key strings with mapFileRegisterKeys enums.
@@ -178,6 +179,7 @@ inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFil
         {mapFileRegisterKeys::BIT_WIDTH, "bitWidth"}, 
         {mapFileRegisterKeys::FRACTIONAL_BITS, "fractionalBits"},
         {mapFileRegisterKeys::SIGNED, "signed"},
+        {mapFileRegisterKeys::CHECKSUM, "checksum"},
       // clang-format on
   };
   return uMap;
@@ -198,6 +200,7 @@ enum class mapFileInteractionInfoKeys {
   BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
+  CHECKSUM, // values must be strings in Checksum.cc::checksumMap
 };
 
 // Associate json key strings with mapFileInteractionInfoKeys enums.
@@ -238,10 +241,36 @@ inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum
 
         {mapFileInteractionInfoKeys::SIGNED, 
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::SIGNED)},
+
+        {mapFileInteractionInfoKeys::CHECKSUM, 
+            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::CHECKSUM)},
       // clang-format on
   };
   return uMap;
 }
+/**********************************************************************************************************************/
+
+// Keys for inja template
+enum class injaTemplatePatternKeys {
+  CHECKSUM_START,
+  CHECKSUM_END,
+  CHECKSUM_POINT,
+  DELIMITER,
+};
+
+// Associate json key strings with mapFileRegisterKeys enums.
+template<>
+inline std::unordered_map<injaTemplatePatternKeys, std::string> getMapForEnum<injaTemplatePatternKeys>() {
+  static const std::unordered_map<injaTemplatePatternKeys, std::string> uMap = {
+      // clang-format off
+        {injaTemplatePatternKeys::CHECKSUM_START, "csStart"}, 
+        {injaTemplatePatternKeys::CHECKSUM_END, "csEnd"}, 
+        {injaTemplatePatternKeys::CHECKSUM_POINT, "cs"}, 
+      // clang-format on
+  };
+  return uMap;
+}
+
 /**********************************************************************************************************************/
 
 /** Internal representation type to which we have to convert successfully.*/
