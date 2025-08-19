@@ -16,12 +16,10 @@
 namespace ChimeraTK {
 
   template<typename UserType>
-  using ToUserTypeFunc =
-      std::function<UserType(const std::string&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+  using ToUserTypeFunc = std::function<UserType(const std::string&, const InteractionInfo&)>;
 
   template<typename UserType>
-  using ToTransportLayerFunc =
-      std::function<std::string(const UserType&, const CommandBasedBackendRegisterInfo::InteractionInfo&)>;
+  using ToTransportLayerFunc = std::function<std::string(const UserType&, const InteractionInfo&)>;
 
   class CommandBasedBackend;
 
@@ -96,8 +94,17 @@ namespace ChimeraTK {
 
     void doReadTransferSynchronously() override;
 
-    std::regex _readResponseRegex;
+    std::regex _readResponseDataRegex;
+    std::regex _readResponseChecksumPayloadRegex;
+    std::regex _readResponseChecksumRegex;
+    std::regex _writeResponseDataRegex;
+    std::regex _writeResponseChecksumPayloadRegex;
+    std::regex _writeResponseChecksumRegex;
 
+    std::vector<Checksumer> _readCommandChecksumers;
+    std::vector<Checksumer> _readResponseChecksumers;
+    std::vector<Checksumer> _writeCommandChecksumers;
+    std::vector<Checksumer> _writeResponseChecksumers;
   }; // end class CommandBasedBackendRegisterAccessor
 
   DECLARE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);

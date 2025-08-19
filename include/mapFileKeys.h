@@ -117,7 +117,7 @@ template<>
 inline std::unordered_map<mapFileTopLevelKeys, std::string> getMapForEnum<mapFileTopLevelKeys>() {
   static const std::unordered_map<mapFileTopLevelKeys, std::string> uMap = {
       // clang-format off
-        {mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION, "mapFileFormatVersion"}, 
+        {mapFileTopLevelKeys::MAP_FILE_FORMAT_VERSION, "mapFileFormatVersion"},
         {mapFileTopLevelKeys::METADATA, "metadata"},
         {mapFileTopLevelKeys::REGISTERS, "registers"} // clang-format on
   };
@@ -165,17 +165,17 @@ template<>
 inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFileRegisterKeys>() {
   static const std::unordered_map<mapFileRegisterKeys, std::string> uMap = {
       // clang-format off
-        {mapFileRegisterKeys::WRITE, "write"}, 
-        {mapFileRegisterKeys::READ, "read"}, 
-        {mapFileRegisterKeys::N_ELEM, "nElem"}, 
+        {mapFileRegisterKeys::WRITE, "write"},
+        {mapFileRegisterKeys::READ, "read"},
+        {mapFileRegisterKeys::N_ELEM, "nElem"},
         {mapFileRegisterKeys::TYPE, "type"}, //TYPE and below need to be in common with mapFileInteractionInfoKeys
         {mapFileRegisterKeys::N_RESPONSE_BYTES, "nRespBytes"},
-        {mapFileRegisterKeys::N_RESPONSE_LINES, "nRespLines"}, 
+        {mapFileRegisterKeys::N_RESPONSE_LINES, "nRespLines"},
         {mapFileRegisterKeys::DELIMITER, "delimiter"},
-        {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"}, 
+        {mapFileRegisterKeys::COMMAND_DELIMITER, "cmdDelim"},
         {mapFileRegisterKeys::RESPONSE_DELIMITER, "respDelim"},
-        {mapFileRegisterKeys::CHARACTER_WIDTH, "characterWidth"}, 
-        {mapFileRegisterKeys::BIT_WIDTH, "bitWidth"}, 
+        {mapFileRegisterKeys::CHARACTER_WIDTH, "characterWidth"},
+        {mapFileRegisterKeys::BIT_WIDTH, "bitWidth"},
         {mapFileRegisterKeys::FRACTIONAL_BITS, "fractionalBits"},
         {mapFileRegisterKeys::SIGNED, "signed"},
       // clang-format on
@@ -188,6 +188,8 @@ inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFil
 enum class mapFileInteractionInfoKeys {
   COMMAND,
   RESPESPONSE,
+  CMD_CHECKSUM,
+  RESP_CHECKSUM,
   TYPE, // TYPE and below need to be in common with mapFileRegisterKeys
   N_RESPONSE_BYTES,
   N_RESPONSE_LINES,
@@ -205,43 +207,97 @@ template<>
 inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum<mapFileInteractionInfoKeys>() {
   static const std::unordered_map<mapFileInteractionInfoKeys, std::string> uMap = {
       // clang-format off
-        {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
+        {mapFileInteractionInfoKeys::COMMAND, "cmd"},
         {mapFileInteractionInfoKeys::RESPESPONSE, "resp"},
+        {mapFileInteractionInfoKeys::CMD_CHECKSUM, "cmdChecksum"},
+        {mapFileInteractionInfoKeys::RESP_CHECKSUM, "respChecksum"},
 
         //unordered_map<mapFileRegisterKeys.. is the single source of truth for these shared JSON key strings.
-        {mapFileInteractionInfoKeys::TYPE, 
+        {mapFileInteractionInfoKeys::TYPE,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::TYPE)},
 
-        {mapFileInteractionInfoKeys::N_RESPONSE_BYTES, 
+        {mapFileInteractionInfoKeys::N_RESPONSE_BYTES,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::N_RESPONSE_BYTES)},
 
-        {mapFileInteractionInfoKeys::N_RESPONSE_LINES, 
+        {mapFileInteractionInfoKeys::N_RESPONSE_LINES,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::N_RESPONSE_LINES)},
 
-        {mapFileInteractionInfoKeys::DELIMITER, 
+        {mapFileInteractionInfoKeys::DELIMITER,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::DELIMITER)},
 
-        {mapFileInteractionInfoKeys::COMMAND_DELIMITER, 
+        {mapFileInteractionInfoKeys::COMMAND_DELIMITER,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::COMMAND_DELIMITER)},
 
-        {mapFileInteractionInfoKeys::RESPONSE_DELIMITER, 
+        {mapFileInteractionInfoKeys::RESPONSE_DELIMITER,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::RESPONSE_DELIMITER)},
 
-        {mapFileInteractionInfoKeys::CHARACTER_WIDTH, 
+        {mapFileInteractionInfoKeys::CHARACTER_WIDTH,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::CHARACTER_WIDTH)},
 
-        {mapFileInteractionInfoKeys::BIT_WIDTH, 
+        {mapFileInteractionInfoKeys::BIT_WIDTH,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::BIT_WIDTH)},
 
-        {mapFileInteractionInfoKeys::FRACTIONAL_BITS, 
+        {mapFileInteractionInfoKeys::FRACTIONAL_BITS,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::FRACTIONAL_BITS)},
 
-        {mapFileInteractionInfoKeys::SIGNED, 
+        {mapFileInteractionInfoKeys::SIGNED,
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::SIGNED)},
       // clang-format on
   };
   return uMap;
 }
+/**********************************************************************************************************************/
+
+// Keys for inja template
+enum class injaTemplatePatternKeys {
+  DATA,
+  CHECKSUM_START,
+  CHECKSUM_END,
+  CHECKSUM_POINT,
+  DELIMITER,
+};
+
+// Associate inja json key strings with injaTemplatePatternKeys enums.
+template<>
+inline std::unordered_map<injaTemplatePatternKeys, std::string> getMapForEnum<injaTemplatePatternKeys>() {
+  static const std::unordered_map<injaTemplatePatternKeys, std::string> uMap = {
+      // clang-format off
+    {injaTemplatePatternKeys::DATA, "x"},
+    {injaTemplatePatternKeys::CHECKSUM_START, "csStart"},
+    {injaTemplatePatternKeys::CHECKSUM_END, "csEnd"},
+    {injaTemplatePatternKeys::CHECKSUM_POINT, "cs"},
+      // clang-format on
+  };
+  return uMap;
+}
+
+/**********************************************************************************************************************/
+
+// checksum options, (associated with the toStr(CHECKSUM) key)
+enum class checksum {
+  // clang-format off
+    CS8,
+    CS32,
+    SHA256,
+    CRC_CCIT16
+  // clang-format on
+};
+// When updating these, also update Checksum.cc::
+
+// JSON value strings associate with checksum enums.
+template<>
+inline std::unordered_map<checksum, std::string> getMapForEnum<checksum>() {
+  static const std::unordered_map<checksum, std::string> uMap = {
+      // clang-format off
+    {checksum::CS8, "cs8"},
+    {checksum::CS32, "cs32"},
+    {checksum::SHA256, "sha256"},
+    {checksum::CRC_CCIT16, "crcccit16"},
+      // clang-format on
+  };
+  return uMap;
+}
+
 /**********************************************************************************************************************/
 
 /** Internal representation type to which we have to convert successfully.*/

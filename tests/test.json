@@ -26,9 +26,9 @@
       "/setByteModeVoid":{"write":{"cmd":"setByteMode", "resp":"ok", "nRespBytes":2},"type":"VOID"},
       "/setByteMode":{"write":{"cmd":"setByteMode {{x.0}}", "resp":"ok", "nRespBytes":2},"type":"decInt"},
       "/binFloatTest":{"read":{"cmd":"42464C543F" /*ASCII HEX for "BFLT?"*/, "resp":"{{x.0}}", "nRespBytes":4},"write":{"cmd":"42464C5420{{x.0}}" /*ASCII hex for "BFLT {{x.0}}"*/}, "type":"binFloat","bitWidth":32},
-      "/uLog":{"read":{"Cmd":"F503ADD500000000", "Resp":"F504ADD5{{x.0}}"},
-               "write":{"Cmd":"F501ADD5{{x.0}}", "Resp":"F502ADD5.*"},
-			   "nRespBytes":8, "bitWidth":32, "type":"binInt" }
+      "/uLog":{"read":{"Cmd":"{{csStart.0}}F503ADD500000000{{csEnd.0}}{{cs.0}}", "Resp":"{{csStart.0}}F504ADD5{{x.0}}{{csEnd.0}}{{cs.0}}", "cmdChecksum":["cs8"], "respChecksum":["cs8"]},
+               "write":{"Cmd":"{{csStart.0}}F501ADD5{{x.0}}{{csEnd.0}}{{cs.0}}", "Resp":"{{csStart.0}}F502ADD5.*{{csEnd.0}}{{cs.0}}", "cmdChecksum":["cs8"], "respChecksum":["cs8"]},
+			   "nRespBytes":9, "bitWidth":32, "type":"binInt" }
   }
 }
 

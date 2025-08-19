@@ -102,7 +102,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   std::vector<std::string> CommandBasedBackend::sendCommandAndRead(
-      const std::string& cmd, const CommandBasedBackendRegisterInfo::InteractionInfo& iInfo) {
+      const std::string& cmd, const InteractionInfo& iInfo) {
     assert(_commandHandler);
     std::lock_guard<std::mutex> lock(_mux);
     std::vector<std::string> ret;

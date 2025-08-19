@@ -109,10 +109,10 @@ BOOST_AUTO_TEST_CASE(testULog) {
   }
   auto byteModeAccessor = device.getScalarRegisterAccessor<uint32_t>("/setByteMode");
   auto uLogAccessor = device.getScalarRegisterAccessor<uint32_t>("/uLog");
-  uint32_t w = 8;
+  uint32_t w = 9;
   byteModeAccessor = w;
   if(DEBUG) {
-    std::cout << "testBinary: testULog write 8" << std::endl;
+    std::cout << "testBinary: testULog write " + std::to_string(w) << std::endl;
   }
   byteModeAccessor.write();
   if(DEBUG) {
