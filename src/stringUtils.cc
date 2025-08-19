@@ -309,3 +309,30 @@ bool strCmp(const std::string& a, const std::string& b) noexcept {
   }
   return true;
 }
+
+/**********************************************************************************************************************/
+
+std::string toNonCaptureGroupPattern(const std::string& regexStr) noexcept {
+  std::string result = regexStr; // copy
+
+  // Lambda to find the next '(' that is not a "(?" non-capture group
+  auto findCapturingParen = [&](std::size_t start) -> std::size_t {
+    std::size_t pos = result.find('(', start);
+    while(pos != std::string::npos && pos + 1 < result.size() && result.compare(pos, 2, "(?") == 0) {
+      // pos pointed to a non-capture group, so search again until we find the first "(" that's not "(?"
+      pos = result.find('(', pos + 1);
+    }
+    return pos;
+  };
+
+  // For all capturing parentheses
+  std::size_t pos = findCapturingParen(0);
+  while(pos != std::string::npos) {
+    result.replace(pos, 1, "(?:");     // convert to non-capturing
+    pos = findCapturingParen(pos + 3); // move past the inserted "(?:"
+  }
+
+  return result;
+}
+
+/**********************************************************************************************************************/

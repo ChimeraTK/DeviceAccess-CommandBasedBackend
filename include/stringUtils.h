@@ -58,6 +58,13 @@ bool strCmp(const std::string& a, const std::string& b) noexcept; // DEBUG
 [[nodiscard]] std::string replaceNewLines(const std::string& input) noexcept;
 
 /**
+ * @brief Replaces capture-groups with non-capture groups
+ * @pararm regexStr a string representing a regex
+ * @returns a string representing a regex that uses non-capture groups instead.
+ */
+[[nodiscard]] std::string toNonCaptureGroupPattern(const std::string& regexStr) noexcept;
+
+/**
  * Convert string to lower case in-place. Use this to make inputs case insensitive.
  */
 void toLowerCase(std::string& str) noexcept;
