@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "Checksum.h"
 #include "mapFileKeys.h"
 
 #include <ChimeraTK/BackendRegisterInfoBase.h>
@@ -62,6 +63,9 @@ namespace ChimeraTK {
       std::optional<int> fractionalBitsOpt =
           std::nullopt; // can be negative, needs fixedRegexCharacterWidthOpt to be set
       bool isSigned = false;
+
+      std::vector<std::shared_ptr<checksumFunction>> commandChecksumFuncs;
+      std::vector<std::shared_ptr<checksumFunction>> responseChecksumFuncs;
 
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : _responseInfo(ResponseLinesInfo{}) {}
