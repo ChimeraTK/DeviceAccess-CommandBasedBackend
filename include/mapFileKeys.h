@@ -258,14 +258,41 @@ enum class injaTemplatePatternKeys {
   DELIMITER,
 };
 
-// Associate json key strings with mapFileRegisterKeys enums.
+// Associate inja json key strings with injaTemplatePatternKeys enums.
 template<>
 inline std::unordered_map<injaTemplatePatternKeys, std::string> getMapForEnum<injaTemplatePatternKeys>() {
   static const std::unordered_map<injaTemplatePatternKeys, std::string> uMap = {
       // clang-format off
-        {injaTemplatePatternKeys::CHECKSUM_START, "csStart"}, 
-        {injaTemplatePatternKeys::CHECKSUM_END, "csEnd"}, 
-        {injaTemplatePatternKeys::CHECKSUM_POINT, "cs"}, 
+    {injaTemplatePatternKeys::CHECKSUM_START, "csStart"}, 
+    {injaTemplatePatternKeys::CHECKSUM_END, "csEnd"}, 
+    {injaTemplatePatternKeys::CHECKSUM_POINT, "cs"},
+      // clang-format on
+  };
+  return uMap;
+}
+
+/**********************************************************************************************************************/
+
+// checksum options, (associated with the toStr(CHECKSUM) key)
+enum class checksum {
+  // clang-format off
+    CS8, 
+    CS32, 
+    SHA256, 
+    CRC_CCIT16
+  // clang-format on
+};
+// When updating these, also update Checksum.cc::
+
+// JSON value strings associate with checksum enums.
+template<>
+inline std::unordered_map<checksum, std::string> getMapForEnum<checksum>() {
+  static const std::unordered_map<checksum, std::string> uMap = {
+      // clang-format off
+    {checksum::CS8, "cs8"}, 
+    {checksum::CS32, "cs32"}, 
+    {checksum::SHA256, "sha256"}, 
+    {checksum::CRC_CCIT16, "crcccit16"},
       // clang-format on
   };
   return uMap;

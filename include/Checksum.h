@@ -2,25 +2,26 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
+#include "mapFileKeys.h"
+
 #include <functional>
 #include <string>
-#include <unordered_map>
 
 // Type alias for our checksum function signature
 using checksumFunction = std::function<std::string(const std::string&)>;
 
 /**
- * @brief Checks if a checksum name is valid (registered).
- * @param name The case-insensitive name of the checksum.
- * @return True if the name is mapped, false otherwise.
- * @throws ChimeraTK::logic_error if name is multiply defined in the checksumMap
+ * @brief Retrieves a regex string to match the checksum
+ * @param cs Enum indicating which checksum to get
+ * @return A string representation of a regex
+ * @throws ChimeraTK::logic_error if cs isn't mapped.
  */
-bool isValidChecksumName(std::string name);
+[[nodiscard]] std::string getRegexString(checksum cs);
 
 /**
  * @brief Retrieves a checksum function by its name.
- * @param name The case-insensitive name of the checksum function.
+ * @param cs Enum indicating which checksum to get
  * @return The checksumFunction if found.
- * @throws ChimeraTK::logic_error if isValidChecksumName(name) is false
+ * @throws ChimeraTK::logic_error if cs isn't mapped.
  */
-checksumFunction getChecksumer(std::string name);
+checksumFunction getChecksumer(checksum cs);
