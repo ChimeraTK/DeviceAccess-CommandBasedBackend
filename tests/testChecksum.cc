@@ -61,3 +61,81 @@ BOOST_AUTO_TEST_CASE(testSha256) {
 }
 
 /**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(testChecksumValidation) {
+  BOOST_CHECK_NO_THROW(validateChecksumPattern("", ""));
+  BOOST_CHECK_NO_THROW(validateChecksumPattern("Pattern with no checksum tags", "error message detail"));
+  BOOST_CHECK_NO_THROW(
+      validateChecksumPattern("{{cs.1}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""));
+
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.2}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.2}}qwer{{csEnd.2}}", ""),
+      ChimeraTK::logic_error); // index gap
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.3}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // incomplete
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // missing parentheses->incomplete
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{cs.1}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // missing parentheses->incomplete
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}{}{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // garbled parentheses->incomplete
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}}{{csstart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // incorrect capitalization->incomplete
+  BOOST_CHECK_THROW(validateChecksumPattern("{{cs.1}}{{csStart.0csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // garbled tags->incomplete
+  BOOST_CHECK_THROW(validateChecksumPattern("{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // missing insertion tag
+  BOOST_CHECK_THROW(validateChecksumPattern("{{cs.1}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // missing start tag
+  BOOST_CHECK_THROW(validateChecksumPattern("{{cs.1}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer", ""),
+      ChimeraTK::logic_error); // missing end tag
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}}{{csEnd.0}}asdf{{csStart.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // end<start
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}}{{csStart.0}}asdf{{cs.0}}{{csEnd.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // contains self
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{csStart.0}}{{cs.1}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", ""),
+      ChimeraTK::logic_error); // overlap, insertion tag contained
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}}{{csStart.0}}asdf{{csStart.1}}{{csEnd.0}}qwer{{csEnd.1}}{{cs.0}}", ""),
+      ChimeraTK::logic_error); // overlap, start tag contained
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{cs.1}}{{csStart.1}}asdf{{csStart.0}}{{csEnd.1}}qwer{{csEnd.0}}{{cs.0}}", ""),
+      ChimeraTK::logic_error); // overlap, end tag contained
+  BOOST_CHECK_THROW(
+      validateChecksumPattern("{{csStart.0}}{{cs.1}}asdf{{csStart.1}}qwer{{csEnd.1}}{{csEnd.0}}{{cs.0}}", ""),
+      ChimeraTK::logic_error); // nesting
+}
+
+/**********************************************************************************************************************/
+BOOST_AUTO_TEST_CASE(testGetChecksumBlockSnippets) {
+  //[[nodiscard]] size_t getNChecksums(const std::string& pattern, const std::string& errorMessageDetail);
+  size_t n0 = getNChecksums("", "");
+  BOOST_CHECK_EQUAL(n0, 0);
+
+  size_t n1 = getNChecksums("Pattern with no checksum tags", "error message detail");
+  BOOST_CHECK_EQUAL(n1, 0);
+
+  size_t n2 = getNChecksums("{{cs.1}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", "");
+  BOOST_CHECK_EQUAL(n2, 2);
+}
+
+/**********************************************************************************************************************/
+
+BOOST_AUTO_TEST_CASE(testGetNChecksums) {
+  // std::vector<std::string_view> getChecksumBlockSnippets(const std::string& pattern, const std::string& errorMessageDetail);
+  auto v1 = getChecksumBlockSnippets("Pattern with no checksum tags", "error message detail");
+  BOOST_CHECK_EQUAL(v1.size(), 0);
+
+  auto v2 = getChecksumBlockSnippets("{{cs.1}}{{csStart.0}}asdf{{csEnd.0}}{{cs.0}}{{csStart.1}}qwer{{csEnd.1}}", "");
+  BOOST_CHECK_EQUAL(v2.size(), 2);
+  BOOST_CHECK_EQUAL(v2[0], "asdf");
+  BOOST_CHECK_EQUAL(v2[1], "qwer");
+}
