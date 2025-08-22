@@ -96,7 +96,9 @@ namespace ChimeraTK {
 
     void doReadTransferSynchronously() override;
 
-    std::regex _readResponseRegex;
+    std::regex _readResponseDataRegex;
+    std::regex _readResponseChecksumRegex;
+    std::regex _readResponseChecksumBlockRegex;
 
   }; // end class CommandBasedBackendRegisterAccessor
 

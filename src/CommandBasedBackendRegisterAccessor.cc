@@ -76,7 +76,9 @@ namespace ChimeraTK {
       // We seek registerInfo.getNumberOfElements() matches in the response regex,
       // which may be more than the number of elements in the the register (_numberOfElements), due to a non-zero
       // _elementOffsetInRegister.
-      _readResponseRegex = _registerInfo.getReadResponseRegex();
+      _readResponseDataRegex = _registerInfo.getReadResponseDataRegex();
+      _readResponseChecksumRegex = _registerInfo.getReadResponseChecksumRegex();
+      _readResponseChecksumBlockRegex = _registerInfo.getReadResponseChecksumBlockRegex();
     }
 
   } // end constructor CommandBasedBackendRegisterAccessor

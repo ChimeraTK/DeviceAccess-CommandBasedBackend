@@ -64,8 +64,8 @@ namespace ChimeraTK {
           std::nullopt; // can be negative, needs fixedRegexCharacterWidthOpt to be set
       bool isSigned = false;
 
-      std::vector<std::shared_ptr<checksumFunction>> commandChecksumFuncs;
-      std::vector<std::shared_ptr<checksumFunction>> responseChecksumFuncs;
+      std::vector<checksum> commandChecksumEnums;
+      std::vector<checksum> responseChecksumEnums;
 
       /*--------------------------------------------------------------------------------------------------------------*/
       InteractionInfo() : _responseInfo(ResponseLinesInfo{}) {}
@@ -168,18 +168,30 @@ namespace ChimeraTK {
     }
 
     /**
-     * @brief: Fetches the read response regex given the TransportLayerType
+     * @brief: Fetches the read response data regex given the TransportLayerType
      * @throws std::regex_error or inja::ParserError
      */
-    [[nodiscard]] std::regex getReadResponseRegex() const {
-      return getResponseRegex(readInfo, "read for " + registerPath);
+    [[nodiscard]] std::regex getReadResponseDataRegex() const {
+      return getResponseDataRegex(readInfo, "read for " + registerPath);
     }
     /**
-     * @brief: Fetches the write response regex given the TransportLayerType
+     * @brief: Fetches the write response data regex given the TransportLayerType
      * @throws std::regex_error or inja::ParserError
      */
-    [[nodiscard]] std::regex getWriteResponseRegex() const {
-      return getResponseRegex(writeInfo, "write for " + registerPath);
+    [[nodiscard]] std::regex getWriteResponseDataRegex() const {
+      return getResponseDataRegex(writeInfo, "write for " + registerPath);
+    }
+    [[nodiscard]] std::regex getReadResponseChecksumRegex() const {
+      return getResponseChecksumRegex(readInfo, "read for " + registerPath);
+    }
+    [[nodiscard]] std::regex getReadResponseChecksumRegex() const {
+      return getResponseChecksumRegex(writeInfo, "write for " + registerPath);
+    }
+    [[nodiscard]] std::regex getReadResponseChecksumBlockRegex() const {
+      return getResponseChecksumBlockRegex(readInfo, "read for " + registerPath);
+    }
+    [[nodiscard]] std::regex getReadResponseChecksumBlockRegex() const {
+      return getResponseChecksumBlockRegex(writeInfo, "write for " + registerPath);
     }
 
     unsigned int nChannels{1};
@@ -201,8 +213,14 @@ namespace ChimeraTK {
      * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
      * @throws std::regex_error or inja::ParserError
      */
-    [[nodiscard]] std::regex getResponseRegex(const InteractionInfo& info, const std::string& errorMessageDetail) const;
+    [[nodiscard]] std::regex getResponseDataRegex(
+        const InteractionInfo& info, const std::string& errorMessageDetail) const;
 
+    [[nodiscard]] std::regex getResponseChecksumRegex(
+        const InteractionInfo& info, const std::string& errorMessageDetail) const;
+
+    [[nodiscard]] std::regex getResponseChecksumBlockRegex(
+        const InteractionInfo& info, const std::string& errorMessageDetail) const;
   }; // end CommandBasedBackendRegisterInfo
 
   // Operators for cout:

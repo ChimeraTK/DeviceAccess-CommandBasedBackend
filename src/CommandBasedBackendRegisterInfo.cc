@@ -1110,15 +1110,30 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::regex CommandBasedBackendRegisterInfo::getResponseRegex(
+  std::regex CommandBasedBackendRegisterInfo::getResponseDataRegex(
       const InteractionInfo& info, const std::string& errorMessageDetail) const {
-    std::string valueRegex = info.getRegexString();
+    std::string valueRegex = info.getRegexString(); // A capture group
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
     for(size_t i = 0; i < getNumberOfElements(); ++i) {
       // FIXME: does not know about formating. TODO ticket 13534. See below..
-      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex);
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data capture groups
+    }
+
+    // Fill checksum components
+    if(info.commandChecksumEnums.size() > 0) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as empty.
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
+        // render checksum insertion point tags as non-capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
+            toNonCaptureGroupPattern(getRegexString(cs)));
+      } // end for
     }
 
     std::regex returnRegex = injaRenderRegex(
@@ -1131,7 +1146,87 @@ namespace ChimeraTK {
           "\" for " + errorMessageDetail);
     }
     return returnRegex;
-  } // end getResponseRegex
+  } // end getResponseDataRegex
+
+  /********************************************************************************************************************/
+
+  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumRegex(
+      const InteractionInfo& info, const std::string& errorMessageDetail) const {
+    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+
+    inja::json replacePatterns;
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
+    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
+    }
+
+    // Fill checksum components
+    size_t nCS = info.commandChecksumEnums.size();
+    if(nCS > 0) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as empty.
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
+        // render checksum insertion point tags as capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(getRegexString(cs));
+      } // end for
+    }
+
+    std::regex returnRegex = injaRenderRegex(
+        info.responsePattern, replacePatterns, "in read response checksum pattern for " + errorMessageDetail);
+
+    if(returnRegex.mark_count() != nCS) {
+      throw ChimeraTK::logic_error("The number of capture groups (" + std::to_string(returnRegex.mark_count()) +
+          ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_POINT) + " checksum tags (" +
+          std::to_string(nCS) + ") in responsePattern \"" + info.responsePattern + "\" for " + errorMessageDetail);
+    }
+    return returnRegex;
+  } // end getResponseChecksumRegex
+
+  /********************************************************************************************************************/
+
+  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumBlockRegex(
+      const InteractionInfo& info, const std::string& errorMessageDetail) const {
+    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+
+    inja::json replacePatterns;
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
+    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+      // FIXME: does not know about formating. TODO ticket 13534. See below..
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
+    }
+
+    // Fill checksum components
+    size_t nCS = info.commandChecksumEnums.size();
+    if(nCS > 0) {
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
+      replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
+      for(const auto& cs : info.commandChecksumEnums) {
+        // render the checksum start and end tags as the beginning and end of regex capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("(");
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back(")");
+        // render checksum insertion point tags as non-capture groups
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
+            toNonCaptureGroupPattern(getRegexString(cs)));
+      } // end for
+    }
+
+    std::regex returnRegex = injaRenderRegex(
+        info.responsePattern, replacePatterns, "in read response checksum block pattern for " + errorMessageDetail);
+
+    if(returnRegex.mark_count() != nCS) {
+      throw ChimeraTK::logic_error("The number of capture groups (" + std::to_string(returnRegex.mark_count()) +
+          ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_START) + "/" +
+          toStr(injaTemplatePatternKeys::CHECKSUM_END) + "checksum block tags (" + std::to_string(nCS) +
+          ") in responsePattern \"" + info.responsePattern + "\" for " + errorMessageDetail);
+    }
+    return returnRegex;
+  } // end getResponseChecksumBlockRegex
 
   /********************************************************************************************************************/
 
