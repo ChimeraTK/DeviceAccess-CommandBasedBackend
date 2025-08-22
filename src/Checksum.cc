@@ -13,13 +13,12 @@
 #include <boost/crc.hpp>
 
 #include <memory> // For std::unique_ptr
-#include <optional>
 #include <regex>
 
 #define FUNC_NAME (std::string(__func__) + ": ")
 
 // First put the hex through
-// std::string binData = binaryStrFromHexStr(hexData, padLeft);
+// std::string binData = binaryStrFromHexStr(hexData);
 
 static const checksumFunction checksum8 = [](const std::string binData) -> std::string {
   uint8_t sum = 0;
