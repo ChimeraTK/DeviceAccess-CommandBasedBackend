@@ -178,9 +178,10 @@ namespace ChimeraTK {
     }
 
     inja::json replacePatterns;
-    replacePatterns["x"] = {};
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
     for(size_t i = 0; i < _numberOfElements; ++i) {
-      replacePatterns["x"].push_back(_transportLayerTypeFromUserType(buffer_2D[0][i], _registerInfo.writeInfo));
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(
+          _transportLayerTypeFromUserType(buffer_2D[0][i], _registerInfo.writeInfo));
     }
 
     // Form the write command.

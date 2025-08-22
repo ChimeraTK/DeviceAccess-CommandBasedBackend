@@ -250,6 +250,7 @@ inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum
 
 // Keys for inja template
 enum class injaTemplatePatternKeys {
+  DATA,
   CHECKSUM_START,
   CHECKSUM_END,
   CHECKSUM_POINT,
@@ -261,6 +262,7 @@ template<>
 inline std::unordered_map<injaTemplatePatternKeys, std::string> getMapForEnum<injaTemplatePatternKeys>() {
   static const std::unordered_map<injaTemplatePatternKeys, std::string> uMap = {
       // clang-format off
+    {injaTemplatePatternKeys::DATA, "x"}, 
     {injaTemplatePatternKeys::CHECKSUM_START, "csStart"}, 
     {injaTemplatePatternKeys::CHECKSUM_END, "csEnd"}, 
     {injaTemplatePatternKeys::CHECKSUM_POINT, "cs"},

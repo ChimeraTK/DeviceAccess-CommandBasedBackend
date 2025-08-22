@@ -1115,10 +1115,10 @@ namespace ChimeraTK {
     std::string valueRegex = info.getRegexString();
 
     inja::json replacePatterns;
-    replacePatterns["x"] = {};
+    replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
     for(size_t i = 0; i < getNumberOfElements(); ++i) {
       // FIXME: does not know about formating. TODO ticket 13534. See below..
-      replacePatterns["x"].push_back(valueRegex);
+      replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex);
     }
 
     std::regex returnRegex = injaRenderRegex(
