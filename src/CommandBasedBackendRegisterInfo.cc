@@ -1121,18 +1121,9 @@ namespace ChimeraTK {
       replacePatterns["x"].push_back(valueRegex);
     }
 
-    std::regex returnRegex;
-    try {
-      auto regexText = inja::render(info.responsePattern, replacePatterns);
-      returnRegex = regexText;
-    }
-    catch(std::regex_error& e) {
-      throw ChimeraTK::logic_error("Regex error in read responsePattern for " + errorMessageDetail + ": " + e.what());
-    }
-    catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error(
-          "Inja parser error in read responsePattern for " + errorMessageDetail + ": " + e.what());
-    }
+    std::regex returnRegex = injaRenderRegex(
+        info.responsePattern, replacePatterns, "in read response data pattern for " + errorMessageDetail);
+
     // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
     if(returnRegex.mark_count() != getNumberOfElements()) {
       throw ChimeraTK::logic_error("Wrong number of capture groups " + std::to_string(returnRegex.mark_count()) + "(" +

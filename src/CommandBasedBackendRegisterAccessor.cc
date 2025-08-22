@@ -184,13 +184,7 @@ namespace ChimeraTK {
     }
 
     // Form the write command.
-    try {
-      _writeTransferBuffer = inja::render(_registerInfo.writeInfo.commandPattern, replacePatterns);
-    }
-    catch(inja::ParserError& e) {
-      throw ChimeraTK::logic_error(
-          "Inja parser error in write commandPattern of " + _registerInfo.registerPath + ": " + e.what());
-    }
+    _writeTransferBuffer = injaRender(_registerInfo.writeInfo.commandPattern, replacePatterns, in write commandPattern of " + _registerInfo.registerPath);
 
     if(_registerInfo.writeInfo.isBinary()) {
       _writeTransferBuffer = binaryStrFromHexStr(_writeTransferBuffer, /*isSigned*/ false);
