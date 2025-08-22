@@ -158,7 +158,6 @@ enum class mapFileRegisterKeys {
   BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
-  CHECKSUM,
 };
 
 // Associate json key strings with mapFileRegisterKeys enums.
@@ -179,7 +178,6 @@ inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFil
         {mapFileRegisterKeys::BIT_WIDTH, "bitWidth"}, 
         {mapFileRegisterKeys::FRACTIONAL_BITS, "fractionalBits"},
         {mapFileRegisterKeys::SIGNED, "signed"},
-        {mapFileRegisterKeys::CHECKSUM, "checksum"},
       // clang-format on
   };
   return uMap;
@@ -190,6 +188,8 @@ inline std::unordered_map<mapFileRegisterKeys, std::string> getMapForEnum<mapFil
 enum class mapFileInteractionInfoKeys {
   COMMAND,
   RESPESPONSE,
+  CMD_CHECKSUM,
+  RESP_CHECKSUM,
   TYPE, // TYPE and below need to be in common with mapFileRegisterKeys
   N_RESPONSE_BYTES,
   N_RESPONSE_LINES,
@@ -200,7 +200,6 @@ enum class mapFileInteractionInfoKeys {
   BIT_WIDTH,
   FRACTIONAL_BITS,
   SIGNED,
-  CHECKSUM, // values must be strings in Checksum.cc::checksumMap
 };
 
 // Associate json key strings with mapFileInteractionInfoKeys enums.
@@ -210,6 +209,8 @@ inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum
       // clang-format off
         {mapFileInteractionInfoKeys::COMMAND, "cmd"}, 
         {mapFileInteractionInfoKeys::RESPESPONSE, "resp"},
+        {mapFileInteractionInfoKeys::CMD_CHECKSUM, "cmdChecksum"},
+        {mapFileInteractionInfoKeys::RESP_CHECKSUM, "respChecksum"},
 
         //unordered_map<mapFileRegisterKeys.. is the single source of truth for these shared JSON key strings.
         {mapFileInteractionInfoKeys::TYPE, 
@@ -241,9 +242,6 @@ inline std::unordered_map<mapFileInteractionInfoKeys, std::string> getMapForEnum
 
         {mapFileInteractionInfoKeys::SIGNED, 
             getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::SIGNED)},
-
-        {mapFileInteractionInfoKeys::CHECKSUM, 
-            getMapForEnum<mapFileRegisterKeys>().at(mapFileRegisterKeys::CHECKSUM)},
       // clang-format on
   };
   return uMap;
