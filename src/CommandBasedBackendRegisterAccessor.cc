@@ -128,7 +128,7 @@ namespace ChimeraTK {
     }
 
     std::string renderedReadCommand = injaRender(_registerInfo.readInfo.commandPattern, replacePatterns,
-        "in read command pattern of " + _registerInfo.registerPath);
+        "in command pattern for " + _registerInfo.readInfo.errorMessageDetail);
 
     std::string readCommand;
     if(_registerInfo.readInfo.isBinary()) {
@@ -182,18 +182,17 @@ namespace ChimeraTK {
    * @param[in] responseChecksumPayloadRegex The regex to extract the checksum payload from combinedReadString.
    * @param[in] responseChecksumRegex The regex to extract the checksum from combinedReadString.
    * @param[in] responseChecksumers The functional to compute the checksum from the payload.
-   * @param[in] errorMessageDetail Will be replaced by iInfo.errorMessageDetail after ticket 14877
    * @throws ChimeraTK::runtime_error if the
    */
   void inspectChecksum(const std::string& combinedReadString, const InteractionInfo& iInfo,
       const std::regex& responseChecksumPayloadRegex, const std::regex& responseChecksumRegex,
-      const std::vector<Checksumer>& responseChecksumers, const std::string& errorMessageDetail) {
+      const std::vector<Checksumer>& responseChecksumers) {
     // Second regex match: extract the checksum payloads.
     std::smatch checksumPayloadMatch;
     if(!std::regex_match(combinedReadString, checksumPayloadMatch, responseChecksumPayloadRegex)) {
       throw ChimeraTK::runtime_error(
           "Could not extract checksum payloads with the response checksum payload regex in \"" +
-          replaceNewLines(combinedReadString) + "\" for " + errorMessageDetail);
+          replaceNewLines(combinedReadString) + "\" for " + iInfo.errorMessageDetail);
     }
 
     std::vector<std::string> checksumResults;
@@ -205,13 +204,13 @@ namespace ChimeraTK {
     std::smatch checksumMatch;
     if(!std::regex_match(combinedReadString, checksumMatch, responseChecksumRegex)) {
       throw ChimeraTK::runtime_error("Could not extract checksum values with the response checksum regex in \"" +
-          replaceNewLines(combinedReadString) + "\" for " + errorMessageDetail);
+          replaceNewLines(combinedReadString) + "\" for " + iInfo.errorMessageDetail);
     }
     for(size_t i = 0; i < iInfo.responseChecksumEnums.size(); ++i) {
       if(checksumMatch.str(i + 1) != checksumResults[i]) {
-        throw ChimeraTK::runtime_error("Response checksum " + toStr(iInfo.responseChecksumEnums[i]) + " failed for " +
-            errorMessageDetail + ". Received \"" + std::string(checksumMatch.str(i + 1)) + "\" but calculated \"" +
-            checksumResults[i] + "\"");
+        throw ChimeraTK::runtime_error("Response checksum " + toStr(iInfo.responseChecksumEnums[i]) +
+            " failed for " + iInfo.errorMessageDetail + ". Received \"" + std::string(checksumMatch.str(i + 1)) +
+            "\" but calculated \"" + checksumResults[i] + "\"");
       }
     }
   } // end inspectChecksum
@@ -230,8 +229,8 @@ namespace ChimeraTK {
       // First regex match: extract the data.
       std::smatch dataMatch;
       if(!std::regex_match(combinedReadString, dataMatch, _readResponseDataRegex)) {
-        throw ChimeraTK::runtime_error("Could not extract data values with the read response data regex for \"" +
-            replaceNewLines(combinedReadString) + "\" in " + _registerInfo.registerPath);
+        throw ChimeraTK::runtime_error("Could not extract data values with the response data regex \"" +
+            replaceNewLines(combinedReadString) + "\" for " + _registerInfo.readInfo.errorMessageDetail);
       }
 
       for(size_t i = 0; i < _numberOfElements; ++i) {
@@ -240,7 +239,7 @@ namespace ChimeraTK {
       }
       /*--------------------------------------------------------------------------------------------------------------*/
       inspectChecksum(combinedReadString, _registerInfo.readInfo, _readResponseChecksumPayloadRegex,
-          _readResponseChecksumRegex, _readResponseChecksumers, "read for " + _registerInfo.registerPath);
+          _readResponseChecksumRegex, _readResponseChecksumers);
       /*--------------------------------------------------------------------------------------------------------------*/
       this->_versionNumber = {};
       this->_dataValidity = DataValidity::ok;
@@ -271,7 +270,8 @@ namespace ChimeraTK {
     }
 
     // Compute the checksums
-    std::string errorMessageDetail = "in write command checksum pattern for " + _registerInfo.registerPath;
+    std::string errorMessageDetail =
+        "in the command checksum pattern for " + _registerInfo.writeInfo.errorMessageDetail;
     replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
     replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
     replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
@@ -309,20 +309,20 @@ namespace ChimeraTK {
       throw ChimeraTK::runtime_error("Device not functional when reading " + this->getName());
     }
 
-    std::vector<std::string> writeResponseBuffer =
+    std::vector<std::string> writeTransferBuffer =
         _backend->sendCommandAndRead(_writeTransferBuffer, _registerInfo.writeInfo);
 
-    std::string combinedReadString = makeCombinedReadString(writeResponseBuffer, _registerInfo.writeInfo);
+    std::string combinedReadString = makeCombinedReadString(writeTransferBuffer, _registerInfo.writeInfo);
     /*----------------------------------------------------------------------------------------------------------------*/
     // Regex compare: Make sure the write response matches the expected pattern.
     std::smatch payloadMatch;
     if(!std::regex_match(combinedReadString, payloadMatch, _writeResponseDataRegex)) {
-      throw ChimeraTK::runtime_error("Write response \"" + replaceNewLines(combinedReadString) +
-          "\" does not match the required template regex for " + _registerInfo.registerPath);
+      throw ChimeraTK::runtime_error("Response \"" + replaceNewLines(combinedReadString) +
+          "\" does not match the required template regex for " + _registerInfo.writeInfo.errorMessageDetail);
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     inspectChecksum(combinedReadString, _registerInfo.writeInfo, _writeResponseChecksumPayloadRegex,
-        _writeResponseChecksumRegex, _writeResponseChecksumers, "write for " + _registerInfo.registerPath);
+        _writeResponseChecksumRegex, _writeResponseChecksumers);
 
     return false; // no data was lost
   }

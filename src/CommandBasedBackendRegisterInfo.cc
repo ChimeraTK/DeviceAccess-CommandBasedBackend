@@ -3,6 +3,7 @@
 
 #include "CommandBasedBackendRegisterInfo.h"
 
+#include "Checksum.h"
 #include "injaUtils.h"
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
@@ -17,109 +18,6 @@
 
 namespace ChimeraTK {
 
-  /**
-   * @brief This enforces that the register is either readable, writeable, or both.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error
-   */
-  static void throwIfBadActivation(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Throws unless at least one of the two interaction Infos has a type set.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If no type has been set.
-   */
-  static void throwIfATransportLayerTypeIsNotSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Throws unless both interaction Infos have a type set.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error
-   */
-  static void throwIfTransportLayerTypesAreNotBothSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief If one InteractionInfo is missing its TransportLayerType, the type is copied from the other InteractionInfo
-   * The InteractionInfo is expected to lack a transport type if it is never activated, but the type is needed
-   * Doing this synchronization simplifies later logic, such as throwIfBadNElements.
-   */
-  static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo);
-
-  /**
-   * @brief Validates the line endings for the interaction info.
-   * Enforces that responseLinesDelimiter is not empty if the interaction uses read lines.
-   * @param[in] iInfo The InteractionInfo to validate.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error if invalid.
-   */
-  static void throwIfBadEndings(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Validates nElements, particularly its interaction with VOID type.
-   * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
-   * @throws ChimeraTK::logic_error If nElements is incompatible with void type.
-   */
-  static void throwIfBadNElements(
-      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Validates fractionalBitsOpt, and its interactions.
-   * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedRegexCharacterWidthOpt, and signed.
-   * transportLayerType must be set before running this
-   * @param[in] iInfo The InteractionInfo to validate.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If fractionalBitsOpt or its interactions is invalid.
-   */
-  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Validates fixedRegexCharacterWidthOpt, particularly its interaction with the transportLayerType.
-   * transportLayerType must be set before running this
-   * Ensures that fixedRegexCharacterWidthOpt is set if iInfo.isBinary().
-   * @param[in] iInfo The InteractionInfo to validate.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If fixedRegexCharacterWidthOpt is invalid for the type.
-   */
-  static void throwIfBadFixedWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Validates the signed property, making sure its a valid property for the TransportLayerType.
-   * transportLayerType must be set before running this
-   * @param[in] iInfo The InteractionInfo to validate.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If the signed property is invalid for the type.
-   */
-  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail);
-
-  /**
-   * @brief Validates that the number of checksum entries matches the number of inja checksum payloads in the command
-   * and response pattern.
-   * @param[in] regInfo The CommandBasedBackendRegisterInfo to validate.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error If there is a size missmatch, or an invalid checksum inja patterns.
-   */
-  static void throwIfBadChecksums(
-      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail);
-
-  /*
-   * Get the DataType best suited to the InteractionInfo info.
-   * This considers iInfo.isSigned, and the fixedRegexCharacterWidthOpt
-   * returns the smallest datatype that meets those needs.
-   */
-  static DataType getDataType(const InteractionInfo& iInfo);
-
-  /**
-   * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake of
-   * setting the DataDescriptor.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error if the readInfo and writeInfo have incompatible data types.
-   */
-  static DataType getDataType(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail);
-
   /*
    * Gets a single DataType, if possible, that will work for both iInfoA and iInfoB.
    * The resulting data type will have the larger of the two bit depths needed to suit iInfoB.
@@ -129,58 +27,44 @@ namespace ChimeraTK {
   static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB);
 
   /**
-   * @brief Sets iInfo.nElements from JSON, if present, or else sets it to 1.
-   * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error if nElements is set <= 0 in the JSON.
-   */
-  static void setNElementsFromJson(
-      CommandBasedBackendRegisterInfo& rInfo, const json& j, const std::string& errorMessageDetail);
-
-  /**
    * @brief Sets the iInfo.TransportLayerType from JSON, if present, with type checking.
    * This must be a template to accomdate keys at the register level and the interaction level.
    * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if the type in the JSON is invalid.
    */
   template<typename EnumType>
-  static void setTypeFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+  static void setTypeFromJson(InteractionInfo& iInfo, const json& j);
 
   /**
    * @brief Sets the InteractionInfo's line delimiters, number of lines, and number of bytes, from the JSON,
    * This must be a template to accomdate keys at the register level and the interaction level.
    * @param[in] j nlohmann::json from the map file
    * @param[in] defaultDelimOpt Is a the default serial delimiter, such as that coming from the dmap file.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if the delimiters, nLines, and nBytes are in an invalid combination
    */
   template<typename EnumType>
   static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
-      const std::optional<std::string>& defaultDelimOpt, const std::string& errorMessageDetail,
-      bool responseIsAbsent = false);
+      const std::optional<std::string>& defaultDelimOpt, bool responseIsAbsent = false);
 
   /**
    * @brief Sets iInfo.fixedRegexCharacterWidthOpt from JSON.
    * This must be a template to accomdate keys at the register level and the interaction level.
    * This depends on the transportLayerType being set.
    * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if the JSON lists a value <= 0, or transportLayerType is not set.
    */
   template<typename EnumType>
-  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j);
 
   /**
    * @brief Sets iInfo.fractionalBitsOpt from JSON.
    * This must be a template to accomdate keys at the register level and the interaction level.
    * This depends on the transportLayerType being set, since it depends on iInfo.isBinary.
    * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if transportLayerType is not set.
    */
   template<typename EnumType>
-  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j);
 
   /**
    * @brief Sets iInfo.signed from JSON.
@@ -189,54 +73,57 @@ namespace ChimeraTK {
    * If no vaue is set, this sets a default value based on the type, so
    * this depends on the transportLayerType being set.
    * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if the JSON lists unrecognizable value, or transportLayerType is not set.
    */
   template<typename EnumType>
-  static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+  static void setSignedFromJson(InteractionInfo& iInfo, const json& j);
 
   /**
    * @brief Set all checksum relevent members in the iInfo.
    * @param[in] j nlohmann::json from the map file
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
    * @throws ChimeraTK::logic_error if there are undefined checksum identifiers in the map file, or if the
    * commandPattern's checksum tags are ill formed.
    */
   template<typename EnumType>
-  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail);
+  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j);
 
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void CommandBasedBackendRegisterInfo::validate(std::string& errorMessageDetail) {
-    std::string errorMessageDetailRead = errorMessageDetail + " for read";
-    std::string errorMessageDetailWrite = errorMessageDetail + " for write";
-    /*----------------------------------------------------------------------------------------------------------------*/
-    // Validite data in readInfo and writeInfo
-    throwIfBadActivation(writeInfo, readInfo, errorMessageDetail);
-    throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail);
-    throwIfBadCommandAndResponsePatterns(*this, errorMessageDetail);
-    throwIfBadEndings(writeInfo, errorMessageDetailWrite);
-    throwIfBadEndings(readInfo, errorMessageDetailWrite);
-    throwIfBadNElements(writeInfo, getNumberOfElementsImpl(), errorMessageDetail);
-    throwIfBadFixedWidth(writeInfo, errorMessageDetailWrite);
-    throwIfBadFixedWidth(readInfo, errorMessageDetailRead);
-    throwIfBadFractionalBits(writeInfo, errorMessageDetailWrite);
-    throwIfBadFractionalBits(readInfo, errorMessageDetailRead);
-    throwIfBadSigned(writeInfo, errorMessageDetailWrite);
-    throwIfBadSigned(readInfo, errorMessageDetailRead);
-    throwIfBadChecksums(*this, errorMessageDetail);
+  void CommandBasedBackendRegisterInfo::validate() const {
+    throwIfBadActivation();
+    writeInfo.throwIfTransportLayerTypesIsNotSet();
+    readInfo.throwIfTransportLayerTypesIsNotSet();
+    throwIfBadNElements();
+    throwIfBadCommandAndResponsePatterns();
+
+    writeInfo.throwIfBadEndings();
+    writeInfo.throwIfBadFixedWidth();
+    writeInfo.throwIfBadFractionalBits();
+    writeInfo.throwIfBadSigned();
+    writeInfo.throwIfBadChecksum(getNumberOfElementsImpl());
+
+    readInfo.throwIfBadEndings();
+    readInfo.throwIfBadFixedWidth();
+    readInfo.throwIfBadFractionalBits();
+    readInfo.throwIfBadSigned();
+    readInfo.throwIfBadChecksum(getNumberOfElementsImpl());
+  }
+
+  /********************************************************************************************************************/
+  void CommandBasedBackendRegisterInfo::setErrorMessageDetail() {
+    _errorMessageDetail = "register " + getRegisterNameImpl();
+    readInfo.setErrorMessageDetail(_errorMessageDetail);
+    writeInfo.setErrorMessageDetail(_errorMessageDetail);
   }
 
   /********************************************************************************************************************/
 
   void CommandBasedBackendRegisterInfo::finalize() {
-    std::string errorMessageDetail = "register " + registerPath;
-
-    validate(errorMessageDetail);
+    validate();
 
     // Check that the data types are compatible and set dataDescriptor
-    dataDescriptor = DataDescriptor(getDataType(writeInfo, readInfo, errorMessageDetail));
+    dataDescriptor = DataDescriptor(getDataType());
   } // end init
 
   /********************************************************************************************************************/
@@ -245,6 +132,7 @@ namespace ChimeraTK {
       const RegisterPath& registerPath_, InteractionInfo readInfo_, InteractionInfo writeInfo_, uint nElements_)
   : nElements(nElements_), registerPath(registerPath_), readInfo(std::move(readInfo_)),
     writeInfo(std::move(writeInfo_)) {
+    setErrorMessageDetail();
     std::string registerPathStr = std::string(registerPath);
     if(registerPathStr.empty() or (registerPath == "/")) { // if registerPath is empty
       // CommandBasedBackendRegisterInfo is initalized as an empty placeholder, so don't validate its data.
@@ -263,63 +151,58 @@ namespace ChimeraTK {
      * Checking only that we don't have invalid json keys or unpassable negative numbers.
      * Then call finalize() for data validation and tasks common to all constructors.
      */
-    std::string errorMessageDetail = "register " + registerPath;
-    std::string errorMessageDetailRead = errorMessageDetail + " read";
-    std::string errorMessageDetailWrite = errorMessageDetail + " write";
+    setErrorMessageDetail();
     auto readOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::READ));
     auto writeOpt = caseInsensitiveGetValueOption(j, toStr(mapFileRegisterKeys::WRITE));
 
     // Validate retister-level json keys
-    throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileRegisterKeys>(), "Map file " + errorMessageDetail);
+    throwIfHasInvalidJsonKeyCaseInsensitive(j, getMapForEnum<mapFileRegisterKeys>(), "Map file " + _errorMessageDetail);
     /*----------------------------------------------------------------------------------------------------------------*/
     // SET CONTENT BASED ON TOP-LEVEL JSON
 
     // N_ELEM,
-    setNElementsFromJson(*this, j, errorMessageDetail);
+    setNElementsFromJson(j);
 
     // TYPE
-    setTypeFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
-    setTypeFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+    setTypeFromJson<mapFileRegisterKeys>(readInfo, j);
+    setTypeFromJson<mapFileRegisterKeys>(writeInfo, j);
     if(readOpt) {
-      setTypeFromJson<mapFileInteractionInfoKeys>(readInfo, readOpt->get<json>(), errorMessageDetailRead);
+      setTypeFromJson<mapFileInteractionInfoKeys>(readInfo, readOpt->get<json>());
     }
     if(writeOpt) {
-      setTypeFromJson<mapFileInteractionInfoKeys>(writeInfo, writeOpt->get<json>(), errorMessageDetailWrite);
+      setTypeFromJson<mapFileInteractionInfoKeys>(writeInfo, writeOpt->get<json>());
     }
-    throwIfATransportLayerTypeIsNotSet(writeInfo, readInfo, errorMessageDetail);
-    synchronizeTransportLayerTypes(writeInfo, readInfo);
-    throwIfTransportLayerTypesAreNotBothSet(writeInfo, readInfo, errorMessageDetail); // DEBUG
+    throwIfATransportLayerTypeIsNotSet();
+    synchronizeTransportLayerTypes();
 
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
-    readInfo.setResponseNLines(1);
-    setEndingsFromJson<mapFileRegisterKeys>(readInfo, j, defaultSerialDelimiter, errorMessageDetail);
     writeInfo.setResponseNLines(0);
-    setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter, errorMessageDetail);
+    setEndingsFromJson<mapFileRegisterKeys>(readInfo, j, defaultSerialDelimiter);
+    setEndingsFromJson<mapFileRegisterKeys>(writeInfo, j, defaultSerialDelimiter);
     // NOTE: These delimiter settings may be overrided by populateFromJson below.
 
     // BIT_WIDTH, CHARACTER_WIDTH, depends on transportLayerType
-    setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
-    setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+    setFixedWidthFromJson<mapFileRegisterKeys>(readInfo, j);
+    setFixedWidthFromJson<mapFileRegisterKeys>(writeInfo, j);
 
-    // FRACTIONAL_BITS, depends on transportLayerType
-    setFractionalBitsFromJson<mapFileRegisterKeys>(
-        readInfo, j, errorMessageDetail); // These must come after setFixedWidthFromJson
-    setFractionalBitsFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+    // FRACTIONAL_BITS, depends on transportLayerType. These must come after setFixedWidthFromJson
+    setFractionalBitsFromJson<mapFileRegisterKeys>(readInfo, j);
+    setFractionalBitsFromJson<mapFileRegisterKeys>(writeInfo, j);
 
     // SIGNED, depends on transportLayerType
-    setSignedFromJson<mapFileRegisterKeys>(readInfo, j, errorMessageDetail);
-    setSignedFromJson<mapFileRegisterKeys>(writeInfo, j, errorMessageDetail);
+    setSignedFromJson<mapFileRegisterKeys>(readInfo, j);
+    setSignedFromJson<mapFileRegisterKeys>(writeInfo, j);
 
     // READ,
     // Override settings from the top level based on the "read" key's contents
     if(readOpt) {
-      readInfo.populateFromJson(readOpt->get<json>(), errorMessageDetailRead, true);
+      readInfo.populateFromJson(readOpt->get<json>(), true);
     }
 
     // WRITE
     // Override settings from the top level based on the "write" key's contents
     if(writeOpt) {
-      writeInfo.populateFromJson(writeOpt->get<json>(), errorMessageDetailWrite, true);
+      writeInfo.populateFromJson(writeOpt->get<json>(), true);
     }
     /*----------------------------------------------------------------------------------------------------------------*/
     // FIXME: extract the number of lines in write response from pattern; Ticket 13531
@@ -330,7 +213,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  void InteractionInfo::populateFromJson(const json& j, const std::string& errorMessageDetail, bool skipSetType) {
+  void InteractionInfo::populateFromJson(const json& j, bool skipSetType) {
     // This is not just a constructor because we want to fill in json
 
     // Validate json keys at the InteractionInfo level
@@ -345,7 +228,7 @@ namespace ChimeraTK {
 
     // TYPE
     if(not skipSetType) {
-      setTypeFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+      setTypeFromJson<mapFileInteractionInfoKeys>(*this, j);
     }
 
     if(not isActive()) {
@@ -360,20 +243,19 @@ namespace ChimeraTK {
     }
 
     // DELIMITER, COMMAND_DELIMITER, RESPONSE_DELIMITER, N_RESPONSE_LINES, N_RESPONSE_BYTES
-    setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, errorMessageDetail, responseIsAbsent);
+    setEndingsFromJson<mapFileInteractionInfoKeys>(*this, j, std::nullopt, responseIsAbsent);
 
     // BIT_WIDTH, CHARACTER_WIDTH
-    setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    setFixedWidthFromJson<mapFileInteractionInfoKeys>(*this, j);
 
-    // FRACTIONAL_BITS
-    setFractionalBitsFromJson<mapFileInteractionInfoKeys>(
-        *this, j, errorMessageDetail); // Must come after setFixedWidthFromJson
+    // FRACTIONAL_BITS This must come after setFixedWidthFromJson
+    setFractionalBitsFromJson<mapFileInteractionInfoKeys>(*this, j);
 
     // SIGNED
-    setSignedFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    setSignedFromJson<mapFileInteractionInfoKeys>(*this, j);
 
     // CMD_CHECKSUM, RESP_CHECKSUM
-    setChecksumsFromJson<mapFileInteractionInfoKeys>(*this, j, errorMessageDetail);
+    setChecksumsFromJson<mapFileInteractionInfoKeys>(*this, j);
   } // populateFromJson
 
   /********************************************************************************************************************/
@@ -477,86 +359,74 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static void throwIfBadActivation(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
-    bool readable = readInfo.isActive();
-    bool writeable = writeInfo.isActive();
-
-    if(not(readable or writeable)) {
+  void CommandBasedBackendRegisterInfo::throwIfBadActivation() const {
+    if(not(readInfo.isActive() or writeInfo.isActive())) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A non-empty read:" + toStr(mapFileInteractionInfoKeys::COMMAND) +
           " or write " + toStr(mapFileInteractionInfoKeys::COMMAND) +
-          " tags is required, and neither are present for " + errorMessageDetail);
+          " tags is required, and neither are present for " + _errorMessageDetail);
     }
 
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(readInfo.isActive() or not writeInfo.isActive()) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Void type must be write-only but has a " +
-            toStr(mapFileRegisterKeys::READ) + " key for " + errorMessageDetail);
+            toStr(mapFileRegisterKeys::READ) + " key for " + _errorMessageDetail);
       }
     }
   } // end throwIfBadActivation
 
   /********************************************************************************************************************/
 
-  void throwIfBadCommandAndResponsePatterns(
-      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail) {
-    const InteractionInfo& writeInfo = regInfo.writeInfo;
-    const InteractionInfo& readInfo = regInfo.readInfo;
-    bool lacksReadCommand = readInfo.commandPattern.empty();
-    bool lacksWriteCommand = writeInfo.commandPattern.empty();
-    bool hasReadResponse = not readInfo.responsePattern.empty();
-    bool hasWriteResponse = not writeInfo.responsePattern.empty();
-    // Throw if there are responses without corresponding commands.
-    if(hasReadResponse and lacksReadCommand) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A non-empty read " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-          " without a non-empty read " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
-    }
-
-    if(hasWriteResponse and lacksWriteCommand) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A non-empty write " + toStr(mapFileInteractionInfoKeys::RESPESPONSE) +
-          " without a non-empty write " + toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + errorMessageDetail);
-    }
+  void CommandBasedBackendRegisterInfo::throwIfBadCommandAndResponsePatterns() const {
+    auto throwIfResponsesWithoutCommands = [&](const InteractionInfo& iInfo) {
+      bool lacksCommand = iInfo.commandPattern.empty();
+      bool hasResponse = not iInfo.responsePattern.empty();
+      if(hasResponse and lacksCommand) {
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A non-empty " + iInfo.readWriteStr() + " " +
+            toStr(mapFileInteractionInfoKeys::RESPESPONSE) + " without a non-empty " + iInfo.readWriteStr() + " " +
+            toStr(mapFileInteractionInfoKeys::COMMAND) + " for " + _errorMessageDetail);
+      }
+    };
+    throwIfResponsesWithoutCommands(readInfo);
+    throwIfResponsesWithoutCommands(writeInfo);
 
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(writeInfo.commandPattern.find("{{x") != std::string::npos) {
-        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Illegal inja template in write " +
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Illegal inja template data tags in write " +
             toStr(mapFileInteractionInfoKeys::COMMAND) + " = \"" + writeInfo.commandPattern + "\" for void-type for " +
-            errorMessageDetail);
+            _errorMessageDetail);
       }
     }
 
     // Alignment between the mark_count and nElements can be enforced by using non-capture groups: (?:   )
-    size_t nReadResponseMarks = regInfo.getReadResponseDataRegex().mark_count();
-    size_t nExpectedMarks;
-    if(readInfo.isActive() and (regInfo.readInfo.getTransportLayerType() != TransportLayerType::VOID)) {
-      nExpectedMarks = regInfo.getNumberOfElementsImpl();
+    auto throwIfWrongNCaptures = [&](const InteractionInfo& iInfo, size_t nMarks, size_t nMarksRequired) {
+      if(nMarks != nMarksRequired) {
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Wrong number of capture groups " + std::to_string(nMarks) + "(" +
+            std::to_string(nMarksRequired) + " required) in " + iInfo.readWriteStr() + " responsePattern \"" +
+            iInfo.responsePattern + "\" for " + _errorMessageDetail);
+      }
+    };
+
+    size_t nReadResponseMarks = getReadResponseDataRegex().mark_count();
+    if(readInfo.isActive() and (readInfo.getTransportLayerType() != TransportLayerType::VOID)) {
+      throwIfWrongNCaptures(readInfo, nReadResponseMarks, getNumberOfElementsImpl());
     }
     else {
       /* nElements = 1 when the type is void, even though no return marks are expected.
        * Also, if it's a write-only register, expect 0 reading marks
        */
-      nExpectedMarks = 0;
-    }
-
-    if(nReadResponseMarks != nExpectedMarks) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Wrong number of capture groups " + std::to_string(nReadResponseMarks) +
-          "(" + std::to_string(nExpectedMarks) + " required) in read responsePattern \"" + readInfo.responsePattern +
-          "\" for " + errorMessageDetail);
+      throwIfWrongNCaptures(readInfo, nReadResponseMarks, 0);
     }
 
     // Ensure no capture groups in the write response.
-    size_t nWriteResponseMarks = regInfo.getWriteResponseDataRegex().mark_count();
-    if(nWriteResponseMarks != 0) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Write response has " + std::to_string(nReadResponseMarks) +
-          "illegal capture group(s) in write responsePattern \"" + writeInfo.responsePattern + "\" for " +
-          errorMessageDetail);
-    }
+    size_t nWriteResponseMarks = getWriteResponseDataRegex().mark_count();
+    throwIfWrongNCaptures(writeInfo, nWriteResponseMarks, 0);
+
   } // end throwIfBadCommandAndResponsePatterns
 
   /********************************************************************************************************************/
 
-  static void throwIfBadEndings(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if(iInfo.usesReadLines() and iInfo.getResponseLinesDelimiter() == "") {
+  void InteractionInfo::throwIfBadEndings() const {
+    if(usesReadLines() and getResponseLinesDelimiter() == "") {
       throw ChimeraTK::logic_error(
           ERR_LOC_PREFIX + "Illegally set response delimiter to empty string for" + errorMessageDetail);
     }
@@ -564,53 +434,48 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadNElements(
-      const InteractionInfo& writeInfo, unsigned int nElem, const std::string& errorMessageDetail) {
+  void CommandBasedBackendRegisterInfo::throwIfBadNElements() const {
+    unsigned int nElem = getNumberOfElementsImpl();
     if(writeInfo.getTransportLayerType() == TransportLayerType::VOID) {
       if(nElem != 1) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Void type must only have 1 element but has " +
-            toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + errorMessageDetail);
+            toStr(mapFileRegisterKeys::N_ELEM) + " = " + std::to_string(nElem) + " for " + _errorMessageDetail);
       }
     }
     if(nElem == 0) {
       throw ChimeraTK::logic_error(
-          ERR_LOC_PREFIX + "Invalid zero " + toStr(mapFileRegisterKeys::N_ELEM) + " for " + errorMessageDetail);
+          ERR_LOC_PREFIX + "Invalid zero " + toStr(mapFileRegisterKeys::N_ELEM) + " for " + _errorMessageDetail);
     }
   } // end if void type
 
   /********************************************************************************************************************/
 
-  static void throwIfTransportLayerTypesAreNotBothSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
-    if(not(writeInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Type is required but is missing for write " + errorMessageDetail);
-    }
-    if(not(readInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Type is required but is missing for read " + errorMessageDetail);
+  void InteractionInfo::throwIfTransportLayerTypesIsNotSet() const {
+    if(not(hasTransportLayerType())) {
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Type is required but is missing for " + errorMessageDetail);
     }
   }
 
   /********************************************************************************************************************/
 
-  static void throwIfATransportLayerTypeIsNotSet(
-      InteractionInfo& writeInfo, InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+  void CommandBasedBackendRegisterInfo::throwIfATransportLayerTypeIsNotSet() const {
     // Throw if type/transportLayerType is not set.
     if(not(writeInfo.hasTransportLayerType() or readInfo.hasTransportLayerType())) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Type is required but is missing for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Type is required but is missing for " + _errorMessageDetail);
     }
     if(readInfo.isActive() and not readInfo.hasTransportLayerType()) {
       throw ChimeraTK::logic_error(
-          ERR_LOC_PREFIX + "Type is required but is missing on read for " + errorMessageDetail);
+          ERR_LOC_PREFIX + "Type is required but is missing on " + readInfo.errorMessageDetail);
     }
     if(writeInfo.isActive() and not writeInfo.hasTransportLayerType()) {
       throw ChimeraTK::logic_error(
-          ERR_LOC_PREFIX + "Type is required but is missing on write for " + errorMessageDetail);
+          ERR_LOC_PREFIX + "Type is required but is missing on " + writeInfo.errorMessageDetail);
     }
   }
 
   /********************************************************************************************************************/
 
-  static void synchronizeTransportLayerTypes(InteractionInfo& writeInfo, InteractionInfo& readInfo) {
+  void CommandBasedBackendRegisterInfo::synchronizeTransportLayerTypes() {
     if(readInfo.hasTransportLayerType() and not writeInfo.hasTransportLayerType()) {
       TransportLayerType type = readInfo.getTransportLayerType();
       writeInfo.setTransportLayerType(type);
@@ -623,32 +488,32 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadFractionalBits(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if((not iInfo.fractionalBitsOpt) or (not iInfo.isActive())) {
+  void InteractionInfo::throwIfBadFractionalBits() const {
+    if((not fractionalBitsOpt) or (not isActive())) {
       return;
     }
-    if(not iInfo.fixedRegexCharacterWidthOpt) {
+    if(not fixedRegexCharacterWidthOpt) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " is set but " +
           toStr(mapFileRegisterKeys::BIT_WIDTH) + " is not set for " + errorMessageDetail);
     }
-    if((iInfo.getTransportLayerType() != TransportLayerType::BIN_INT) and
-        (iInfo.getTransportLayerType() != TransportLayerType::HEX_INT)) {
+    if((getTransportLayerType() != TransportLayerType::BIN_INT) and
+        (getTransportLayerType() != TransportLayerType::HEX_INT)) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) +
-          " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(iInfo.getTransportLayerType()) +
+          " is set for incompatible " + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(getTransportLayerType()) +
           " for " + errorMessageDetail + " (only " + toStr(TransportLayerType::BIN_INT) + " and " +
           toStr(TransportLayerType::HEX_INT) + " are compatible)");
     }
     // case: fractionalBits is too big
     // TODO confirm these formulas .. can fractional bits really not exceed the size of the container?
-    size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
-    if(iInfo.isSigned) {
-      if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value() + 1)) {
+    size_t width = *(fixedRegexCharacterWidthOpt);
+    if(isSigned) {
+      if(static_cast<int>(width * 4) < (fractionalBitsOpt.value() + 1)) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " exceeds the " +
             toStr(mapFileRegisterKeys::BIT_WIDTH) + " minus the sign bit for " + errorMessageDetail);
       }
     }
     else {
-      if(static_cast<int>(width * 4) < (iInfo.fractionalBitsOpt.value())) {
+      if(static_cast<int>(width * 4) < (fractionalBitsOpt.value())) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::FRACTIONAL_BITS) + " exceeds the " +
             toStr(mapFileRegisterKeys::BIT_WIDTH) + " for " + errorMessageDetail);
       }
@@ -658,22 +523,22 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadFixedWidth(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if(not iInfo.isActive()) {
+  void InteractionInfo::throwIfBadFixedWidth() const {
+    if(not isActive()) {
       return;
     }
     std::string bitWidthTag = toStr(mapFileRegisterKeys::BIT_WIDTH);
     std::string charWidthTag = toStr(mapFileRegisterKeys::CHARACTER_WIDTH);
     std::string eitherWidthTag = bitWidthTag + " or " + charWidthTag;
-    if(not iInfo.fixedRegexCharacterWidthOpt) {
-      if(iInfo.isBinary()) {
+    if(not fixedRegexCharacterWidthOpt) {
+      if(isBinary()) {
         throw ChimeraTK::logic_error(
             ERR_LOC_PREFIX + bitWidthTag + " must be set for binary type for " + errorMessageDetail);
       }
       return;
     }
-    size_t regexCharacterWidth = *(iInfo.fixedRegexCharacterWidthOpt);
-    TransportLayerType type = iInfo.getTransportLayerType();
+    size_t regexCharacterWidth = *(fixedRegexCharacterWidthOpt);
+    TransportLayerType type = getTransportLayerType();
 
     // VOID
     if(type == TransportLayerType::VOID) {
@@ -699,7 +564,7 @@ namespace ChimeraTK {
        * The widest possible DEC_INT that can fit in an int64 is  -9223372036854775808 (19 characters + sign char)
        * The widest possible DEC_INT that can fit in an uint64 is 18446744073709551615 (20 chars)
        */
-      size_t maxWidth = iInfo.isSigned ? 19 : 20;
+      size_t maxWidth = (isSigned ? 19 : 20);
       if(regexCharacterWidth > maxWidth) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid " + charWidthTag + " " +
             std::to_string(regexCharacterWidth) + " digits for type " + toStr(type) + " for " + errorMessageDetail +
@@ -719,44 +584,52 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static void throwIfBadSigned(const InteractionInfo& iInfo, const std::string& errorMessageDetail) {
-    if((not iInfo.isSigned) or (not iInfo.isActive())) {
+  void InteractionInfo::throwIfBadSigned() const {
+    if((not isSigned) or (not isActive())) {
       return;
     }
-    TransportLayerType type = iInfo.getTransportLayerType();
 
+    TransportLayerType type = getTransportLayerType();
     if(type == TransportLayerType::VOID or type == TransportLayerType::STRING) {
-      throw ChimeraTK::logic_error(
-          ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) + "is signed for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(mapFileRegisterKeys::TYPE) + " " + toStr(type) +
+          "is signed for " + errorMessageDetail);
     }
   }
 
-  static void throwIfBadChecksum(
-      const InteractionInfo& iInfo, size_t nCsMarks, size_t nCsPayloadMarks, const std::string& errorMessageDetail) {
+  /********************************************************************************************************************/
+
+  /*
+   * @brief Validates that the number of checksum entries matches the number of inja checksum payloads in the command
+   * and response pattern.
+   * @throws ChimeraTK::logic_error If there is a size missmatch, or an invalid checksum inja patterns.
+   */
+  void InteractionInfo::throwIfBadChecksum(const size_t nElements) const {
+    size_t nCsMarks = getResponseChecksumRegex(nElements).mark_count();
+    size_t nCsPayloadMarks = getResponseChecksumPayloadRegex(nElements).mark_count();
     // getNChecksums throws ChimeraTK::logic_error if the validates the checksum patterns are ill-formed..
-    size_t nRespCS = getNChecksums(iInfo.responsePattern, errorMessageDetail + "for response checksum");
-    size_t nCmdCS = getNChecksums(iInfo.commandPattern, errorMessageDetail + "for command checksum");
+    size_t nRespCS = getNChecksums(responsePattern, errorMessageDetail + "for response checksum");
+    size_t nCmdCS = getNChecksums(commandPattern, errorMessageDetail + "for command checksum");
 
     // Verify that the number of checksum tags found in the patterns match the size of the checksum name array given in the map file.
-    if(nRespCS != iInfo.responseChecksumEnums.size()) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number (" + std::to_string(iInfo.responseChecksumEnums.size()) +
+    if(nRespCS != responseChecksumEnums.size()) {
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number (" + std::to_string(responseChecksumEnums.size()) +
           ") of " + toStr(mapFileInteractionInfoKeys::RESP_CHECKSUM) + " entries does not match number (" +
           toStr(mapFileInteractionInfoKeys::RESP_CHECKSUM) + ") of checksum tags in the inja response pattern \"" +
-          iInfo.responsePattern + "\" for " + errorMessageDetail);
+          responsePattern + "\" for " + errorMessageDetail);
     }
-    if(nCmdCS != iInfo.commandChecksumEnums.size()) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number (" + std::to_string(iInfo.commandChecksumEnums.size()) +
+    if(nCmdCS != commandChecksumEnums.size()) {
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number (" + std::to_string(commandChecksumEnums.size()) +
           ") of " + toStr(mapFileInteractionInfoKeys::CMD_CHECKSUM) + " entries does not match number (" +
           toStr(mapFileInteractionInfoKeys::CMD_CHECKSUM) + ") of checksum tags in the inja command pattern \"" +
-          iInfo.commandPattern + "\" for " + errorMessageDetail);
+          commandPattern + "\" for " + errorMessageDetail);
     }
 
     // Verify that the modified regex for capturing checksum insertion points has the right number of captures.
-    size_t nCS = iInfo.commandChecksumEnums.size();
+    size_t nCS = commandChecksumEnums.size();
     if(nCsMarks != nCS) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number of capture groups (" + std::to_string(nCsPayloadMarks) +
           ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_POINT) + " checksum tags (" +
-          std::to_string(nCS) + ") in responsePattern \"" + iInfo.responsePattern + "\" for " + errorMessageDetail);
+          std::to_string(nCS) + ") in responsePattern \"" + responsePattern + "\" for " + errorMessageDetail);
     }
 
     // Verify that the modified regex for capturing checksum payloads has the right number of captures.
@@ -764,19 +637,21 @@ namespace ChimeraTK {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "The number of capture groups (" + std::to_string(nCsPayloadMarks) +
           ") mismatches the number of " + toStr(injaTemplatePatternKeys::CHECKSUM_START) + "/" +
           toStr(injaTemplatePatternKeys::CHECKSUM_END) + "checksum payload tags (" + std::to_string(nCS) +
-          ") in responsePattern \"" + iInfo.responsePattern + "\" for " + errorMessageDetail);
+          ") in responsePattern \"" + responsePattern + "\" for " + errorMessageDetail);
     }
   } // end throwIfBadChecksum
 
-  static void throwIfBadChecksums(
-      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail) {
-    throwIfBadChecksum(regInfo.writeInfo, regInfo.getWriteResponseChecksumRegex().mark_count(),
-        regInfo.getWriteResponseChecksumPayloadRegex().mark_count(), errorMessageDetail + " for write");
-    throwIfBadChecksum(regInfo.readInfo, regInfo.getReadResponseChecksumRegex().mark_count(),
-        regInfo.getReadResponseChecksumPayloadRegex().mark_count(), errorMessageDetail + " for read");
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
+
+  TransportLayerType InteractionInfo::getTransportLayerType() const {
+    if(not hasTransportLayerType()) {
+      throw ChimeraTK::logic_error(
+          "Attempting to get a TransportLayerType that has not been set for " + errorMessageDetail);
+    }
+    return _transportLayerType.value();
   }
 
-  /********************************************************************************************************************/
   /********************************************************************************************************************/
 
   static DataType getDataTypeFromSizeCode(int sizeCode, const std::map<DataType, int>& map) {
@@ -822,14 +697,8 @@ namespace ChimeraTK {
     return 64;
   }
 
-  /*
-   * Get the DataType best suited to the InteractionInfo info.
-   * This considers iInfo.isSigned, and the fixedRegexCharacterWidthOpt
-   * returns the smallest datatype that meets those needs.
-   */
-  static DataType getDataType(const InteractionInfo& iInfo) {
-    const TransportLayerType type = iInfo.getTransportLayerType();
-    const bool isSigned = iInfo.isSigned;
+  DataType InteractionInfo::getDataType() const {
+    const TransportLayerType type = getTransportLayerType();
     const auto& map = (isSigned ? signedTransportLayerTypeToDataTypeMap : unsignedTransportLayerTypeToDataTypeMap);
     auto it = map.find(type); // std::unordered_map<TransportLayerType, DataType>::const_iterator it;
 
@@ -848,8 +717,8 @@ namespace ChimeraTK {
     }
 
     // Consider shrinking the DataType based on the width setting.
-    if(iInfo.fixedRegexCharacterWidthOpt) {
-      size_t width = *(iInfo.fixedRegexCharacterWidthOpt);
+    if(fixedRegexCharacterWidthOpt) {
+      size_t width = *fixedRegexCharacterWidthOpt;
       if(type == TransportLayerType::HEX_INT or type == TransportLayerType::BIN_INT or
           type == TransportLayerType::DEC_INT) { // Any int type
 
@@ -894,20 +763,20 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  static DataType getDataType(
-      const InteractionInfo& writeInfo, const InteractionInfo& readInfo, const std::string& errorMessageDetail) {
+  DataType CommandBasedBackendRegisterInfo::getDataType() const {
     assert(writeInfo.isActive() or readInfo.isActive());
 
     if(writeInfo.isActive() and not readInfo.isActive()) {
-      return getDataType(writeInfo);
+      return writeInfo.getDataType();
     }
     if(readInfo.isActive() and not writeInfo.isActive()) {
-      return getDataType(readInfo);
+      return readInfo.getDataType();
     }
     // both are active, have to reconcile them.
     auto mergedDataType = getReconciledDataTypes(writeInfo, readInfo);
     if(not mergedDataType) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Read and Write have incompatible DataTypes for " + errorMessageDetail);
+      throw ChimeraTK::logic_error(
+          ERR_LOC_PREFIX + "Read and Write have incompatible DataTypes for " + _errorMessageDetail);
     }
     return *mergedDataType;
   }
@@ -915,8 +784,8 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   static std::optional<DataType> getReconciledDataTypes(const InteractionInfo& iInfoA, const InteractionInfo& iInfoB) {
-    DataType a = getDataType(iInfoA);
-    DataType b = getDataType(iInfoB);
+    DataType a = iInfoA.getDataType();
+    DataType b = iInfoB.getDataType();
 
     bool invalidCombination = false;
     invalidCombination |= (a.isNumeric() != b.isNumeric()); // Invalid if one is numeric and the other is not
@@ -953,32 +822,31 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
   /********************************************************************************************************************/
 
-  static void setNElementsFromJson(
-      CommandBasedBackendRegisterInfo& rInfo, const json& j, const std::string& errorMessageDetail) {
+  void CommandBasedBackendRegisterInfo::setNElementsFromJson(const json& j) {
     std::string keyStr = toStr(mapFileRegisterKeys::N_ELEM);
     int64_t nElementsUnprotected = caseInsensitiveGetValueOr(j, keyStr, 1L);
     if(nElementsUnprotected < 1L) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid non-positive " + keyStr + " " +
-          std::to_string(nElementsUnprotected) + " for " + errorMessageDetail);
+          std::to_string(nElementsUnprotected) + " for " + _errorMessageDetail);
     }
     if(nElementsUnprotected > static_cast<int64_t>(std::numeric_limits<unsigned int>::max())) {
       throw ChimeraTK::logic_error(ERR_LOC_PREFIX + keyStr +
-          " is too large to fit in a uint: " + std::to_string(nElementsUnprotected) + " for " + errorMessageDetail);
+          " is too large to fit in a uint: " + std::to_string(nElementsUnprotected) + " for " + _errorMessageDetail);
     }
-    rInfo.nElements = static_cast<unsigned int>(nElementsUnprotected);
+    nElements = static_cast<unsigned int>(nElementsUnprotected);
   } // end setNElementsFromJson
 
   /********************************************************************************************************************/
 
   template<typename EnumType>
-  static void setTypeFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+  static void setTypeFromJson(InteractionInfo& iInfo, const json& j) {
     std::string keyStr = toStr(EnumType::TYPE);
     std::optional<std::string> typeStrOpt = caseInsensitiveGetValueOption(j, keyStr);
     if(typeStrOpt) {
       std::optional<TransportLayerType> typeEnumOpt = strToEnumOpt<TransportLayerType>(*typeStrOpt);
       if(not typeEnumOpt) {
         throw ChimeraTK::logic_error(
-            ERR_LOC_PREFIX + "Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + errorMessageDetail);
+            ERR_LOC_PREFIX + "Unknown value for " + keyStr + ": " + *typeStrOpt + " for " + iInfo.errorMessageDetail);
       }
       iInfo.setTransportLayerType(*typeEnumOpt);
     }
@@ -988,8 +856,7 @@ namespace ChimeraTK {
 
   template<typename EnumType>
   static void setEndingsFromJson(InteractionInfo& iInfo, const json& j,
-      const std::optional<std::string>& defaultDelimOpt, const std::string& errorMessageDetail,
-      const bool responseIsAbsent) {
+      const std::optional<std::string>& defaultDelimOpt, const bool responseIsAbsent) {
     bool explicitlySetToReadLines = false;
     std::string keyStr;
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -1035,11 +902,11 @@ namespace ChimeraTK {
       int n = opt->get<int>();
       if(n < 0) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid negative " + toStr(EnumType::N_RESPONSE_LINES) + " " +
-            std::to_string(n) + " for " + errorMessageDetail);
+            std::to_string(n) + " for " + iInfo.errorMessageDetail);
       }
       if(responseIsAbsent and (n != 0)) {
-        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Response is absent but " + toStr(EnumType::N_RESPONSE_LINES) + " = " +
-            std::to_string(n) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Response is absent but " + toStr(EnumType::N_RESPONSE_LINES) +
+            " = " + std::to_string(n) + " for " + iInfo.errorMessageDetail);
       }
       iInfo.setResponseNLines(
           static_cast<size_t>(n)); // Gets Overwritten if responseIsAbsent, yet ensures usesReadBytes() is true
@@ -1050,18 +917,18 @@ namespace ChimeraTK {
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       if(explicitlySetToReadLines) {
         throw ChimeraTK::logic_error(
-            ERR_LOC_PREFIX + "Invalid mixture of read-lines and read-bytes for " + errorMessageDetail);
+            ERR_LOC_PREFIX + "Invalid mixture of read-lines and read-bytes for " + iInfo.errorMessageDetail);
       }
 
       int n = opt->get<int>();
       if(n < 0) {
-        throw ChimeraTK::logic_error(
-            ERR_LOC_PREFIX + "Invalid negative " + keyStr + " " + std::to_string(n) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid negative " + keyStr + " " + std::to_string(n) + " for " +
+            iInfo.errorMessageDetail);
       }
 
       if(responseIsAbsent and (n != 0)) {
-        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Response is absent but " + toStr(EnumType::N_RESPONSE_BYTES) + " = " +
-            std::to_string(n) + " for " + errorMessageDetail);
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Response is absent but " + toStr(EnumType::N_RESPONSE_BYTES) +
+            " = " + std::to_string(n) + " for " + iInfo.errorMessageDetail);
       }
 
       iInfo.setResponseBytes(
@@ -1081,7 +948,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename EnumType>
-  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+  static void setFixedWidthFromJson(InteractionInfo& iInfo, const json& j) {
     std::string bitWidthKeyStr = toStr(EnumType::BIT_WIDTH);
     std::string charWidthKeyStr = toStr(EnumType::CHARACTER_WIDTH);
     auto bitWidthOpt = caseInsensitiveGetValueOption(j, bitWidthKeyStr);
@@ -1092,29 +959,29 @@ namespace ChimeraTK {
     }
 
     if(bitWidthOpt and charWidthOpt) {
-      throw ChimeraTK::logic_error(
-          ERR_LOC_PREFIX + bitWidthKeyStr + " and " + charWidthKeyStr + " cannot both be set. See: " + errorMessageDetail);
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + bitWidthKeyStr + " and " + charWidthKeyStr +
+          " cannot both be set. See: " + iInfo.errorMessageDetail);
     }
 
     int nRegexChars{};
     if(not iInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + " A transportLayerType must be set." + errorMessageDetail);
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + " A transportLayerType must be set." + iInfo.errorMessageDetail);
     }
     auto type = iInfo.getTransportLayerType();
     if(bitWidthOpt) { // BIT_WIDTH
       int nBits = bitWidthOpt->get<int>();
       if(nBits <= 0) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid non-positive " + bitWidthKeyStr + " " +
-            std::to_string(nBits) + " for " + errorMessageDetail);
+            std::to_string(nBits) + " for " + iInfo.errorMessageDetail);
       }
       if(nBits % 4 != 0) { // n bits must represent a nibble.
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid " + bitWidthKeyStr + "=" + std::to_string(nBits) +
-            " must be a multiple of 4 bits. See: " + errorMessageDetail);
+            " must be a multiple of 4 bits. See: " + iInfo.errorMessageDetail);
       }
       if((type == TransportLayerType::VOID) or (type == TransportLayerType::DEC_INT) or
           (type == TransportLayerType::STRING)) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid combination of " + bitWidthKeyStr + " and " +
-            toStr(EnumType::TYPE) + " for " + errorMessageDetail + ". Did you mean " + charWidthKeyStr + "?");
+            toStr(EnumType::TYPE) + " for " + iInfo.errorMessageDetail + ". Did you mean " + charWidthKeyStr + "?");
       }
       nRegexChars = nBits / 4;
     }
@@ -1122,12 +989,12 @@ namespace ChimeraTK {
       if((type == TransportLayerType::VOID) or (type == TransportLayerType::BIN_INT) or
           (type == TransportLayerType::BIN_FLOAT) or (type == TransportLayerType::DEC_FLOAT)) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid combination of " + charWidthKeyStr + " and " +
-            toStr(EnumType::TYPE) + " for " + errorMessageDetail + ". Did you mean " + bitWidthKeyStr + "?");
+            toStr(EnumType::TYPE) + " for " + iInfo.errorMessageDetail + ". Did you mean " + bitWidthKeyStr + "?");
       }
       nRegexChars = charWidthOpt->get<int>();
       if(nRegexChars <= 0) {
         throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Invalid non-positive " + charWidthKeyStr + " " +
-            std::to_string(nRegexChars) + " for " + errorMessageDetail);
+            std::to_string(nRegexChars) + " for " + iInfo.errorMessageDetail);
       }
       // Screen types
     }
@@ -1138,14 +1005,14 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename EnumType>
-  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+  static void setFractionalBitsFromJson(InteractionInfo& iInfo, const json& j) {
     std::string keyStr = toStr(EnumType::FRACTIONAL_BITS);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       iInfo.fractionalBitsOpt = opt->get<int>();
       return;
     }
     if(not iInfo.hasTransportLayerType()) {
-      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A transportLayerType must be set." + errorMessageDetail);
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "A transportLayerType must be set." + iInfo.errorMessageDetail);
     }
     auto type = iInfo.getTransportLayerType();
     if(((type == TransportLayerType::BIN_INT) or (type == TransportLayerType::HEX_INT)) and
@@ -1157,7 +1024,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename EnumType>
-  static void setSignedFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+  static void setSignedFromJson(InteractionInfo& iInfo, const json& j) {
     std::string keyStr = toStr(EnumType::SIGNED);
     if(auto opt = caseInsensitiveGetValueOption(j, keyStr)) {
       iInfo.isSigned = opt->get<bool>();
@@ -1165,7 +1032,7 @@ namespace ChimeraTK {
     else { // if not set, default to sensible values given the transportLayerType
       if(not iInfo.hasTransportLayerType()) {
         throw ChimeraTK::logic_error(
-            ERR_LOC_PREFIX + " A transportLayerType or " + keyStr + " must be set." + errorMessageDetail);
+            ERR_LOC_PREFIX + " A transportLayerType or " + keyStr + " must be set." + iInfo.errorMessageDetail);
       }
 
       TransportLayerType type = iInfo.getTransportLayerType();
@@ -1177,7 +1044,7 @@ namespace ChimeraTK {
   /********************************************************************************************************************/
 
   template<typename EnumType>
-  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j, const std::string& errorMessageDetail) {
+  static void setChecksumsFromJson(InteractionInfo& iInfo, const json& j) {
     const std::string funcName = ERR_LOC_PREFIX; // keeps the linter happy
     auto processChecksumField = [&](const EnumType& key, const std::string& pattern) -> std::vector<checksum> {
       std::vector<checksum> checksumEnums;
@@ -1191,24 +1058,24 @@ namespace ChimeraTK {
             }
             else {
               throw ChimeraTK::logic_error(
-                  funcName + "Unknown value " + csStr + " for " + keyStr + " - " + errorMessageDetail);
+                  funcName + "Unknown value " + csStr + " for " + keyStr + " - " + iInfo.errorMessageDetail);
             }
           }
         }
         else if(opt->is_string()) {
           std::string csStr = opt->get<std::string>();
           if(auto csEnumOpt = getEnumOptFromStrMapCaseInsensitive<checksum>(csStr, getMapForEnum<checksum>())) {
-            size_t nCS = getNChecksums(pattern, errorMessageDetail);
+            size_t nCS = getNChecksums(pattern, iInfo.errorMessageDetail);
             checksumEnums = std::vector<checksum>(nCS, *csEnumOpt);
           }
           else {
             throw ChimeraTK::logic_error(
-                funcName + "Unknown value " + csStr + " for " + keyStr + " - " + errorMessageDetail);
+                funcName + "Unknown value " + csStr + " for " + keyStr + " - " + iInfo.errorMessageDetail);
           }
         }
         else {
           throw ChimeraTK::logic_error(
-              funcName + "Invalid non-array, non-string type for " + keyStr + " for " + errorMessageDetail);
+              funcName + "Invalid non-array, non-string type for " + keyStr + " for " + iInfo.errorMessageDetail);
         }
       }
       return checksumEnums;
@@ -1216,7 +1083,7 @@ namespace ChimeraTK {
 
     iInfo.commandChecksumEnums = processChecksumField(EnumType::CMD_CHECKSUM, iInfo.commandPattern);
     iInfo.responseChecksumEnums = processChecksumField(EnumType::RESP_CHECKSUM, iInfo.responsePattern);
-    iInfo.commandChecksumPayloadStrs = getChecksumPayloadSnippets(iInfo.commandPattern, errorMessageDetail);
+    iInfo.commandChecksumPayloadStrs = getChecksumPayloadSnippets(iInfo.commandPattern, iInfo.errorMessageDetail);
   } // end setChecksumsFromJson
 
   /********************************************************************************************************************/
@@ -1246,103 +1113,100 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::regex CommandBasedBackendRegisterInfo::getResponseDataRegex(
-      const InteractionInfo& info, const std::string& errorMessageDetail) const {
-    std::string valueRegex = info.getRegexString(); // A capture group
+  std::regex InteractionInfo::getResponseDataRegex(const size_t nElements) const {
+    std::string valueRegex = getRegexString(); // A capture group
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
-    for(size_t i = 0; i < getNumberOfElementsImpl(); ++i) {
+    for(size_t i = 0; i < nElements; ++i) {
       // NumberOfElements may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data capture groups
     }
 
     // Fill checksum components
-    if(not info.commandChecksumEnums.empty()) {
+    if(not commandChecksumEnums.empty()) {
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
-      for(const auto& cs : info.commandChecksumEnums) {
+      for(const auto& cs : commandChecksumEnums) {
         // render the checksum start and end tags as empty.
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
         // render checksum insertion point tags as non-capture groups
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
-            toNonCaptureGroupPattern(getRegexString(cs)));
+            toNonCaptureGroupPattern(ChimeraTK::getRegexString(cs)));
       } // end for
     }
 
     return injaRenderRegex(
-        info.responsePattern, replacePatterns, "in response data pattern for " + errorMessageDetail + " from " + LOCATION);
+        responsePattern, replacePatterns, "in response data pattern for " + errorMessageDetail + " from " + LOCATION);
 
   } // end getResponseDataRegex
 
   /********************************************************************************************************************/
 
-  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumRegex(
-      const InteractionInfo& info, const std::string& errorMessageDetail) const {
-    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+  std::regex InteractionInfo::getResponseChecksumRegex(const size_t nElements) const {
+    std::string valueRegex = toNonCaptureGroupPattern(getRegexString());
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
-    for(size_t i = 0; i < getNumberOfElements(); ++i) {
-      // getNumberOfElements() may be an overestimate of how many are needed.
+    for(size_t i = 0; i < nElements; ++i) {
+      // nElements may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
     }
 
     // Fill checksum components
-    size_t nCS = info.commandChecksumEnums.size();
+    size_t nCS = commandChecksumEnums.size();
     if(nCS > 0) {
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
-      for(const auto& cs : info.commandChecksumEnums) {
+      for(const auto& cs : commandChecksumEnums) {
         // render the checksum start and end tags as empty.
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("");
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back("");
         // render checksum insertion point tags as capture groups
-        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(getRegexString(cs));
+        replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(ChimeraTK::getRegexString(cs));
       } // end for
     }
 
-    return injaRenderRegex(info.responsePattern, replacePatterns,
+    return injaRenderRegex(responsePattern, replacePatterns,
         "in response checksum pattern for " + errorMessageDetail + " from " + LOCATION);
   } // end getResponseChecksumRegex
 
   /********************************************************************************************************************/
 
-  std::regex CommandBasedBackendRegisterInfo::getResponseChecksumPayloadRegex(
-      const InteractionInfo& info, const std::string& errorMessageDetail) const {
-    std::string valueRegex = toNonCaptureGroupPattern(info.getRegexString());
+  std::regex InteractionInfo::getResponseChecksumPayloadRegex(const size_t nElements) const {
+    std::string valueRegex = toNonCaptureGroupPattern(getRegexString());
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
-    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+    for(size_t i = 0; i < nElements; ++i) {
       // getNumberOfElements() may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
     }
 
     // Fill checksum components
-    size_t nCS = info.commandChecksumEnums.size();
+    size_t nCS = commandChecksumEnums.size();
     if(nCS > 0) {
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)] = {};
       replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)] = {};
-      for(const auto& cs : info.commandChecksumEnums) {
+      for(const auto& cs : commandChecksumEnums) {
         // render the checksum start and end tags as the beginning and end of regex capture groups
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_START)].push_back("(");
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_END)].push_back(")");
         // render checksum insertion point tags as non-capture groups
         replacePatterns[toStr(injaTemplatePatternKeys::CHECKSUM_POINT)].push_back(
-            toNonCaptureGroupPattern(getRegexString(cs)));
+            toNonCaptureGroupPattern(ChimeraTK::getRegexString(cs)));
       } // end for
     }
 
-    return injaRenderRegex(info.responsePattern, replacePatterns,
-        "in read response checksum payload pattern for " + errorMessageDetail + " from " + LOCATION);
+    return injaRenderRegex(responsePattern, replacePatterns,
+        "in " + readWriteStr() + " response checksum payload pattern for " + errorMessageDetail + " from " + LOCATION);
 
   } // end getResponseChecksumPayloadRegex
 

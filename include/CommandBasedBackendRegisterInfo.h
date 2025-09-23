@@ -19,9 +19,13 @@
 using json = nlohmann::json;
 
 namespace ChimeraTK {
+  struct CommandBasedBackendRegisterInfo;
+
+  enum class ReadWriteMode : bool { READ, WRITE };
 
   class InteractionInfo {
    protected:
+    ReadWriteMode _readWriteMode; // For error reporting.
     struct ResponseLinesInfo {
       size_t nLines = 0;
       std::string delimiter;
@@ -65,14 +69,19 @@ namespace ChimeraTK {
     std::vector<checksum> commandChecksumEnums;
     std::vector<checksum> responseChecksumEnums;
 
-    /*----------------------------------------------------------------------------------------------------------------*/
-    InteractionInfo() : _responseInfo(ResponseLinesInfo{}) {}
+    std::string errorMessageDetail;
 
-    // Set the entire InteractionInfo from json,
-    // transportLayerType is exceptional: it typically needs to be set at all levels before other
-    // CommandBasedRegisterInfo level quantities can be set. So, when we have to set the type earlier than the rest of
-    // interactionInfo, we can skip setting it again by setting skipSetType to true.
-    void populateFromJson(const json& j, const std::string& errorMessageDetail, bool skipSetType = false);
+    /*----------------------------------------------------------------------------------------------------------------*/
+    explicit InteractionInfo(ReadWriteMode readWriteMode)
+    : _readWriteMode(readWriteMode), _responseInfo(ResponseLinesInfo{}) {}
+
+    /**
+     * Set the entire InteractionInfo from json,
+     * transportLayerType is exceptional: it typically needs to be set at all levels before other
+     * CommandBasedRegisterInfo level quantities can be set. So, when we have to set the type earlier than the rest of
+     * interactionInfo, we can skip setting it again by setting skipSetType to true.
+     */
+    void populateFromJson(const json& j, bool skipSetType = false);
 
     /*
      * If an InteractionInfo is not active, then it is disabled.
@@ -82,12 +91,11 @@ namespace ChimeraTK {
     [[nodiscard]] inline bool isActive() const { return not commandPattern.empty(); }
     [[nodiscard]] inline bool isBinary() const { return _isBinary; }
 
-    [[nodiscard]] inline TransportLayerType getTransportLayerType() const {
-      if(not hasTransportLayerType()) {
-        throw ChimeraTK::logic_error("Attempting to get a TransportLayerType that has not been set");
-      }
-      return _transportLayerType.value();
+    [[nodiscard]] inline std::string readWriteStr() const {
+      return (_readWriteMode == ReadWriteMode::READ ? "read" : "write");
     }
+    [[nodiscard]] TransportLayerType getTransportLayerType() const;
+
     /*
      * These getters return the corresponding responceInfo member, if the corresponding
      * SendCommandType is used, otherwise return nullopt.
@@ -102,6 +110,22 @@ namespace ChimeraTK {
      */
     [[nodiscard]] std::string getRegexString() const;
 
+    /**
+     * @brief: Fetches the appropriate regex given the TransportLayerType.
+     * @param[in] nElements The number of elements from the CommandBasedBackendRegisterInfo
+     * @throws std::regex_error or inja::ParserError
+     */
+    [[nodiscard]] std::regex getResponseDataRegex(size_t nElements) const;
+    [[nodiscard]] std::regex getResponseChecksumRegex(size_t nElements) const;
+    [[nodiscard]] std::regex getResponseChecksumPayloadRegex(size_t nElements) const;
+
+    /*
+     * Get the DataType best suited to the InteractionInfo info.
+     * This considers iInfo.isSigned, and the fixedRegexCharacterWidthOpt
+     * returns the smallest datatype that meets those needs.
+     */
+    [[nodiscard]] DataType getDataType() const;
+
     /*
      * These set the struct members if responceInfo is already in the corresponding
      * SendCommandType, otherwise they destructively set the SendCommandType,
@@ -111,6 +135,9 @@ namespace ChimeraTK {
     void setResponseNLines(size_t nLines);
     void setResponseBytes(size_t nBytes) { _responseInfo = ResponseBytesInfo{nBytes}; }
     void setTransportLayerType(TransportLayerType& type) noexcept;
+    inline void setErrorMessageDetail(const std::string& detail) noexcept {
+      errorMessageDetail = readWriteStr() + " for " + detail;
+    }
 
     [[nodiscard]] inline bool usesReadLines() const { return std::holds_alternative<ResponseLinesInfo>(_responseInfo); }
     [[nodiscard]] inline bool usesReadBytes() const { return std::holds_alternative<ResponseBytesInfo>(_responseInfo); }
@@ -118,6 +145,51 @@ namespace ChimeraTK {
     /*----------------------------------------------------------------------------------------------------------------*/
    protected:
     bool _isBinary = false;
+
+    /**
+     * @brief Validates the line endings for the interaction info.
+     * Enforces that responseLinesDelimiter is not empty if the interaction uses read lines.
+     * @throws ChimeraTK::logic_error if invalid.
+     */
+    void throwIfBadEndings() const;
+
+    /**
+     * @brief Validates fixedRegexCharacterWidthOpt, particularly its interaction with the transportLayerType.
+     * Ensures that fixedRegexCharacterWidthOpt is set if iInfo.isBinary().
+     * transportLayerType must be set before running this
+     * @throws ChimeraTK::logic_error If fixedRegexCharacterWidthOpt is invalid for the type.
+     */
+    void throwIfBadFixedWidth() const;
+
+    /**
+     * @brief Validates fractionalBitsOpt, and its interactions.
+     * Checks interactions with the transportLayerType, fractionalBitsOpt, fixedRegexCharacterWidthOpt, and signed.
+     * transportLayerType must be set before running this
+     * @throws ChimeraTK::logic_error If fractionalBitsOpt or its interactions is invalid.
+     */
+    void throwIfBadFractionalBits() const;
+
+    /**
+     * @brief Validates the signed property, making sure its a valid property for the TransportLayerType.
+     * transportLayerType must be set before running this
+     * @throws ChimeraTK::logic_error If the signed property is invalid for the type.
+     */
+    void throwIfBadSigned() const;
+
+    /**
+     * @brief Throws unless the transport layer type is set.
+     * @throws ChimeraTK::logic_error
+     */
+    void throwIfTransportLayerTypesIsNotSet() const;
+
+    /**
+     * @brief Validates that the number of checksum entries matches the number of inja checksum payloads in the command
+     * and response pattern.
+     * @throws ChimeraTK::logic_error If there is a size missmatch, or an invalid checksum inja patterns.
+     */
+    void throwIfBadChecksum(size_t nElements) const;
+
+    friend struct CommandBasedBackendRegisterInfo;
   }; // end InteractionInfo
 
   /********************************************************************************************************************/
@@ -128,8 +200,9 @@ namespace ChimeraTK {
     */
   struct CommandBasedBackendRegisterInfo : public BackendRegisterInfoBase {
     // Must have the option of 0 arguments
-    explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {}, InteractionInfo readInfo_ = {},
-        InteractionInfo writeInfo_ = {}, uint nElements_ = 1);
+    explicit CommandBasedBackendRegisterInfo(const RegisterPath& registerPath_ = {},
+        InteractionInfo readInfo_ = InteractionInfo(ReadWriteMode::READ),
+        InteractionInfo writeInfo_ = InteractionInfo(ReadWriteMode::WRITE), uint nElements_ = 1);
 
     /**
      * @brief Create and populate a CommandBasedBackendRegisterInfo directly from json.
@@ -140,10 +213,9 @@ namespace ChimeraTK {
 
     /**
      * @brief Validates the data
-     * @param[in] errorMessageDetail Fills error strings for logic_erros as needed. It should mention which register this is.
      * @throws a ChimeraTK::logic_error if something is invalid
      */
-    void validate(std::string& errorMessageDetail);
+    void validate() const;
 
     /**
      * @brief finalize must be run at the end of each constructor. It sets the dataDescriptor and validate()'s the data.
@@ -170,69 +242,108 @@ namespace ChimeraTK {
      * @throws std::regex_error
      */
     [[nodiscard]] std::regex getReadResponseDataRegex() const {
-      return getResponseDataRegex(readInfo, "read for " + registerPath);
+      return readInfo.getResponseDataRegex(getNumberOfElementsImpl());
     }
     /**
      * @brief: Fetches the write response data regex given the TransportLayerType
      * @throws std::regex_error
      */
     [[nodiscard]] std::regex getWriteResponseDataRegex() const {
-      return getResponseDataRegex(writeInfo, "write for " + registerPath);
+      return writeInfo.getResponseDataRegex(getNumberOfElementsImpl());
     }
     [[nodiscard]] std::regex getReadResponseChecksumRegex() const {
-      return getResponseChecksumRegex(readInfo, "read for " + registerPath);
+      return readInfo.getResponseChecksumRegex(getNumberOfElementsImpl());
     }
     [[nodiscard]] std::regex getWriteResponseChecksumRegex() const {
-      return getResponseChecksumRegex(writeInfo, "write for " + registerPath);
+      return writeInfo.getResponseChecksumRegex(getNumberOfElementsImpl());
     }
     [[nodiscard]] std::regex getReadResponseChecksumPayloadRegex() const {
-      return getResponseChecksumPayloadRegex(readInfo, "read for " + registerPath);
+      return readInfo.getResponseChecksumPayloadRegex(getNumberOfElementsImpl());
     }
     [[nodiscard]] std::regex getWriteResponseChecksumPayloadRegex() const {
-      return getResponseChecksumPayloadRegex(writeInfo, "write for " + registerPath);
+      return writeInfo.getResponseChecksumPayloadRegex(getNumberOfElementsImpl());
     }
 
     unsigned int nChannels{1};
     unsigned int nElements{1};
     RegisterPath registerPath; // can be converted to string
-    InteractionInfo readInfo;
-    InteractionInfo writeInfo;
+    InteractionInfo readInfo{ReadWriteMode::READ};
+    InteractionInfo writeInfo{ReadWriteMode::WRITE};
 
     DataDescriptor dataDescriptor;
 
    protected:
+    std::string _errorMessageDetail;
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Private getters
     [[nodiscard]] inline RegisterPath getRegisterNameImpl() const { return registerPath; }
     [[nodiscard]] inline unsigned int getNumberOfElementsImpl() const { return nElements; }
     [[nodiscard]] inline unsigned int getNumberOfChannelsImpl() const { return nChannels; }
 
     /**
-     * @brief: Fetches the appropriate regex given the TransportLayerType.
-     * @param[in] InteractionInfo
-     * @param[in] errorMessageDetial Info useful in the error message, preceeded in error strings by "for ".
-     * @throws std::regex_error or inja::ParserError
+     * @brief Gets a single coherent data type from the two possible data types in writeInfo and readInfo, for the sake
+     * of setting the DataDescriptor.
+     * @throws ChimeraTK::logic_error if the readInfo and writeInfo have incompatible data types.
      */
-    [[nodiscard]] std::regex getResponseDataRegex(
-        const InteractionInfo& info, const std::string& errorMessageDetail) const;
+    [[nodiscard]] DataType getDataType() const;
 
-    [[nodiscard]] std::regex getResponseChecksumRegex(
-        const InteractionInfo& info, const std::string& errorMessageDetail) const;
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Privte Setters
+    /**
+     * Sets errorMessageDetail in the CommandBasedBackendRegisterInfo and InteractionInfo's
+     */
+    void setErrorMessageDetail();
 
-    [[nodiscard]] std::regex getResponseChecksumPayloadRegex(
-        const InteractionInfo& info, const std::string& errorMessageDetail) const;
+    /**
+     * @brief Sets iInfo.nElements from JSON, if present, or else sets it to 1.
+     * @param[in] j nlohmann::json from the map file
+     * @throws ChimeraTK::logic_error if nElements is set <= 0 in the JSON.
+     */
+    void setNElementsFromJson(const json& j);
 
-    friend void throwIfBadCommandAndResponsePatterns(const CommandBasedBackendRegisterInfo& regInfo,
-        const std::string& errorMessageDetail); // accesses getNumberOfElementsImpl()
+    /*----------------------------------------------------------------------------------------------------------------*/
+
+    /**
+     * @brief Synchronizes the TransportLayerType of writeInfo and readInfo in case one is missing its TransportLayerType
+     * The type is copied from the other InteractionInfo
+     * The InteractionInfo is expected to lack a transport type if it is never activated, but the type is needed
+     * Doing this synchronization simplifies later logic, such as throwIfBadNElements.
+     */
+    void synchronizeTransportLayerTypes();
+
+    /*----------------------------------------------------------------------------------------------------------------*/
+    // Private Data Validaters
+
+    /**
+     * @brief This enforces that the register is either readable, writeable, or both.
+     * @throws ChimeraTK::logic_error
+     */
+    void throwIfBadActivation() const;
+
+    /**
+     * @brief This checks for the obvious error of having a command response patterns without corresponding command
+     * patterns. Requires the number of elements to already be set.
+     * @throws ChimeraTK::logic_error
+     */
+    void throwIfBadCommandAndResponsePatterns() const;
+
+    /**
+     * @brief Validates nElements, particularly its interaction with VOID type.
+     * Enforces that void type registers must be write-only, have nElements = 1, and have no inja variables in their commands.
+     * @throws ChimeraTK::logic_error If nElements is incompatible with void type.
+     */
+    void throwIfBadNElements() const;
+
+    /**
+     * @brief Throws unless at least one of the two interaction Infos has a type set.
+     * @throws ChimeraTK::logic_error If no type has been set.
+     */
+    void throwIfATransportLayerTypeIsNotSet() const;
   }; // end CommandBasedBackendRegisterInfo
+  /********************************************************************************************************************/
+  /********************************************************************************************************************/
 
   // Operators for cout:
   std::ostream& operator<<(std::ostream& os, const InteractionInfo& iInfo);
-
-  /**
-   * @brief This checks for the obvious error of having a command response patterns without corresponding command patterns.
-   * @param[in] errorMessageDetail Specifies the registerPath, and maybe other details to orient error messages.
-   * @throws ChimeraTK::logic_error
-   */
-  void throwIfBadCommandAndResponsePatterns(
-      const CommandBasedBackendRegisterInfo& regInfo, const std::string& errorMessageDetail);
 
 } // end namespace ChimeraTK
