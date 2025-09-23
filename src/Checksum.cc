@@ -15,7 +15,7 @@
 #include <memory> // For std::unique_ptr
 #include <regex>
 
-#define FUNC_NAME (std::string(__func__) + ": ")
+#define ERR_LOC_PREFIX (std::string(__FILE__) + "::" + std::string(__func__) + "::" + std::to_string(__LINE__) + ": ")
 
 namespace ChimeraTK {
   /********************************************************************************************************************/
@@ -94,7 +94,7 @@ namespace ChimeraTK {
       return checksumToFuncMap.at(cs);
     }
     catch(const std::out_of_range&) {
-      throw ChimeraTK::logic_error(FUNC_NAME + "Encountered unmapped checksum " + toStr(cs));
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Encountered unmapped checksum " + toStr(cs));
     }
   }
 
@@ -114,7 +114,7 @@ namespace ChimeraTK {
       return checksumToRegexStrMap.at(cs);
     }
     catch(const std::out_of_range&) {
-      throw ChimeraTK::logic_error(FUNC_NAME + "Encountered unmapped checksum " + toStr(cs));
+      throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Encountered unmapped checksum " + toStr(cs));
     }
   }
 
@@ -187,7 +187,7 @@ namespace ChimeraTK {
     int iExpected = -1;
     for(auto const& [iKey, _] : map) {
       if(iKey != (++iExpected)) {
-        throw ChimeraTK::logic_error(FUNC_NAME + "Checksum indices have gaps, missing checksum " +
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + "Checksum indices have gaps, missing checksum " +
             std::to_string(iExpected) + " - " + errorMessageDetail);
       }
     }
@@ -201,19 +201,23 @@ namespace ChimeraTK {
    */
   void throwIfChecksumMapHasIncompleteEntries(
       const std::map<int, ChecksumTagTripple>& map, const std::string& errorMessageDetail) {
-    const std::string funcName = FUNC_NAME; // keeps the linter happy
+    std::string errorLocationPrefix;
     auto makeErrorMessage = [&](int iKey, injaTemplatePatternKeys tag) -> std::string {
-      return funcName + "Checksum " + std::to_string(iKey) + " is miss tag " + toStr(tag) + " - " + errorMessageDetail;
+      return errorLocationPrefix + "Checksum " + std::to_string(iKey) + " is miss tag " + toStr(tag) + " - " +
+          errorMessageDetail;
     };
 
     for(auto const& [iKey, checksumTripple] : map) {
       if(checksumTripple.csStart == ChecksumTagTripple::NOT_FOUND) {
+        errorLocationPrefix = ERR_LOC_PREFIX;
         throw ChimeraTK::logic_error(makeErrorMessage(iKey, injaTemplatePatternKeys::CHECKSUM_START));
       }
       if(checksumTripple.csEnd == ChecksumTagTripple::NOT_FOUND) {
+        errorLocationPrefix = ERR_LOC_PREFIX;
         throw ChimeraTK::logic_error(makeErrorMessage(iKey, injaTemplatePatternKeys::CHECKSUM_END));
       }
       if(checksumTripple.csPoint == ChecksumTagTripple::NOT_FOUND) {
+        errorLocationPrefix = ERR_LOC_PREFIX;
         throw ChimeraTK::logic_error(makeErrorMessage(iKey, injaTemplatePatternKeys::CHECKSUM_POINT));
       }
     }
@@ -228,9 +232,9 @@ namespace ChimeraTK {
       const std::map<int, ChecksumTagTripple>& map, const std::string& errorMessageDetail) {
     for(auto const& [i, iTripple] : map) {
       if(iTripple.csStart >= iTripple.csEnd) {
-        throw ChimeraTK::logic_error(FUNC_NAME + toStr(injaTemplatePatternKeys::CHECKSUM_END) + " tag comes before " +
-            toStr(injaTemplatePatternKeys::CHECKSUM_START) + " tag for checksum " + std::to_string(i) + " - " +
-            errorMessageDetail);
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(injaTemplatePatternKeys::CHECKSUM_END) +
+            " tag comes before " + toStr(injaTemplatePatternKeys::CHECKSUM_START) + " tag for checksum " +
+            std::to_string(i) + " - " + errorMessageDetail);
       }
     }
   }
@@ -245,7 +249,7 @@ namespace ChimeraTK {
       const std::map<int, ChecksumTagTripple>& map, const std::string& errorMessageDetail) {
     for(auto const& [i, iTripple] : map) {
       if((iTripple.csStart <= iTripple.csPoint) and (iTripple.csPoint <= iTripple.csEnd)) {
-        throw ChimeraTK::logic_error(FUNC_NAME + toStr(injaTemplatePatternKeys::CHECKSUM_POINT) +
+        throw ChimeraTK::logic_error(ERR_LOC_PREFIX + toStr(injaTemplatePatternKeys::CHECKSUM_POINT) +
             " tag is illegally between the " + toStr(injaTemplatePatternKeys::CHECKSUM_START) + " and " +
             toStr(injaTemplatePatternKeys::CHECKSUM_END) + " tags for checksum " + std::to_string(i) + " - " +
             errorMessageDetail);
@@ -261,9 +265,9 @@ namespace ChimeraTK {
    */
   void throwIfChecksumMapHasNestingOrOverlaps(
       const std::map<int, ChecksumTagTripple>& map, const std::string& errorMessageDetail) {
-    const std::string funcName = FUNC_NAME; // make the linter happy
+    std::string errorLocationPrefix;
     auto makeNestedChecksumErrorMessage = [&](injaTemplatePatternKeys tag, int i, int j) -> std::string {
-      return funcName + toStr(tag) + " of checksum " + std::to_string(j) + " is nested within " +
+      return errorLocationPrefix + toStr(tag) + " of checksum " + std::to_string(j) + " is nested within " +
           toStr(injaTemplatePatternKeys::CHECKSUM_START) + "-" + toStr(injaTemplatePatternKeys::CHECKSUM_END) +
           " of checksum " + std::to_string(i) + " - " + errorMessageDetail;
     };
@@ -278,16 +282,19 @@ namespace ChimeraTK {
 
         // Guard against nested csPoint
         if((iTripple.csStart <= jTripple.csPoint) and (jTripple.csPoint <= iTripple.csEnd)) {
+          errorLocationPrefix = ERR_LOC_PREFIX;
           throw ChimeraTK::logic_error(makeNestedChecksumErrorMessage(injaTemplatePatternKeys::CHECKSUM_POINT, i, j));
         }
 
         // Guard against nested csStart
         if((iTripple.csStart <= jTripple.csStart) and (jTripple.csStart <= iTripple.csEnd)) {
+          errorLocationPrefix = ERR_LOC_PREFIX;
           throw ChimeraTK::logic_error(makeNestedChecksumErrorMessage(injaTemplatePatternKeys::CHECKSUM_START, i, j));
         }
 
         // Guard against nested csEnd
         if((iTripple.csStart <= jTripple.csEnd) and (jTripple.csEnd <= iTripple.csEnd)) {
+          errorLocationPrefix = ERR_LOC_PREFIX;
           throw ChimeraTK::logic_error(makeNestedChecksumErrorMessage(injaTemplatePatternKeys::CHECKSUM_END, i, j));
         }
       } // end for
