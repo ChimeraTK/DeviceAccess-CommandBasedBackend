@@ -41,8 +41,10 @@ namespace ChimeraTK {
       return {};
     }
 
+    [[nodiscard]] bool mayReplaceOther(const boost::shared_ptr<TransferElement const>& other) const override;
+
     void replaceTransferElement([[maybe_unused]] boost::shared_ptr<TransferElement> newElement) override {
-    } // mayReplaceTransferElement = false, so this is just empty.
+    } // No internal elements to replace, so this is just empty.
 
     /*----------------------------------------------------------------------------------------------------------------*/
    protected:

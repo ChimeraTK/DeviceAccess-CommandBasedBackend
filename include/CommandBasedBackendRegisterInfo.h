@@ -57,6 +57,8 @@ namespace ChimeraTK {
      */
     std::string delimiter;
 
+    [[nodiscard]] inline bool operator==(const CommandBasedBackendRegisterInfo& other) const = default;
+
   }; // end CommandBasedBackendRegisterInfo
 
 } // end namespace ChimeraTK

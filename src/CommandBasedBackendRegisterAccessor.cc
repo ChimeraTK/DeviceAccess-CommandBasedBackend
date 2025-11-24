@@ -229,6 +229,40 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
+  template<typename UserType>
+  bool CommandBasedBackendRegisterAccessor<UserType>::mayReplaceOther(
+      const boost::shared_ptr<TransferElement const>& other) const {
+    auto rhsCasted = boost::dynamic_pointer_cast<const CommandBasedBackendRegisterAccessor<UserType>>(other);
+    if(!rhsCasted) {
+      return false;
+    }
+    if(rhsCasted.get() == this) {
+      return false;
+    }
+    if(_registerInfo != rhsCasted->_registerInfo) {
+      return false;
+    }
+    if(_numberOfElements != rhsCasted->_numberOfElements) {
+      return false;
+    }
+    if(_elementOffsetInRegister != rhsCasted->_elementOffsetInRegister) {
+      return false;
+    }
+    if(_backend != rhsCasted->_backend) {
+      return false;
+    }
+    if(_isRecoveryTestAccessor != rhsCasted->_isRecoveryTestAccessor) {
+      return false;
+    }
+    if(_registerInfo != rhsCasted->_registerInfo) {
+      return false;
+    }
+    // no need to check the _readResponseRegex. It is generated from the readResponsePattern in the constructor.
+    return true;
+  }
+
+  /********************************************************************************************************************/
+
   // Magic from SupportedUserTypes.h
   INSTANTIATE_TEMPLATE_FOR_CHIMERATK_USER_TYPES(CommandBasedBackendRegisterAccessor);
 
