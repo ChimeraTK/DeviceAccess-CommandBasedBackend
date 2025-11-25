@@ -20,20 +20,11 @@ namespace ChimeraTK {
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
       AccessModeFlags flags, bool isRecoveryTestAccessor)
-  : NDRegisterAccessor<UserType>(registerPathName, flags), _numberOfElements(numberOfElements),
-    _elementOffsetInRegister(elementOffsetInRegister), _registerInfo(registerInfo),
+  : NDRegisterAccessor<UserType>(registerPathName, flags), _registerInfo(registerInfo),
     _isRecoveryTestAccessor(isRecoveryTestAccessor), _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
     assert(_registerInfo.getNumberOfChannels() != 0);
     assert(_registerInfo.getNumberOfElements() != 0);
     assert(_registerInfo.getNumberOfDimensions() < 2); // Implementation is only for scalar and 1D.
-
-    // 0 indicates all elements are described in registerInfo.
-    if(_numberOfElements == 0) {
-      _numberOfElements = _registerInfo.getNumberOfElements();
-    }
-    if(_elementOffsetInRegister + _numberOfElements > _registerInfo.getNumberOfElements()) {
-      throw ChimeraTK::logic_error("Requested offset + nElemements exceeds register size in " + this->getName());
-    }
 
     flags.checkForUnknownFlags({}); // Ensure that the user has not requested any flags, as none are supported.
 
@@ -45,7 +36,7 @@ namespace ChimeraTK {
 
     // Allocate the buffers
     NDRegisterAccessor<UserType>::buffer_2D.resize(_registerInfo.getNumberOfChannels());
-    NDRegisterAccessor<UserType>::buffer_2D[0].resize(_numberOfElements);
+    NDRegisterAccessor<UserType>::buffer_2D[0].resize(_registerInfo.getNumberOfElements());
     _readTransferBuffer.resize(1);
 
     this->_exceptionBackend = dev;
@@ -154,9 +145,8 @@ namespace ChimeraTK {
 
       std::string hexIndicator =
           (_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX ? "0x" : "");
-      for(size_t i = 0; i < _numberOfElements; ++i) {
-        buffer_2D[0][i] =
-            userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + _elementOffsetInRegister + 1));
+      for(size_t i = 0; i < _registerInfo.getNumberOfElements(); ++i) {
+        buffer_2D[0][i] = userTypeToUserType<UserType, std::string>(hexIndicator + valueMatch.str(i + 1));
       }
       this->_versionNumber = {};
       this->_dataValidity = DataValidity::ok;
@@ -182,14 +172,14 @@ namespace ChimeraTK {
     inja::json replacePatterns;
     replacePatterns["x"] = {};
     if(_registerInfo.internalType == CommandBasedBackendRegisterInfo::InternalType::HEX) {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
+      for(size_t i = 0; i < _registerInfo.getNumberOfElements(); ++i) {
         std::ostringstream oss;
         oss << std::hex << userTypeToUserType<uint64_t, UserType>(buffer_2D[0][i]);
         replacePatterns["x"].push_back(oss.str());
       }
     }
     else {
-      for(size_t i = 0; i < _numberOfElements; ++i) {
+      for(size_t i = 0; i < _registerInfo.getNumberOfElements(); ++i) {
         // FIXME: does not know about formating. TODO ticket 13534.
         // May need leading zeros or other formatting to satisfy the hardware interface.
         replacePatterns["x"].push_back(userTypeToUserType<std::string, UserType>(buffer_2D[0][i]));
@@ -240,12 +230,6 @@ namespace ChimeraTK {
       return false;
     }
     if(_registerInfo != rhsCasted->_registerInfo) {
-      return false;
-    }
-    if(_numberOfElements != rhsCasted->_numberOfElements) {
-      return false;
-    }
-    if(_elementOffsetInRegister != rhsCasted->_elementOffsetInRegister) {
       return false;
     }
     if(_backend != rhsCasted->_backend) {

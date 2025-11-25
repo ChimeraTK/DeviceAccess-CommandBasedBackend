@@ -50,8 +50,6 @@ namespace ChimeraTK {
    protected:
     using NDRegisterAccessor<UserType>::buffer_2D;
 
-    size_t _numberOfElements;
-    size_t _elementOffsetInRegister;
     CommandBasedBackendRegisterInfo _registerInfo;
 
     /**
