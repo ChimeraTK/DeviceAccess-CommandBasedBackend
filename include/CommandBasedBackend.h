@@ -11,6 +11,7 @@
 #include <ChimeraTK/BackendRegisterCatalogue.h>
 #include <ChimeraTK/DeviceAccessVersion.h>
 #include <ChimeraTK/DeviceBackendImpl.h>
+#include <ChimeraTK/SubArrayAccessorDecorator.h>
 
 #include <boost/make_shared.hpp>
 
@@ -131,9 +132,15 @@ namespace ChimeraTK {
   boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
       const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
     auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
-
-    return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(
-        DeviceBackend::shared_from_this(), registerInfo, registerPathName, numberOfWords, wordOffsetInRegister, flags);
+    // Accessor for the full register. We always have to read/write everything.
+    auto fullAccessor =
+        boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
+            registerInfo, registerPathName, registerInfo.getNumberOfElements(), 0 /* offset */, flags);
+    if((wordOffsetInRegister == 0) && ((numberOfWords == registerInfo.getNumberOfElements()) || numberOfWords == 0)) {
+      return fullAccessor;
+    }
+    return boost::make_shared<ChimeraTK::detail::SubArrayAccessorDecorator<UserType, UserType>>(
+        shared_from_this(), fullAccessor, numberOfWords, wordOffsetInRegister);
   }
 
 } // end namespace ChimeraTK

@@ -14,15 +14,14 @@ include(cmake/enable_code_coverage_report.cmake)
 include(cmake/enable_code_style_check.cmake)
 include(cmake/add_linter_target.cmake)
 
-find_package(ChimeraTK-DeviceAccess 03.15 REQUIRED)
+find_package(ChimeraTK-DeviceAccess 03.25 REQUIRED)
 
-#FIXME: nlohmann version 03.07 on focal is too old for inja.
-#That's why inja (there) brings its own version which is found by
-#the source code, but not by cmake.
-#Put back the explicit nlohmann dependency as soon as we abandoned focal.
+# FIXME: nlohmann version 03.07 on focal is too old for inja.
+# That's why inja (there) brings its own version which is found by
+# the source code, but not by cmake.
+# Put back the explicit nlohmann dependency as soon as we abandoned focal.
 #
-#find_package(nlohmann_json 03.07.0 REQUIRED) 
-
+# find_package(nlohmann_json 03.07.0 REQUIRED)
 find_package(inja 03.04.0 REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
