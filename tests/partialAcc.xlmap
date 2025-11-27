@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<logicalNameMap>
+  <redirectedRegister name="acc">
+    <targetDevice>CMD_TTY</targetDevice>
+    <targetRegister>/ACC</targetRegister>
+  </redirectedRegister>
+  <redirectedRegister name="acc23">
+    <targetDevice>CMD_TTY</targetDevice>
+    <targetRegister>/ACC</targetRegister>
+    <targetStartIndex>2</targetStartIndex>
+    <numberOfElements>2</numberOfElements>
+  </redirectedRegister>
+</logicalNameMap>
