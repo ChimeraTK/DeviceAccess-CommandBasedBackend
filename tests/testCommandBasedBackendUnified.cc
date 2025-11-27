@@ -218,7 +218,7 @@ struct StringArray : public RegisterDescriptorBase {
 struct ArrayFloatMultiLine : public RegisterDescriptorBase {
   static std::string path() { return "/ACC"; }
   static bool isWriteable() { return true; }
-  static size_t nElementsPerChannel() { return 2; }
+  static size_t nElementsPerChannel() { return 5; }
 
   using minimumUserType = float;
 

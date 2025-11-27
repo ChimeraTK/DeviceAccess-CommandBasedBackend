@@ -182,13 +182,23 @@ void DummyServer::mainLoop() {
       if(tokens.size() <= 3) {
         _serialPort->send("12345 Syntax error: ACC needs axis and value");
       }
-
+      std::vector<size_t> validTokenSizes = {3, 5, 7, 9, 11};
+      if(std::ranges::find(validTokenSizes, tokens.size()) == validTokenSizes.end()) {
+        _serialPort->send("12345 Syntax error: ACC has wrong number of arguments");
+        continue;
+      }
       setAcc(tokens[1], tokens[2]);
-      if(tokens.size() == 5) {
+      if(tokens.size() >= 5) {
         setAcc(tokens[3], tokens[4]);
       }
-      if(tokens.size() != 5 && tokens.size() != 3) {
-        _serialPort->send("12345 Syntax error: ACC has wrong number of arguments");
+      if(tokens.size() >= 7) {
+        setAcc(tokens[5], tokens[6]);
+      }
+      if(tokens.size() >= 9) {
+        setAcc(tokens[7], tokens[8]);
+      }
+      if(tokens.size() == 11) {
+        setAcc(tokens[9], tokens[10]);
       }
     }
     else if(data == "ACC?") {
@@ -200,6 +210,9 @@ void DummyServer::mainLoop() {
       }
       if(!sendTooFew) {
         _serialPort->send("AXIS_2=" + std::to_string(acc[1]));
+        _serialPort->send("AXIS_3=" + std::to_string(acc[2]));
+        _serialPort->send("AXIS_4=" + std::to_string(acc[3]));
+        _serialPort->send("AXIS_5=" + std::to_string(acc[4]));
       }
     }
     else if(data == "ACC? AXIS1") {

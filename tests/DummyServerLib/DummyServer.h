@@ -57,7 +57,7 @@ class DummyServer {
 
   // These hold data values interogated by the CommandBasedBackend
   // Their names reflect register names
-  std::array<std::atomic<float>, 2> acc = {0.2F, 0.3F};
+  std::array<std::atomic<float>, 5> acc = {0.2F, 0.3F, 0.4F, 0.5F, 0.6F};
   std::array<std::atomic<float>, 2> mov = {1.2F, 1.3F};
   std::atomic<uint64_t> cwFrequency{1300000000};
   std::array<std::atomic<float>, 10> trace = {0.F, 1.F, 4.F, 9.F, 16.F, 25.F, 36.F, 49.F, 64.F, 81.F};
