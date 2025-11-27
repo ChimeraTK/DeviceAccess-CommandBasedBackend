@@ -1,3 +1,4 @@
 @LOAD_LIB /home/killenb/software/build/ChimeraTK-DeviceAccess-CommandBasedBackend-debug/libChimeraTK-DeviceAccess-CommandBasedBackend.so
 CMD_TTY (CommandBasedTTY:/tmp/virtual-tty?map=test.json)
+PARTIAL (logicalNameMap?map=partialAcc.xlmap)
 PI_E873 (CommandBasedTCP:mskpie873-lab?map=hwtest.json&port=50000)
