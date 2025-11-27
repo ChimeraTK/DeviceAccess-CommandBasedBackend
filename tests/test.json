@@ -17,7 +17,7 @@
       "type": "INT64"
     },
     "/ACC": {
-      "writeCmd": "ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}} AXIS_3 {{x.2}} AXIS_4 {{x.3}} ACC AXIS_5 {{x.4}}",
+      "writeCmd": "ACC AXIS_1 {{x.0}} AXIS_2 {{x.1}} AXIS_3 {{x.2}} AXIS_4 {{x.3}} AXIS_5 {{x.4}}",
       "readCmd": "ACC?",
       "readResp": "AXIS_1={{x.0}}\r\nAXIS_2={{x.1}}\r\nAXIS_3={{x.2}}\r\nAXIS_4={{x.3}}\r\nAXIS_5={{x.4}}\r\n",
       "nElem": 5,

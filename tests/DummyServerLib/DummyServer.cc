@@ -322,6 +322,15 @@ void DummyServer::setAcc(const std::string& axis, const std::string& value) {
   else if(axis == "AXIS_2") {
     i = 1;
   }
+  else if(axis == "AXIS_3") {
+    i = 2;
+  }
+  else if(axis == "AXIS_4") {
+    i = 3;
+  }
+  else if(axis == "AXIS_5") {
+    i = 4;
+  }
   else {
     _serialPort->send("12345 Unknown axis: " + axis);
     return;
