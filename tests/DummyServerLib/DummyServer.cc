@@ -134,16 +134,16 @@ void DummyServer::waitForStop() {
 }
 
 void DummyServer::mainLoop() {
-  uint64_t nIter = 0;
   while(true) {
     if(_debug) {
-      std::cout << "dummy-server is patiently listening (" << nIter++ << ")..." << std::endl;
+      std::cout << "dummy-server is patiently listening (" << commandCounter << ")..." << std::endl;
     }
     auto readValue = _serialPort->readline();
     if(!readValue.has_value() || _stopMainLoop) {
       return;
     }
     auto data = readValue.value();
+    commandCounter++;
 
     if(_debug) {
       std::cout << "rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
