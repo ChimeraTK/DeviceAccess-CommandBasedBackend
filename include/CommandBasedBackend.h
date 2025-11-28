@@ -137,10 +137,11 @@ namespace ChimeraTK {
         boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
             registerInfo, registerPathName, registerInfo.getNumberOfElements(), 0 /* offset */, flags);
     if((wordOffsetInRegister == 0) && ((numberOfWords == registerInfo.getNumberOfElements()) || numberOfWords == 0)) {
-      return fullAccessor;
+      return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
+          registerInfo, registerPathName, registerInfo.getNumberOfElements(), 0 /* offset */, flags);
     }
     return boost::make_shared<ChimeraTK::detail::SubArrayAccessorDecorator<UserType, UserType>>(
-        shared_from_this(), fullAccessor, numberOfWords, wordOffsetInRegister);
+        shared_from_this(), registerPathName, numberOfWords, wordOffsetInRegister, flags);
   }
 
 } // end namespace ChimeraTK
