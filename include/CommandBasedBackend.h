@@ -132,10 +132,14 @@ namespace ChimeraTK {
   boost::shared_ptr<NDRegisterAccessor<UserType>> CommandBasedBackend::getRegisterAccessor_impl(
       const RegisterPath& registerPathName, size_t numberOfWords, size_t wordOffsetInRegister, AccessModeFlags flags) {
     auto registerInfo = _backendCatalogue.getBackendRegister(registerPathName);
-    // Accessor for the full register. We always have to read/write everything.
-    auto fullAccessor =
-        boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
-            registerInfo, registerPathName, registerInfo.getNumberOfElements(), 0 /* offset */, flags);
+    // consistency check before allocating anything
+    if(numberOfWords == 0) {
+      numberOfWords = registerInfo.getNumberOfElements();
+    }
+    if(numberOfWords + wordOffsetInRegister > registerInfo.getNumberOfElements()) {
+      throw ChimeraTK::logic_error("CommandBasedBackend: Number of words plus offset too large in " + registerPathName);
+    }
+
     if((wordOffsetInRegister == 0) && ((numberOfWords == registerInfo.getNumberOfElements()) || numberOfWords == 0)) {
       return boost::make_shared<CommandBasedBackendRegisterAccessor<UserType>>(DeviceBackend::shared_from_this(),
           registerInfo, registerPathName, registerInfo.getNumberOfElements(), 0 /* offset */, flags);
