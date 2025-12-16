@@ -83,7 +83,6 @@ BOOST_AUTO_TEST_CASE(AccessorMergingReadModifyWrite) {
   tg.addAccessor(acc23);
 
   uint64_t oldCommandCount = dummyServer.commandCounter;
-  std::cout << "oldCommandCount " << oldCommandCount << std::endl;
 
   acc1 = 22;
   acc23[0] = 33;
@@ -104,4 +103,76 @@ BOOST_AUTO_TEST_CASE(AccessorMergingReadModifyWrite) {
   BOOST_TEST(fullAccessor[2] == 33.);
   BOOST_TEST(fullAccessor[3] == 44.);
   BOOST_TEST(fullAccessor[4] == 50.);
+}
+
+/**
+ * Dediacated test that partial write only accessors are merging correctly.
+ */
+
+BOOST_AUTO_TEST_CASE(AccessorMergingWriteOnly) {
+  auto device = ChimeraTK::Device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)");
+
+  device.open();
+
+  auto fullAccessor = device.getOneDRegisterAccessor<double>("/ACC");
+  auto acc1 = device.getScalarRegisterAccessor<double>("/ACCWO", 1);
+  auto acc23 = device.getOneDRegisterAccessor<double>("/ACCWO", 2, 2);
+  auto acc0 = device.getScalarRegisterAccessor<double>("/ACCWO");
+  auto acc4 = device.getScalarRegisterAccessor<double>("/ACCWO", 4);
+
+  fullAccessor = {10., 20., 30., 40., 50.};
+  fullAccessor.write();
+  // do a read to synchronise the command counter. As the write is "fire and forget", and is processed asynchronously,
+  // the counter is probably not increased by the dummy yet when the code continues here.
+  // The read guarantees that the dummy has seen and counted the command, as the read is waiting for the corresponding
+  // response.
+  fullAccessor.read();
+
+  ChimeraTK::TransferGroup tg1;
+  tg1.addAccessor(acc1);
+  tg1.addAccessor(acc23);
+
+  ChimeraTK::TransferGroup tg2;
+  tg2.addAccessor(acc0);
+  tg2.addAccessor(acc4);
+
+  uint64_t oldCommandCount = dummyServer.commandCounter;
+  std::cout << "oldCommandCount " << oldCommandCount << std::endl;
+
+  acc0 = 9;
+  acc1 = 22;
+  acc23[0] = 33;
+  acc23[1] = 44;
+  acc4 = 99;
+
+  tg1.write();
+
+  // we have to perform a read again to synchronise the command counter. It will be one more than the write operation.
+  fullAccessor.read();
+
+  // exactly one has been performed
+  BOOST_TEST(
+      dummyServer.commandCounter == oldCommandCount + 2); // one for the write, and one for the full accessor read.
+
+  // Additional test: The write worked as intended (write-only accessor can only write what it knows, the rest is 0)
+  BOOST_TEST(fullAccessor[0] == 0.);
+  BOOST_TEST(fullAccessor[1] == 22.);
+  BOOST_TEST(fullAccessor[2] == 33.);
+  BOOST_TEST(fullAccessor[3] == 44.);
+  BOOST_TEST(fullAccessor[4] == 0.);
+
+  oldCommandCount = dummyServer.commandCounter;
+  tg2.write();
+
+  // we have to perform a read again to synchronise the command counter. It will be one more than the write operation.
+  fullAccessor.read(); // exactly one has been performed
+  BOOST_TEST(
+      dummyServer.commandCounter == oldCommandCount + 2); // one for the write, and one for the full accessor read.
+
+  // Additional test: The write worked as intended (write-only accessor can only write what it knows, the rest is 0)
+  BOOST_TEST(fullAccessor[0] == 9.);
+  BOOST_TEST(fullAccessor[1] == 0.);
+  BOOST_TEST(fullAccessor[2] == 0.);
+  BOOST_TEST(fullAccessor[3] == 0.);
+  BOOST_TEST(fullAccessor[4] == 99.);
 }
