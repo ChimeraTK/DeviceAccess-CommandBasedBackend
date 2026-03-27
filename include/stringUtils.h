@@ -178,7 +178,12 @@ static size_t getIntNaturalByteWidth(
   using unsignedIntType = typename std::make_unsigned<intType>::type;
 
   // Normalize to positives
-  auto signedPayload = static_cast<signedIntType>(payload);
+  auto signedPayload = std::bit_cast<signedIntType>(payload);
+  if(isSigned && (signedPayload == std::numeric_limits<signedIntType>::lowest())) {
+    // special case for the lowest possible value because -std::numeric_limits<signedIntType>::lowest() cannot be
+    // represented and is undefined behaviour
+    return sizeof(signedIntType);
+  }
   if(isSigned and (signedPayload < 0)) {
     signedPayload *= -1;
   }
