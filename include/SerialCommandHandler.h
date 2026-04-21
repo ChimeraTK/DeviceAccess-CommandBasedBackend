@@ -22,7 +22,7 @@ class SerialCommandHandler : public CommandHandler {
    * @param[in] delimiter Sets the default line delimiter seperating serial communication messages.
    * @param[in] timeoutInMilliseconds The timeout duration in ms
    */
-  explicit SerialCommandHandler(const std::string& device,
+  explicit SerialCommandHandler(const std::string& device, uint32_t baudRate,
       const std::string& delimiter = ChimeraTK::SERIAL_DEFAULT_DELIMITER, ulong timeoutInMilliseconds = 1000);
 
   ~SerialCommandHandler() override = default;

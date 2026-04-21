@@ -13,14 +13,15 @@ using namespace boost::unit_test_framework;
 /**********************************************************************************************************************/
 
 constexpr bool DEBUG = false;
+constexpr uint32_t BAUD_RATE = 115200;
 
 /**********************************************************************************************************************/
 
 struct SerialCommandHandlerFixture {
-  DummyServer dummy{true, DEBUG};
+  DummyServer dummy{true, DEBUG, BAUD_RATE};
   SerialCommandHandler s;
 
-  SerialCommandHandlerFixture() : s(dummy.deviceNode) {}
+  SerialCommandHandlerFixture() : s(dummy.deviceNode, BAUD_RATE) {}
 };
 
 // Declares and registers a fixture used by all test cases under a test suite.

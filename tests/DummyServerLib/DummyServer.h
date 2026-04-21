@@ -21,10 +21,11 @@
 class DummyServer {
  public:
   /**
-   * useRandomDevice randomizes the serial communication port (the _backportNode)
-   * debug toggles printouts
+   * @param useRandomDevice randomizes the serial communication port (the _backportNode)
+   * @param debug toggles printouts
+   * @param baudRate configures  the speed of the serial port
    */
-  explicit DummyServer(bool useRandomDevice = true, bool debug = false);
+  explicit DummyServer(bool useRandomDevice, bool debug, uint32_t baudRate);
   ~DummyServer();
 
   /**
@@ -106,6 +107,7 @@ class DummyServer {
   std::atomic_bool _stopMainLoop{false};
 
   std::string _backportNode;
+  uint32_t _baudRate;
 };
 
 /**

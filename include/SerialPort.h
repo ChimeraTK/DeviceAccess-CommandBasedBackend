@@ -35,7 +35,7 @@ namespace ChimeraTK {
      * @param[in] delmimiter The line delimiter seperating serial port messages.
      * @throws ChimeraTK::runtime_error
      */
-    explicit SerialPort(const std::string& device);
+    explicit SerialPort(const std::string& device, uint32_t baudRate);
 
     /**
      * Closes the port.

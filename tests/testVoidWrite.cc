@@ -19,7 +19,7 @@ constexpr bool DEBUG = false;
 
 /**********************************************************************************************************************/
 
-static DummyServer dummyServer{true, DEBUG};
+static DummyServer dummyServer{true, DEBUG, 115200};
 
 /**
  * Test write of the CommandBasedBackend's void-type accessor.

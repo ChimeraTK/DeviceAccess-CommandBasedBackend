@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-DummyServer::DummyServer(bool useRandomDevice, bool debug) : _debug(debug) {
+DummyServer::DummyServer(bool useRandomDevice, bool debug, uint32_t baudRate) : _debug(debug), _baudRate(baudRate) {
   if(useRandomDevice) {
     // Generate a random number to attach to the device name so muliple tests can run in parallel.
     // Initialise with high resolution clock as see so all processes get a different value.
@@ -66,7 +66,7 @@ void DummyServer::activate() {
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     try {
-      _serialPort = std::make_unique<ChimeraTK::SerialPort>(_backportNode);
+      _serialPort = std::make_unique<ChimeraTK::SerialPort>(_backportNode, _baudRate);
       break;
     }
     catch(ChimeraTK::runtime_error&) {

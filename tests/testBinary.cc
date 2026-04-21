@@ -22,7 +22,7 @@ constexpr bool DEBUG = false;
 /**********************************************************************************************************************/
 
 struct TestFixture {
-  DummyServer dummyServer{true, DEBUG};
+  DummyServer dummyServer{true, DEBUG, 115200}; // default connection speed
   ChimeraTK::Device device;
 
   TestFixture() : device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)") { device.open(); }

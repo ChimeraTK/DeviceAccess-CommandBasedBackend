@@ -20,10 +20,10 @@ constexpr bool DEBUG = false;
 
 /**********************************************************************************************************************/
 
-static DummyServer dummyServer{true, DEBUG};
+static DummyServer dummyServer{true, DEBUG, 19200};
 
 std::string cdd() {
-  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)";
+  return "(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json&baud=19200)";
 }
 
 /**********************************************************************************************************************/
