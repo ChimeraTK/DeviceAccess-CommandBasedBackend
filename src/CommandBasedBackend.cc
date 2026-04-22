@@ -6,7 +6,6 @@
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
 #include "SerialCommandHandler.h"
-#include "stringUtils.h"
 #include "TcpCommandHandler.h"
 
 #include <nlohmann/json.hpp>

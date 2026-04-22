@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "SerialPort.h"
 
-#include "stringUtils.h"
-
 #include <ChimeraTK/Exception.h>
 
 #include <fcntl.h>
@@ -14,8 +12,6 @@
 #include <chrono>  //Needed for timeout
 #include <cstring> //Used for memset, strerrorname_np, strerrordesc_np
 #include <future>  //Needed for timeout
-#include <iomanip>
-#include <iostream>
 #include <sstream>
 #include <string>
 

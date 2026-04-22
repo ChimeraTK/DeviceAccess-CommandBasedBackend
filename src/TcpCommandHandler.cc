@@ -2,11 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "TcpCommandHandler.h"
 
-#include "stringUtils.h"
-
 #include <cstring>
-#include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -30,6 +26,7 @@ namespace ChimeraTK {
     _tcpDevice->send(cmd + toString(writeDelimiter));
 
     std::string delim = toStringGuarded(readDelimiter);
+    ret.reserve(nLinesToRead);
     for(size_t line = 0; line < nLinesToRead; ++line) {
       ret.push_back(_tcpDevice->readlineWithTimeout(timeout, delim));
     }

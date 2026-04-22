@@ -5,8 +5,6 @@
 #include "SerialPort.h"
 
 #include <memory>
-#include <optional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

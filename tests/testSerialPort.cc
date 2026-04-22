@@ -28,13 +28,13 @@ struct SerialCommandHandlerFixture {
 // Each test case in the subtree of the test suite uses the fixture.
 BOOST_FIXTURE_TEST_SUITE(SerialCommandHandlerTests, SerialCommandHandlerFixture)
 
-BOOST_AUTO_TEST_CASE(testBasicCommand) {
+BOOST_AUTO_TEST_CASE(TestBasicCommand) {
   std::string cmd = "test1";
   std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testLongCommandBuffer) {
+BOOST_AUTO_TEST_CASE(TestLongCommandBuffer) {
   // Here the cmd string is longer than 256 character read buffer, forcing a multiple reads.
   // cmd is 255 char long, sending 257 chars
   std::string cmd =
@@ -45,14 +45,14 @@ BOOST_AUTO_TEST_CASE(testLongCommandBuffer) {
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testLongCommandBufferFollowup) {
+BOOST_AUTO_TEST_CASE(TestLongCommandBufferFollowup) {
   // Intermediate basic tests to see if the response from the previous test overflows into the next reply.
   std::string cmd = "test3";
   std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testDelimiterStraddleBuffer) {
+BOOST_AUTO_TEST_CASE(TestDelimiterStraddleBuffer) {
   // cmd is 254 char long, so this sends 256 chars. The read buffer is 256 characters, so the repply comes in over two
   // reads. res has 2-character delimiter straddle read buffer, so the first char of the delimiter comes into the buffer
   // upon the first read, and second delimter char comes into the buffer upon the second read
@@ -64,13 +64,13 @@ BOOST_AUTO_TEST_CASE(testDelimiterStraddleBuffer) {
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testDelimiterStraddleBufferFollowup) {
+BOOST_AUTO_TEST_CASE(TestDelimiterStraddleBufferFollowup) {
   std::string cmd = "test5";
   std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testCommandExactBufferSize) {
+BOOST_AUTO_TEST_CASE(TestCommandExactBufferSize) {
   // cmd is 253 char long, sending 255 chars
   // So the command, together with delimiter, is exactly the size of the buffer.
   std::string cmd =
@@ -81,13 +81,13 @@ BOOST_AUTO_TEST_CASE(testCommandExactBufferSize) {
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testExactBufferSizeFollowup) {
+BOOST_AUTO_TEST_CASE(TestExactBufferSizeFollowup) {
   std::string cmd = "test7";
   std::string res = s.sendCommandAndReadLines(cmd)[0];
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
+BOOST_AUTO_TEST_CASE(TestSemicolonParsing) {
   std::string cmd = "qwer;asdf";
   auto ret = s.sendCommandAndReadLines(cmd, 2);
   BOOST_TEST(ret.size() == 2);
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(testSemicolonParsing) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
+BOOST_AUTO_TEST_CASE(TestOverrideReadDelimiter) {
   // Send cmd consisting of two lines that use an alternate delimiter.
   // Dummy sends that back, minus the write delimiter, resulting in two lines.
   // Dummy relies on cmdline1 starting with "altDelimLine"
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(testOverrideReadDelimiter) {
   }
 }
 
-BOOST_AUTO_TEST_CASE(testOverrideWriteDelimiter) {
+BOOST_AUTO_TEST_CASE(TestOverrideWriteDelimiter) {
   // Use "\n" as the overrideWriteDelimiter, but combine with "\r" in the command to make the dummy server
   // recognize the delimiter and return cmd
   std::string cmd = "testOverrideWriteDelimiter";
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(testOverrideWriteDelimiter) {
   BOOST_TEST(res == cmd);
 }
 
-BOOST_AUTO_TEST_CASE(testBinary) {
+BOOST_AUTO_TEST_CASE(TestBinary) {
   // Use "\n" as the overrideWriteDelimiter, but combine with "\r" in the command to make the dummy server
   // recognize the delimiter and return cmd
   std::cout << "testBinary" << std::endl; // DEBUG

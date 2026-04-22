@@ -357,7 +357,7 @@ struct ArrayHexInt8 : public ArrayHexMultiLine {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testRegisterAccessor) {
+BOOST_AUTO_TEST_CASE(TestRegisterAccessor) {
   ChimeraTK::UnifiedBackendTest<>()
       .addRegister<ScalarInt>()
       .addRegister<ScalarIntRO>()

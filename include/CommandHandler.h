@@ -3,7 +3,6 @@
 #pragma once
 
 #include <chrono>
-#include <optional>
 #include <string>
 #include <utility> //for move()
 #include <variant>
@@ -74,8 +73,7 @@ class CommandHandler {
    */
   std::chrono::milliseconds timeout;
 
-  [[nodiscard]] std::string toString(
-      const Delimiter& delimOption) const noexcept; //!< Converts a delimiter option to string
+  [[nodiscard]] std::string toString(const Delimiter& delimOption) const; //!< Converts a delimiter option to string
 
   /**
    * @brief Converts a delimiter option to string, but throws if delimOption is emptyString. Use for readDelimiters.

@@ -134,7 +134,6 @@ void DummyServer::waitForStop() {
 }
 
 void DummyServer::mainLoop() {
-  std::string delim = ChimeraTK::SERIAL_DEFAULT_DELIMITER;
   uint64_t nIter = 0;
   while(true) {
     if(not byteMode) {
@@ -145,7 +144,7 @@ void DummyServer::mainLoop() {
       if(!readValue.has_value() || _stopMainLoop) {
         return;
       }
-      auto data = readValue.value();
+      const auto& data = readValue.value();
 
       if(_debug) {
         std::cout << "DummyServer: rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
@@ -404,7 +403,7 @@ void DummyServer::mainLoop() {
         }
         return;
       }
-      std::string data = readValue.value();
+      const auto& data = readValue.value();
 
       if((data.find('\x10') == 0)) { // go back to line mode
                                      // this exercises sending bytes and reading lines

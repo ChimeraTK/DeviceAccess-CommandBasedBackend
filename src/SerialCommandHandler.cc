@@ -3,13 +3,10 @@
 #include "SerialCommandHandler.h"
 
 #include "SerialPort.h"
-#include "stringUtils.h"
 
 #include <ChimeraTK/Exception.h>
 
-#include <chrono> //Needed for timeout type.
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <vector>
 

@@ -5,7 +5,6 @@
 
 #include <ChimeraTK/Exception.h>
 
-#include <optional>
 #include <utility>
 
 namespace ChimeraTK {
@@ -35,7 +34,7 @@ namespace ChimeraTK {
   void TcpSocket::disconnect() {
     boost::system::error_code ec;
     try {
-      _socket.cancel(ec);
+      ec = _socket.cancel(ec);
     }
     catch(std::exception& e) {
       throw ChimeraTK::runtime_error(e.what());

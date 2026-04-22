@@ -5,8 +5,6 @@
 #include <atomic>
 #include <chrono>
 #include <optional>
-#include <string>
-#include <vector>
 
 namespace ChimeraTK {
 

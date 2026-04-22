@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include "DummyServer.h"
 
-#include <iostream>
-
 int main() {
   DummyServer dummy(false, // Don't use random number when stating the dummy as a stand-alone executable
       true,                // do use debug printouts
