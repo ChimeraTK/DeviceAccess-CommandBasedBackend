@@ -8,7 +8,6 @@
 #include <cstring>
 #include <functional>
 #include <iostream>
-#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -97,7 +96,7 @@ std::string replaceNewLines(const std::string& input) noexcept {
 /**********************************************************************************************************************/
 
 void toLowerCase(std::string& str) noexcept {
-  std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+  std::ranges::transform(str, str.begin(), [](unsigned char c) { return std::tolower(c); });
 }
 
 /**********************************************************************************************************************/
@@ -228,14 +227,13 @@ std::string hexStrFromBinaryStr(const std::string& byteStr, size_t nHexChars, bo
 /**********************************************************************************************************************/
 
 bool caseInsensitiveStrCompare(const std::string& a, const std::string& b) noexcept {
-  return std::equal(
-      a.begin(), a.end(), b.begin(), b.end(), [](char A, char B) { return std::tolower(A) == std::tolower(B); });
+  return std::ranges::equal(a, b, [](char A, char B) { return std::tolower(A) == std::tolower(B); });
 }
 
 /**********************************************************************************************************************/
 
 std::string replaceAll(const std::string& s, const char charToBeReplaced, const std::string& replacement) noexcept {
-  size_t nOccurences = std::count(s.begin(), s.end(), charToBeReplaced);
+  size_t nOccurences = std::ranges::count(s, charToBeReplaced);
   std::string result;
   result.reserve(s.size() + nOccurences * replacement.size());
   for(char i : s) {

@@ -3,22 +3,19 @@
 #include "SerialCommandHandler.h"
 
 #include "SerialPort.h"
-#include "stringUtils.h"
 
 #include <ChimeraTK/Exception.h>
 
-#include <chrono> //Needed for timeout type.
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <vector>
 
 /**********************************************************************************************************************/
 
 SerialCommandHandler::SerialCommandHandler(
-    const std::string& device, const std::string& _delimiter, ulong timeoutInMilliseconds)
+    const std::string& device, uint32_t baudRate, const std::string& _delimiter, ulong timeoutInMilliseconds)
 : CommandHandler(_delimiter, timeoutInMilliseconds) {
-  _serialPort = std::make_unique<ChimeraTK::SerialPort>(device);
+  _serialPort = std::make_unique<ChimeraTK::SerialPort>(device, baudRate);
 }
 
 /**********************************************************************************************************************/

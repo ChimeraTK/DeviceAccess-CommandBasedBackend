@@ -8,7 +8,7 @@
 
 /**********************************************************************************************************************/
 
-std::string CommandHandler::toString(const Delimiter& delimOption) const noexcept {
+std::string CommandHandler::toString(const Delimiter& delimOption) const {
   if(std::holds_alternative<CommandHandlerDefaultDelimiter>(delimOption)) {
     return delimiter;
   }

@@ -6,7 +6,6 @@
 #include "jsonUtils.h"
 #include "mapFileKeys.h"
 #include "SerialCommandHandler.h"
-#include "stringUtils.h"
 #include "TcpCommandHandler.h"
 
 #include <nlohmann/json.hpp>
@@ -35,6 +34,17 @@ namespace ChimeraTK {
     if(parameters.count("map") == 0) {
       throw ChimeraTK::logic_error("No map file parameter");
     }
+    if(_commandBasedBackendType == CommandBasedBackendType::SERIAL) {
+      if(parameters.count("baud") != 0) {
+        try {
+          _baudRate = std::stoi(parameters["baud"]);
+        }
+        catch(std::exception& e) {
+          throw ChimeraTK::logic_error(
+              "Error converting parameter \"baud=" + parameters["baud"] + "\" to integer: " + e.what());
+        }
+      }
+    }
 
     // Parse map file and copy results to internal catalogues.
     parseJsonAndPopulateCatalogue(parameters["map"]);
@@ -46,7 +56,8 @@ namespace ChimeraTK {
 
   void CommandBasedBackend::open() {
     if(_commandBasedBackendType == CommandBasedBackendType::SERIAL) {
-      _commandHandler = std::make_unique<SerialCommandHandler>(_instance, _serialDelimiter, _timeoutInMilliseconds);
+      _commandHandler =
+          std::make_unique<SerialCommandHandler>(_instance, _baudRate, _serialDelimiter, _timeoutInMilliseconds);
     }
     else if(_commandBasedBackendType == CommandBasedBackendType::ETHERNET) {
       _commandHandler = std::make_unique<TcpCommandHandler>(_instance, _port, _serialDelimiter, _timeoutInMilliseconds);

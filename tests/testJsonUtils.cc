@@ -11,16 +11,13 @@ using namespace boost::unit_test_framework;
 
 #include <ChimeraTK/Exception.h>
 
-#include <nlohmann/json.hpp>
-
 #include <optional>
 #include <unordered_map>
 
 /**********************************************************************************************************************/
-using json = nlohmann::json;
 
 namespace ChimeraTK {
-  BOOST_AUTO_TEST_CASE(caseInsensitiveGetValueOption_test) {
+  BOOST_AUTO_TEST_CASE(TestCaseInsensitiveGetValueOption) {
     json j = {{"read", "ACC?"}, {"write", 3}};
 
     auto noResult = caseInsensitiveGetValueOption(j, "readwrite");
@@ -37,7 +34,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(caseInsensitiveGetValueOr_test) {
+  BOOST_AUTO_TEST_CASE(TestCaseInsensitiveGetValueOr) {
     json j = {{"read", "ACC?"}, {"write", 3}};
 
     BOOST_CHECK_EQUAL(caseInsensitiveGetValueOr(j, "write", -1), 3);
@@ -50,7 +47,7 @@ namespace ChimeraTK {
 
   enum class TestKeys { Read, Write };
 
-  BOOST_AUTO_TEST_CASE(throwIfHasInvalidJsonKeyCaseInsensitive_test) {
+  BOOST_AUTO_TEST_CASE(TestThrowIfHasInvalidJsonKeyCaseInsensitive) {
     json j = {{"read", "ACC?"}, {"write", 3}};
 
     std::unordered_map<TestKeys, std::string> validKeyMap = {{TestKeys::Read, "ReAd"}, {TestKeys::Write, "wRiTe"}};

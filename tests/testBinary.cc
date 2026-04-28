@@ -11,7 +11,6 @@ using namespace boost::unit_test_framework;
 #include "DummyServer.h"
 
 #include <ChimeraTK/Device.h>
-#include <ChimeraTK/UnifiedBackendTest.h>
 
 #include <iostream>
 
@@ -22,7 +21,7 @@ constexpr bool DEBUG = false;
 /**********************************************************************************************************************/
 
 struct TestFixture {
-  DummyServer dummyServer{true, DEBUG};
+  DummyServer dummyServer{true, DEBUG, 115200}; // default connection speed
   ChimeraTK::Device device;
 
   TestFixture() : device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)") { device.open(); }
@@ -32,7 +31,7 @@ struct TestFixture {
 // Each test case in the subtree of the test suite uses the fixture.
 BOOST_FIXTURE_TEST_SUITE(MapFileV2Tests, TestFixture)
 
-BOOST_AUTO_TEST_CASE(testFloat) {
+BOOST_AUTO_TEST_CASE(TestFloat) {
   auto accessor = device.getScalarRegisterAccessor<float>("/floatTest");
 
   float fIn = 2.5;
@@ -45,7 +44,7 @@ BOOST_AUTO_TEST_CASE(testFloat) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testBinFloat) {
+BOOST_AUTO_TEST_CASE(TestBinFloat) {
   auto accessor = device.getScalarRegisterAccessor<float>("/binFloatTest");
   auto byteModeAccessor = device.getScalarRegisterAccessor<uint32_t>("/setByteMode");
 
@@ -87,7 +86,7 @@ BOOST_AUTO_TEST_CASE(testBinFloat) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testReadStatus) {
+BOOST_AUTO_TEST_CASE(TestReadStatus) {
   auto accessor = device.getScalarRegisterAccessor<uint32_t>("/controllerReadyStatus");
   if(DEBUG) {
     std::cout << "testBinary: testReadStatus. Send read" << std::endl;
@@ -103,7 +102,7 @@ BOOST_AUTO_TEST_CASE(testReadStatus) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testULog) {
+BOOST_AUTO_TEST_CASE(TestULog) {
   if(DEBUG) {
     std::cout << "testBinary: testULog write" << std::endl;
   }

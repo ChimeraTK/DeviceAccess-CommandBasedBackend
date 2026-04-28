@@ -23,7 +23,7 @@ using namespace boost::unit_test_framework;
   } while(false)
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testTokeniseNominal) {
+BOOST_AUTO_TEST_CASE(TestTokeniseNominal) {
   // Typical use case: some well formed, space separated string tokens
   auto tokens = tokenise("A hello world example!");
 
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(testTokeniseNominal) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testTokeniseTrailingEndingWhitespace) {
+BOOST_AUTO_TEST_CASE(TestTokeniseTrailingEndingWhitespace) {
   // More elaborate example with multiple lines and tab
   auto tokens = tokenise(" A fancy\r\nhello\tworld\rexample! ");
 
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(testTokeniseTrailingEndingWhitespace) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testTokeniseJustWhitespace) {
+BOOST_AUTO_TEST_CASE(TestTokeniseJustWhitespace) {
   auto tokens = tokenise(" \t ");
 
   BOOST_TEST(tokens.size() == 0);
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(testTokeniseJustWhitespace) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
+BOOST_AUTO_TEST_CASE(TestTokeniseEmptyString) {
   auto tokens = tokenise("");
 
   BOOST_TEST(tokens.size() == 0);
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(testTokeniseEmptyString) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(testHexConversion) {
+BOOST_AUTO_TEST_CASE(TestHexConversion) {
   std::string h1 = "BEEF"; // basic test with no nulls.
   std::string b1 = binaryStrFromHexStr(h1);
   NICE_CHECK_EQUAL(b1, "\xBE\xEF");
@@ -94,7 +94,6 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
 
   std::string h4 = "0ABC0"; // odd, building nulls
   std::string b4L = binaryStrFromHexStr(h4);
-  std::string b4L_cmp{"\0\xAB\xC0", 3};
   NICE_CHECK_EQUAL(printable(b4L), "\\0\xAB\xC0");
 
   std::string h4V1 = hexStrFromBinaryStr(b4L, h4.length());
@@ -120,7 +119,7 @@ BOOST_AUTO_TEST_CASE(testHexConversion) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(nullReplacement_test) {
+BOOST_AUTO_TEST_CASE(TestNullReplacement) {
   std::string s = {"rtyuiR67\089oi", 13};
   s[5] = '\x00'; // replace 'R' with null so that the string literal use the single unicode char '\x0067'
 
@@ -135,7 +134,7 @@ BOOST_AUTO_TEST_CASE(nullReplacement_test) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(caseInsensitiveStrCompare_tests) {
+BOOST_AUTO_TEST_CASE(TestCaseInsensitiveStrCompare) {
   BOOST_TEST(caseInsensitiveStrCompare("things", "tHiNgS") == true);
   BOOST_TEST(caseInsensitiveStrCompare("things", "stufff") == false);
 }
@@ -152,7 +151,7 @@ std::array<OverflowBehavior, 3> overflowBehaviors = {TRUNCATE, EXPAND, NULLOPT};
 using Boolean = ChimeraTK::Boolean;
 const std::string NO = "nullopt";
 
-BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
+BOOST_AUTO_TEST_CASE(TestBinaryStrFromInt) {
   const std::string ZERO_STR("\x00", 1);
   size_t width;
 
@@ -796,7 +795,7 @@ BOOST_AUTO_TEST_CASE(binaryStrFromInt_tests) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
+BOOST_AUTO_TEST_CASE(TestIntFromBinaryStr) {
   // Test conversion from binary string
   BOOST_CHECK_EQUAL(intFromBinaryStr<int32_t>({"\0\x05", 2}).value_or(-999), /*==*/5);
 
@@ -823,7 +822,7 @@ BOOST_AUTO_TEST_CASE(intFromBinaryStr_tests) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(hexStrFromInt_test) {
+BOOST_AUTO_TEST_CASE(TestHexStrFromInt) {
   // This tests the mechanics of toTransportLayerHexInt, which is also used for binary int.
 
   std::string ans, hexOut;
@@ -868,14 +867,14 @@ BOOST_AUTO_TEST_CASE(hexStrFromInt_test) {
   {
     std::vector<std::tuple<int32_t, size_t, bool, std::string>> testCases{
         {0xAB0C, 6, false, "00AB0C"},
-        {0xAB0C, 5, false, "0AB0C"},        // fixed width, unsigned, even number of characters in, odd out
-        {0xD0E, 5, false, "00D0E"},         // fixed width, unsigned, odd number of characters in, odd number out
-        {0xD0E, 6, false, "000D0E"},        // fixed width, unsigned, odd number of characters in, even number out
-        {0xAB0C, 6, true, "00AB0C"},        // fixed width, signed, positive, even number of characters
-        {0xD0E, 5, true, "00D0E"},          // fixed width, signed, positive, odd number of characters
-        {-1 * (0xAB0C), 6, true, "FF54F4"}, // fixed width, signed, negative, even number of characters
-        {-1 * (0xD0E), 5, true, "FF2F2"},   // fixed width, signed, negative, odd number of characters
-        {0, 3, true, "000"},                // Trivial case
+        {0xAB0C, 5, false, "0AB0C"},      // fixed width, unsigned, even number of characters in, odd out
+        {0xD0E, 5, false, "00D0E"},       // fixed width, unsigned, odd number of characters in, odd number out
+        {0xD0E, 6, false, "000D0E"},      // fixed width, unsigned, odd number of characters in, even number out
+        {0xAB0C, 6, true, "00AB0C"},      // fixed width, signed, positive, even number of characters
+        {0xD0E, 5, true, "00D0E"},        // fixed width, signed, positive, odd number of characters
+        {-1 * 0xAB0C, 6, true, "FF54F4"}, // fixed width, signed, negative, even number of characters
+        {-1 * 0xD0E, 5, true, "FF2F2"},   // fixed width, signed, negative, odd number of characters
+        {0, 3, true, "000"},              // Trivial case
     };
     for(const auto& [iInput, width, isSigned, strAns] : testCases) {
       BOOST_CHECK_EQUAL(hexStrFromInt<int32_t>(iInput, width, isSigned).value_or(NO), strAns);
@@ -885,10 +884,8 @@ BOOST_AUTO_TEST_CASE(hexStrFromInt_test) {
 
 /**********************************************************************************************************************/
 
-BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
+BOOST_AUTO_TEST_CASE(TestToUserTypeHexInt) {
   // This tests the mechanics of toUserTypeHexInt, which is also used for binary int.
-
-  std::string str;
 
   { // Boolean
     ChimeraTK::Boolean T = true, F = false;
@@ -948,7 +945,7 @@ BOOST_AUTO_TEST_CASE(toUserTypeHexInt_test) {
 
 } // end toUserTypeHexInt_test
 
-BOOST_AUTO_TEST_CASE(floatBinary_test) {
+BOOST_AUTO_TEST_CASE(TestFloatBinary) {
   // For each case, convert the number to binary, and back to float. Then convert to hex and back to float by way of
   // binary. Check that each round trip works.
   std::string b, b2, h;

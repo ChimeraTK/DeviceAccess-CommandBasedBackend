@@ -19,7 +19,7 @@ constexpr bool DEBUG = false;
 
 /**********************************************************************************************************************/
 
-static DummyServer dummyServer{true, DEBUG};
+static DummyServer dummyServer{true, DEBUG, 115200};
 
 /**
  * Test write of the CommandBasedBackend's void-type accessor.
@@ -29,7 +29,7 @@ static DummyServer dummyServer{true, DEBUG};
  * We simple confirm that the dummy server's counter starts at 0. Then as void-type command is sent.
  * This is registered by the dummy and it's voidCounter is incremented to 1.
  */
-BOOST_AUTO_TEST_CASE(voidWrite) {
+BOOST_AUTO_TEST_CASE(TestVoidWrite) {
   auto device = ChimeraTK::Device("(CommandBasedTTY:" + dummyServer.deviceNode + "?map=test.json)");
 
   device.open();
