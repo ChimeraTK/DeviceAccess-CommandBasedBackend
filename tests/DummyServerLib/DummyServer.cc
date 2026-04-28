@@ -9,8 +9,6 @@
 #include <ChimeraTK/Exception.h>
 #include <ChimeraTK/SupportedUserTypes.h>
 
-#include <boost/process.hpp>
-
 #include <csignal>
 #include <iostream>
 #include <sstream>
