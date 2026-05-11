@@ -10,7 +10,6 @@
 #include "stringUtils.h"
 
 #include <regex>
-#include <sstream>
 #include <string>
 #include <type_traits>
 
@@ -32,7 +31,7 @@ namespace ChimeraTK {
   CommandBasedBackendRegisterAccessor<UserType>::CommandBasedBackendRegisterAccessor(
       const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev, CommandBasedBackendRegisterInfo& registerInfo,
       const RegisterPath& registerPathName, size_t numberOfElements, size_t elementOffsetInRegister,
-      AccessModeFlags flags, bool isRecoveryTestAccessor)
+      const AccessModeFlags& flags, bool isRecoveryTestAccessor)
   : NDRegisterAccessor<UserType>(registerPathName, flags), _numberOfElements(numberOfElements),
     _elementOffsetInRegister(elementOffsetInRegister), _registerInfo(registerInfo),
     _isRecoveryTestAccessor(isRecoveryTestAccessor), _backend(boost::dynamic_pointer_cast<CommandBasedBackend>(dev)) {
@@ -197,6 +196,7 @@ namespace ChimeraTK {
     }
 
     std::vector<std::string> checksumResults;
+    checksumResults.reserve(iInfo.responseChecksumEnums.size());
     for(size_t i = 0; i < iInfo.responseChecksumEnums.size(); ++i) {
       checksumResults.push_back(responseChecksumers[i](checksumPayloadMatch.str(i + 1)));
     }

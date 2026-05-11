@@ -377,7 +377,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<size_t> InteractionInfo::getResponseNLines() const noexcept {
+  std::optional<size_t> InteractionInfo::getResponseNLines() const {
     if(usesReadLines()) {
       return std::get<ResponseLinesInfo>(_responseInfo).nLines;
     }
@@ -386,7 +386,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<std::string> InteractionInfo::getResponseLinesDelimiter() const noexcept {
+  std::optional<std::string> InteractionInfo::getResponseLinesDelimiter() const {
     if(usesReadLines()) {
       return std::get<ResponseLinesInfo>(_responseInfo).delimiter;
     }
@@ -395,7 +395,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  std::optional<size_t> InteractionInfo::getResponseBytes() const noexcept {
+  std::optional<size_t> InteractionInfo::getResponseBytes() const {
     if(usesReadBytes()) {
       return std::get<ResponseBytesInfo>(_responseInfo).nBytesReadResponse;
     }
@@ -686,7 +686,7 @@ namespace ChimeraTK {
     if(type == TransportLayerType::BIN_FLOAT or type == TransportLayerType::DEC_FLOAT) {
       std::array<size_t, 3> validWidths = {16, 8, 4}; // widths are in nibbles.
 
-      if(std::find(validWidths.begin(), validWidths.end(), regexCharacterWidth) == validWidths.end()) {
+      if(std::ranges::find(validWidths, regexCharacterWidth) == validWidths.end()) {
         throw ChimeraTK::logic_error(FUNC_NAME + "Invalid " + bitWidthTag + " " +
             std::to_string(4 * regexCharacterWidth) + " bits for type " + toStr(type) + " for " + errorMessageDetail);
       }
@@ -1282,7 +1282,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
-    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+    for(size_t i = 0; i < nElements; ++i) {
       // getNumberOfElements() may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups
@@ -1315,7 +1315,7 @@ namespace ChimeraTK {
 
     inja::json replacePatterns;
     replacePatterns[toStr(injaTemplatePatternKeys::DATA)] = {};
-    for(size_t i = 0; i < getNumberOfElements(); ++i) {
+    for(size_t i = 0; i < nElements; ++i) {
       // getNumberOfElements() may be an overestimate of how many are needed.
       // FIXME: does not know about formating. TODO ticket 13534. See below..
       replacePatterns[toStr(injaTemplatePatternKeys::DATA)].push_back(valueRegex); // render data NON-capture groups

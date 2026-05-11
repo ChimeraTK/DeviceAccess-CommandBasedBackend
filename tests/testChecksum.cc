@@ -9,17 +9,13 @@
 using namespace boost::unit_test_framework;
 
 #include "Checksum.h"
-#include "DummyServer.h"
 #include "stringUtils.h"
-
-#include <ChimeraTK/Device.h>
-#include <ChimeraTK/UnifiedBackendTest.h>
 
 namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(testCheckSum8) {
+  BOOST_AUTO_TEST_CASE(TestCheckSum8) {
     std::string hexInput = "3132A33B343C5363D738EF39";
     std::string binInput = binaryStrFromHexStr(hexInput);
     checksumAlgorithm checksumAlgorithmFunc = getChecksumAlgorithm(checksum::CS8);
@@ -31,7 +27,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(testCheckSum32) {
+  BOOST_AUTO_TEST_CASE(TestCheckSum32) {
     std::string hexInput = "3132A33B343C5363D738EF39";
     std::string binInput = binaryStrFromHexStr(hexInput);
     checksumAlgorithm checksumAlgorithmFunc = getChecksumAlgorithm(checksum::CS32);
@@ -42,7 +38,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(testCheckSumCrcCcit16) {
+  BOOST_AUTO_TEST_CASE(TestCheckSumCrcCcit16) {
     std::string hexInput = "313233343536373839";
     std::string binInput = binaryStrFromHexStr(hexInput);
     checksumAlgorithm checksumAlgorithmFunc = getChecksumAlgorithm(checksum::CRC_CCIT16);
@@ -54,7 +50,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(testSha256) {
+  BOOST_AUTO_TEST_CASE(TestSha256) {
     std::string binInput = "Old McDonnald had a farm, E-I-E-I-O. And on that farm he had a hash function, E-I-E-I-O";
 
     checksumAlgorithm checksumAlgorithmFunc = getChecksumAlgorithm(checksum::SHA256);
@@ -66,7 +62,7 @@ namespace ChimeraTK {
 
   /********************************************************************************************************************/
 
-  BOOST_AUTO_TEST_CASE(testChecksumValidation) {
+  BOOST_AUTO_TEST_CASE(TestChecksumValidation) {
     BOOST_CHECK_NO_THROW(validateChecksumPattern("", ""));
     BOOST_CHECK_NO_THROW(validateChecksumPattern("Pattern with no checksum tags", "error message detail"));
     BOOST_CHECK_NO_THROW(
