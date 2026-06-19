@@ -9,15 +9,13 @@
 #include <ChimeraTK/Exception.h>
 #include <ChimeraTK/SupportedUserTypes.h>
 
-#include <boost/process.hpp>
-
 #include <csignal>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
 
-DummyServer::DummyServer(bool useRandomDevice, bool debug) : _debug(debug) {
+DummyServer::DummyServer(bool useRandomDevice, bool debug, uint32_t baudRate) : _debug(debug), _baudRate(baudRate) {
   if(useRandomDevice) {
     // Generate a random number to attach to the device name so muliple tests can run in parallel.
     // Initialise with high resolution clock as see so all processes get a different value.
@@ -66,7 +64,7 @@ void DummyServer::activate() {
   for(size_t i = 0; i < maxTries; ++i) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(10));
     try {
-      _serialPort = std::make_unique<ChimeraTK::SerialPort>(_backportNode);
+      _serialPort = std::make_unique<ChimeraTK::SerialPort>(_backportNode, _baudRate);
       break;
     }
     catch(ChimeraTK::runtime_error&) {
@@ -134,7 +132,6 @@ void DummyServer::waitForStop() {
 }
 
 void DummyServer::mainLoop() {
-  std::string delim = ChimeraTK::SERIAL_DEFAULT_DELIMITER;
   uint64_t nIter = 0;
   while(true) {
     if(not byteMode) {
@@ -145,7 +142,7 @@ void DummyServer::mainLoop() {
       if(!readValue.has_value() || _stopMainLoop) {
         return;
       }
-      auto data = readValue.value();
+      const auto& data = readValue.value();
 
       if(_debug) {
         std::cout << "DummyServer: rx'ed \"" << replaceNewLines(data) << "\"" << std::endl;
@@ -404,7 +401,7 @@ void DummyServer::mainLoop() {
         }
         return;
       }
-      std::string data = readValue.value();
+      const auto& data = readValue.value();
 
       if((data.find('\x10') == 0)) { // go back to line mode
                                      // this exercises sending bytes and reading lines

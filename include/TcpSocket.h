@@ -4,8 +4,6 @@
 #include <boost/asio.hpp>
 
 #include <condition_variable>
-#include <iostream>
-#include <mutex>
 #include <string>
 
 namespace ChimeraTK {

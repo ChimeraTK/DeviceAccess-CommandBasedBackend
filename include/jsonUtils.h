@@ -11,8 +11,8 @@
 #include <algorithm>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 using json = nlohmann::json;
@@ -43,7 +43,7 @@ namespace ChimeraTK {
   [[nodiscard]] inline T caseInsensitiveGetValueOr(
       const json& j, const std::string& caseInsensitiveKeyString, T defaultValue) {
     auto optJsonValue = caseInsensitiveGetValueOption(j, caseInsensitiveKeyString);
-    return optJsonValue ? optJsonValue->get<T>() : defaultValue;
+    return optJsonValue ? optJsonValue->get<T>() : std::move(defaultValue);
   }
 
   // Handle the case that a string literal is passed, which would make T = const char*, which get can't take.

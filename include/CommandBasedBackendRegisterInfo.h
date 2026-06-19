@@ -79,10 +79,10 @@ namespace ChimeraTK {
      * For example, if readInfo.isActive() is true, then the register is readable;
      * but if readInfo.isActive is false, then it is write-only.
      */
-    [[nodiscard]] inline bool isActive() const { return not commandPattern.empty(); }
-    [[nodiscard]] inline bool isBinary() const { return _isBinary; }
+    [[nodiscard]] bool isActive() const { return not commandPattern.empty(); }
+    [[nodiscard]] bool isBinary() const { return _isBinary; }
 
-    [[nodiscard]] inline TransportLayerType getTransportLayerType() const {
+    [[nodiscard]] TransportLayerType getTransportLayerType() const {
       if(not hasTransportLayerType()) {
         throw ChimeraTK::logic_error("Attempting to get a TransportLayerType that has not been set");
       }
@@ -92,9 +92,9 @@ namespace ChimeraTK {
      * These getters return the corresponding responceInfo member, if the corresponding
      * SendCommandType is used, otherwise return nullopt.
      */
-    [[nodiscard]] std::optional<size_t> getResponseNLines() const noexcept;
-    [[nodiscard]] std::optional<std::string> getResponseLinesDelimiter() const noexcept;
-    [[nodiscard]] std::optional<size_t> getResponseBytes() const noexcept;
+    [[nodiscard]] std::optional<size_t> getResponseNLines() const;
+    [[nodiscard]] std::optional<std::string> getResponseLinesDelimiter() const;
+    [[nodiscard]] std::optional<size_t> getResponseBytes() const;
 
     /**
      * @brief Gets the regex pattern string for this InteractionInfo's type
@@ -112,9 +112,9 @@ namespace ChimeraTK {
     void setResponseBytes(size_t nBytes) { _responseInfo = ResponseBytesInfo{nBytes}; }
     void setTransportLayerType(TransportLayerType& type) noexcept;
 
-    [[nodiscard]] inline bool usesReadLines() const { return std::holds_alternative<ResponseLinesInfo>(_responseInfo); }
-    [[nodiscard]] inline bool usesReadBytes() const { return std::holds_alternative<ResponseBytesInfo>(_responseInfo); }
-    [[nodiscard]] inline bool hasTransportLayerType() const { return _transportLayerType.has_value(); }
+    [[nodiscard]] bool usesReadLines() const { return std::holds_alternative<ResponseLinesInfo>(_responseInfo); }
+    [[nodiscard]] bool usesReadBytes() const { return std::holds_alternative<ResponseBytesInfo>(_responseInfo); }
+    [[nodiscard]] bool hasTransportLayerType() const { return _transportLayerType.has_value(); }
     /*----------------------------------------------------------------------------------------------------------------*/
    protected:
     bool _isBinary = false;
@@ -153,15 +153,15 @@ namespace ChimeraTK {
     ~CommandBasedBackendRegisterInfo() override = default;
 
     // An Impl versions must be used internally, for anything that might be used by the constructor.
-    [[nodiscard]] inline RegisterPath getRegisterName() const override { return getRegisterNameImpl(); }
-    [[nodiscard]] inline unsigned int getNumberOfElements() const override { return getNumberOfElementsImpl(); }
-    [[nodiscard]] inline unsigned int getNumberOfChannels() const override { return getNumberOfChannelsImpl(); }
-    [[nodiscard]] inline const DataDescriptor& getDataDescriptor() const override { return dataDescriptor; }
-    [[nodiscard]] inline bool isReadable() const override { return readInfo.isActive(); }
-    [[nodiscard]] inline bool isWriteable() const override { return writeInfo.isActive(); }
-    [[nodiscard]] inline AccessModeFlags getSupportedAccessModes() const override { return {}; }
+    [[nodiscard]] RegisterPath getRegisterName() const override { return getRegisterNameImpl(); }
+    [[nodiscard]] unsigned int getNumberOfElements() const override { return getNumberOfElementsImpl(); }
+    [[nodiscard]] unsigned int getNumberOfChannels() const override { return getNumberOfChannelsImpl(); }
+    [[nodiscard]] const DataDescriptor& getDataDescriptor() const override { return dataDescriptor; }
+    [[nodiscard]] bool isReadable() const override { return readInfo.isActive(); }
+    [[nodiscard]] bool isWriteable() const override { return writeInfo.isActive(); }
+    [[nodiscard]] AccessModeFlags getSupportedAccessModes() const override { return {}; }
 
-    [[nodiscard]] inline std::unique_ptr<BackendRegisterInfoBase> clone() const override {
+    [[nodiscard]] std::unique_ptr<BackendRegisterInfoBase> clone() const override {
       return std::make_unique<CommandBasedBackendRegisterInfo>(*this);
     }
 
@@ -201,9 +201,9 @@ namespace ChimeraTK {
     DataDescriptor dataDescriptor;
 
    protected:
-    [[nodiscard]] inline RegisterPath getRegisterNameImpl() const { return registerPath; }
-    [[nodiscard]] inline unsigned int getNumberOfElementsImpl() const { return nElements; }
-    [[nodiscard]] inline unsigned int getNumberOfChannelsImpl() const { return nChannels; }
+    [[nodiscard]] RegisterPath getRegisterNameImpl() const { return registerPath; }
+    [[nodiscard]] unsigned int getNumberOfElementsImpl() const { return nElements; }
+    [[nodiscard]] unsigned int getNumberOfChannelsImpl() const { return nChannels; }
 
     /**
      * @brief: Fetches the appropriate regex given the TransportLayerType.

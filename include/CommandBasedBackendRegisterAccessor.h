@@ -10,7 +10,6 @@
 #include <ChimeraTK/RegisterPath.h>
 
 #include <functional>
-#include <memory>
 #include <regex>
 
 namespace ChimeraTK {
@@ -32,7 +31,7 @@ namespace ChimeraTK {
    public:
     CommandBasedBackendRegisterAccessor(const boost::shared_ptr<ChimeraTK::DeviceBackend>& dev,
         CommandBasedBackendRegisterInfo& registerInfo, const RegisterPath& registerPathName, size_t numberOfElements,
-        size_t elementOffsetInRegister, AccessModeFlags flags, bool isRecoveryTestAccessor = false);
+        size_t elementOffsetInRegister, const AccessModeFlags& flags, bool isRecoveryTestAccessor = false);
 
     // Overridden functions should use Impl version if they may ever be called from the constructor.
     [[nodiscard]] bool isReadOnly() const override { return isReadOnlyImpl(); }

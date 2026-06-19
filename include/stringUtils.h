@@ -165,7 +165,7 @@ using enableIfNonBoolNumeric = std::enable_if_t<std::is_arithmetic<T>::value && 
 // Get the bit that would be the sign bit if it i were signed.
 template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 inline static bool getFirstBit(const intType i) {
-  using signedIntType = typename std::make_signed<intType>::type;
+  using signedIntType = std::make_signed<intType>::type;
   return (static_cast<signedIntType>(i) < 0);
 }
 
@@ -174,8 +174,8 @@ inline static bool getFirstBit(const intType i) {
 template<typename intType, typename = enableIfNonBoolIntegral<intType>>
 static size_t getIntNaturalByteWidth(
     const intType payload, const bool isSigned = std::is_signed<intType>::value) noexcept {
-  using signedIntType = typename std::make_signed<intType>::type;
-  using unsignedIntType = typename std::make_unsigned<intType>::type;
+  using signedIntType = std::make_signed<intType>::type;
+  using unsignedIntType = std::make_unsigned<intType>::type;
 
   // Normalize to positives
   auto signedPayload = std::bit_cast<signedIntType>(payload);
@@ -356,7 +356,7 @@ template<typename boolType>
  * is determined by the size of floatType, with every byte in the payload will be reflected by a byte of the output string.
  */
 template<typename floatType, typename = enableIfFloat<floatType>>
-[[nodiscard]] std::string binaryStrFromFloat(const floatType payload) noexcept {
+[[nodiscard]] std::string binaryStrFromFloat(const floatType payload) {
   return binaryStrFromNumber<floatType>(payload).value_or("");
   // The option returned by binaryStrFromNumber<floatType) is never nullopt.
 }
@@ -417,7 +417,7 @@ template<typename intType, typename = enableIfIntegral<intType>>
  * @returns string containing the hexidecimal representation of the float, with length = 2*sizeof(floatType)
  */
 template<typename floatType, typename = enableIfFloat<floatType>>
-[[nodiscard]] std::string hexStrFromFloat(const floatType payload) noexcept {
+[[nodiscard]] std::string hexStrFromFloat(const floatType payload) {
   return hexStrFromBinaryStr(binaryStrFromFloat(payload));
 }
 
@@ -550,7 +550,7 @@ template<typename intType>
   }
 
   bool isNegative =
-      (std::is_signed<intType>::value) and ((static_cast<unsigned char>(binaryContainer[0]) & 0x80U) != 0);
+      (std::is_signed<intType>::value and ((static_cast<unsigned char>(binaryContainer[0]) & 0x80U) != 0));
   size_t naturalWidth = getStrNaturalByteWidth(binaryContainer, not isNegative);
   const size_t maxBytes = sizeof(intType);
 
@@ -559,7 +559,7 @@ template<typename intType>
     return std::nullopt;
   }
 
-  using uintType = typename std::make_unsigned<intType>::type;
+  using uintType = std::make_unsigned<intType>::type;
   uintType result = 0;
 
   // Calculate how many leading F's we need to add if the string is shorter than expected

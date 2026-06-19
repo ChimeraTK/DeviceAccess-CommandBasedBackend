@@ -3,11 +3,8 @@
 
 #include "jsonUtils.h"
 
-#include <nlohmann/json.hpp>
-
 #include <optional>
 #include <string>
-#include <unordered_map>
 
 namespace ChimeraTK {
   /********************************************************************************************************************/

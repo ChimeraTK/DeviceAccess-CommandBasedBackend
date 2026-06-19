@@ -111,6 +111,8 @@ namespace ChimeraTK {
      */
     std::string _port;
 
+    uint32_t _baudRate{115200}; ///< Baud rate for serial communication.
+
     /**
      * The timeout parameter given to the command handler upon open().
      * This becomes the timeout parameter of sendCommand
